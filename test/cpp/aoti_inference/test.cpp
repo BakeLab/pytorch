@@ -90,11 +90,10 @@ bool testDataFilesExist() {
 
 // Function to ensure test data files are generated at runtime
 void ensureTestDataGenerated() {
-  static std::once_flag generated_flag;
-  std::call_once(generated_flag, []() {
+  static bool test_data_generated [[maybe_unused]] = [] {
     // Only generate if files don't exist or are placeholders
     if (testDataFilesExist()) {
-      return;
+      return true;
     }
 
     std::string bindir = STRINGIZE(CMAKE_CURRENT_BINARY_DIR);
@@ -132,7 +131,8 @@ void ensureTestDataGenerated() {
         result2,
         ": ",
         models_cmd);
-  });
+    return true;
+  }();
 }
 
 const std::unordered_map<std::string, at::Tensor> derefTensorConstantMap(
