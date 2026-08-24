@@ -235,14 +235,6 @@ void Context::alertNotDeterministic(std::string_view const& caller) {
   }
 }
 
-bool Context::userEnabledNNPACK() const {
-  return enabled_nnpack;
-}
-
-void Context::setUserEnabledNNPACK(bool e) {
-  enabled_nnpack = e;
-}
-
 CuDNNDepthwiseKernel Context::cudnnDepthwiseKernel() const {
   return depthwise_kernel_cudnn;
 }
@@ -817,10 +809,6 @@ bool Context::hasMKLDNN() {
 #endif
 }
 
-bool Context::hasKleidiAI() {
-  return AT_KLEIDIAI_ENABLED();
-}
-
 bool Context::hasOpenMP() {
 #ifdef _OPENMP
   return true;
@@ -909,7 +897,7 @@ const std::vector<at::QEngine>& Context::supportedQEngines() {
 }
 
 bool Context::isXNNPACKAvailable() {
-  return xnnpack_backend_available.load(std::memory_order_acquire);
+  return false;
 }
 
 void Context::setCheckSparseTensorInvariants(std::optional<bool> e = std::nullopt) {
