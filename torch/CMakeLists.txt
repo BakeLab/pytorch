@@ -41,9 +41,8 @@ append_filelist("libtorch_python_core_sources" TORCH_PYTHON_SRCS)
 # NB: This has to match the condition under which the JIT test directory
 #     is included (at the time of writing that's in caffe2/CMakeLists.txt).
 if(BUILD_TEST)
-    add_compile_definitions(BUILDING_TESTS)
+    add_definitions(-DBUILDING_TESTS)
     list(APPEND TORCH_PYTHON_SRCS
-      ${TORCH_ROOT}/test/cpp/jit/torch_python_test.cpp
       )
 endif()
 
@@ -57,13 +56,10 @@ set(TORCH_PYTHON_INCLUDE_DIRECTORIES
     ${CMAKE_BINARY_DIR}/aten/src
     ${CMAKE_BINARY_DIR}/caffe2/aten/src
     ${CMAKE_BINARY_DIR}/third_party
-    ${CMAKE_BINARY_DIR}/third_party/onnx
 
     ${TORCH_ROOT}/third_party/valgrind-headers
 
     ${TORCH_ROOT}/third_party/gloo
-    ${TORCH_ROOT}/third_party/onnx
-    ${TORCH_ROOT}/third_party/flatbuffers/include
     ${TORCH_ROOT}/torch/csrc/profiler/kineto/libkineto/include
     ${TORCH_ROOT}/third_party/cpp-httplib
     ${TORCH_ROOT}/third_party/nlohmann/include
@@ -119,7 +115,7 @@ if(MSVC)
         break()
       endif()
     endforeach()
-    list(APPEND TORCH_PYTHON_LINK_LIBRARIES ${Python_LIBRARIES} onnx_library)
+    list(APPEND TORCH_PYTHON_LINK_LIBRARIES ${Python_LIBRARIES})
     if(NOT CMAKE_BUILD_TYPE MATCHES "Release")
       list(APPEND TORCH_PYTHON_LINK_OPTIONS "/DEBUG:FULL")
     endif()
@@ -271,8 +267,6 @@ if(USE_DISTRIBUTED)
     # Disable certain warnings for GCC-9.X
     if(CMAKE_COMPILER_IS_GNUCXX)
       set_source_files_properties(
-        ${TORCH_SRC_DIR}/csrc/distributed/autograd/init.cpp
-        ${TORCH_SRC_DIR}/csrc/distributed/rpc/testing/init.cpp
         ${TORCH_SRC_DIR}/csrc/distributed/c10d/init.cpp
         PROPERTIES COMPILE_OPTIONS -Wno-cast-function-type)
     endif()
@@ -297,13 +291,6 @@ if(USE_NCCL AND NOT WIN32)
     list(APPEND TORCH_PYTHON_COMPILE_DEFINITIONS USE_NCCL)
 endif()
 
-# coreml
-if(USE_COREML_DELEGATE)
-  list(APPEND TORCH_PYTHON_SRCS ${TORCH_SRC_DIR}/csrc/jit/backends/coreml/cpp/backend.cpp)
-  list(APPEND TORCH_PYTHON_SRCS ${TORCH_SRC_DIR}/csrc/jit/backends/coreml/cpp/preprocess.cpp)
-endif()
-
-
 add_library(torch_python SHARED ${TORCH_PYTHON_SRCS})
 torch_compile_options(torch_python)  # see cmake/public/utils.cmake
 torch_optimize_layout_if_enabled(
@@ -323,16 +310,12 @@ if(CAFFE2_USE_MKL AND BUILD_LIBTORCHLESS)
   target_link_libraries(torch_python PRIVATE caffe2::mkl)
 endif()
 
-add_dependencies(torch_python onnx_proto)
 # Avoid numpy for the DEPLOY build
 if(USE_NUMPY)
   target_link_libraries(torch_python PRIVATE Python::NumPy)
   target_compile_definitions(torch_python PRIVATE USE_NUMPY)
 endif()
 
-if(BUILD_LAZY_TS_BACKEND)
-  target_compile_definitions(torch_python PRIVATE BUILD_LAZY_TS_BACKEND)
-endif()
 
 if(HAVE_SOVERSION)
   set_target_properties(torch_python PROPERTIES
@@ -362,13 +345,6 @@ if(BUILD_LIBTORCHLESS)
     target_compile_definitions(torch_python PRIVATE USE_C10D_GLOO)
   endif()
 
-  if(NOT WIN32)
-    target_compile_definitions(torch_python PRIVATE USE_RPC)
-  endif()
-
-  if(USE_TENSORPIPE)
-    target_compile_definitions(torch_python PRIVATE USE_TENSORPIPE)
-  endif()
 
   set(EXPERIMENTAL_SINGLE_THREAD_POOL "0" CACHE STRING
   "Experimental option to use a single thread pool for inter- and intra-op parallelism")
@@ -379,7 +355,6 @@ if(BUILD_LIBTORCHLESS)
 endif()
 
 add_dependencies(torch_python torch_python_stubs)
-add_dependencies(torch_python flatbuffers)
 
 
 if(USE_PRECOMPILED_HEADERS)
@@ -436,12 +411,6 @@ if(USE_UCC)
   target_compile_definitions(torch_python PRIVATE USE_UCC)
 endif()
 
-if(BUILD_ONEDNN_GRAPH)
-  target_compile_definitions(torch_python PRIVATE BUILD_ONEDNN_GRAPH)
-  if(NOT BUILD_LIBTORCHLESS)
-    target_compile_definitions(torch_cpu PRIVATE BUILD_ONEDNN_GRAPH)
-  endif()
-endif()
 
 if(${CMAKE_BUILD_TYPE} STREQUAL "RelWithAssert")
    # Workaround numerous decref-without-a-gil warnings from JIT

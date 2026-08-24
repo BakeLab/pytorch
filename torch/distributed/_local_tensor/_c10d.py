@@ -6,7 +6,7 @@ from datetime import timedelta
 from typing import Any
 
 import torch
-from torch._C import ScriptObject
+from torch._custom_class_base import CustomClassBase as ScriptObject
 from torch._C._distributed_c10d import FakeWork, PythonCallbackWork
 from torch.distributed._mesh_layout import _FlatLayout
 from torch.distributed.distributed_c10d import (
