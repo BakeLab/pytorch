@@ -324,7 +324,6 @@ class TestPublicBindings(TestCase):
             "torch._inductor.kernel.vendored_templates.flydsl.kernels.mxfp8_gemm_utils",  # depends on flydsl
             "torch._inductor.kernel.vendored_templates.flydsl.kernels.mxfp8_grouped_gemm_gfx950",  # depends on flydsl
             "torch._inductor.runtime.triton_helpers",
-            "torch.ao.pruning._experimental.data_sparsifier.lightning.callbacks.data_sparsity",
             "torch.contrib._tensorboard_vis",
             "torch.distributed._composable",
             "torch.distributed._functional_collectives",
@@ -339,11 +338,6 @@ class TestPublicBindings(TestCase):
             "torch.distributed._tensor",
             "torch.distributed._tools.sac_ilp",
             "torch.distributed.algorithms._checkpoint.checkpoint_wrapper",
-            "torch.ao.pruning._experimental.data_sparsifier.benchmarks.dlrm_utils",
-            "torch.ao.pruning._experimental.data_sparsifier.benchmarks.evaluate_disk_savings",
-            "torch.ao.pruning._experimental.data_sparsifier.benchmarks.evaluate_forward_time",
-            "torch.ao.pruning._experimental.data_sparsifier.benchmarks.evaluate_model_metrics",
-            "torch.ao.pruning._experimental.data_sparsifier.lightning.tests.test_callbacks",
             "torch.distributed._tensor.examples.visualize_sharding_example",
             "torch.distributed.examples.memory_tracker_example",
             "torch.utils._cxx_pytree",
