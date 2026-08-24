@@ -600,10 +600,7 @@ void dispatch_half_gemm_wmma(CUDABLAS_GEMM_ARGTYPES(at::Half)) {
 template <>
 void gemm_internal_ck<at::Half>(CUDABLAS_GEMM_ARGTYPES(at::Half)) {
   static const std::vector<std::string> wmma_archs = {
-    "gfx1100", "gfx1101", "gfx1102", "gfx1200", "gfx1201",
-#if ROCM_VERSION >= 70000
-    "gfx1150", "gfx1151"
-#endif
+    "gfx1100", "gfx1101", "gfx1102", "gfx1200", "gfx1201", "gfx1150", "gfx1151"
   };
   // Keep in sync with torch_filter_ck_gemm_arches (cmake/public/utils.cmake)
   // and at::Context::ckGemmSupported().
