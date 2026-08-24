@@ -28,12 +28,8 @@ FrameLocalsMapping::FrameLocalsMapping(FrameLocalsFrameType* frame)
 
 #if IS_PYTHON_3_16_PLUS
   TORCH_CHECK(false, "Python 3.16+");
-#elif IS_PYTHON_3_14_PLUS
-  if (!frame->stackpointer) {
-    return;
-  }
 #else
-  if (!frame->stacktop) {
+  if (!frame->stackpointer) {
     return;
   }
 #endif
@@ -45,11 +41,9 @@ FrameLocalsMapping::FrameLocalsMapping(FrameLocalsFrameType* frame)
       return;
     }
 
-#if IS_PYTHON_3_12_PLUS
     if (kind & CO_FAST_HIDDEN) {
       return;
     }
-#endif
 
     if (kind & CO_FAST_FREE) {
       CHECK(value != nullptr && PyCell_Check(value));
@@ -63,14 +57,10 @@ FrameLocalsMapping::FrameLocalsMapping(FrameLocalsFrameType* frame)
   auto offset = co->co_nlocalsplus - co->co_nfreevars;
 #if IS_PYTHON_3_16_PLUS
   TORCH_CHECK(false, "Python 3.16+");
-#elif IS_PYTHON_3_14_PLUS
+#else
   for (const auto i : c10::irange(offset)) {
     update_framelocals(
         i, THP_PyStackRef_AsPyObjectBorrow(&frame->localsplus[i]));
-  }
-#else
-  for (const auto i : c10::irange(offset)) {
-    update_framelocals(i, frame->localsplus[i]);
   }
 #endif
 

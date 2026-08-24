@@ -12,10 +12,6 @@ PyFunctionObject* _PyFunction_CopyWithNewCode(
     PyFunctionObject* o,
     PyCodeObject* code);
 
-#if !IS_PYTHON_3_13_PLUS
-void THP_PyFrame_Clear(_PyInterpreterFrame* frame);
-#endif
-
 #if IS_PYTHON_3_15_PLUS
 #define THP_PyThreadState_BumpFramePointerSlow \
   _PyThreadState_PushFrame // renamed and publicly exported in 3.15
@@ -23,12 +19,6 @@ void THP_PyFrame_Clear(_PyInterpreterFrame* frame);
 _PyInterpreterFrame* THP_PyThreadState_BumpFramePointerSlow(
     PyThreadState* tstate,
     size_t size);
-#endif
-
-#if !IS_PYTHON_3_13_PLUS
-void THP_PyThreadState_PopFrame(
-    PyThreadState* tstate,
-    _PyInterpreterFrame* frame);
 #endif
 
 // pointers to _PyOpcode_Caches for C++

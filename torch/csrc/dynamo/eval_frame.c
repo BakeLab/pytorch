@@ -169,7 +169,6 @@ static PyObject* THPPyInterpreterFrame_f_locals(
   return self->locals;
 }
 
-#if IS_PYTHON_3_14_PLUS
 static PyObject* THPPyInterpreterFrame_f_executable(
     THPPyInterpreterFrame* self,
     PyObject* _noargs) {
@@ -178,11 +177,6 @@ static PyObject* THPPyInterpreterFrame_f_executable(
   }
   return PyStackRef_AsPyObjectNew(self->frame->f_executable);
 }
-#elif IS_PYTHON_3_13_PLUS
-DECLARE_PYOBJ_ATTR(f_executable)
-#else
-DECLARE_PYOBJ_ATTR(f_code)
-#endif
 
 #undef DECLARE_PYOBJ_ATTR
 
@@ -228,11 +222,7 @@ static struct PyGetSetDef THPPyInterpreterFrame_properties[] = {
     {"f_globals", (getter)THPPyInterpreterFrame_f_globals, NULL, NULL, NULL},
     {"f_builtins", (getter)THPPyInterpreterFrame_f_builtins, NULL, NULL, NULL},
     {"f_locals", (getter)THPPyInterpreterFrame_f_locals, NULL, NULL, NULL},
-#if IS_PYTHON_3_13_PLUS
     {"f_code", (getter)THPPyInterpreterFrame_f_executable, NULL, NULL, NULL},
-#else
-    {"f_code", (getter)THPPyInterpreterFrame_f_code, NULL, NULL, NULL},
-#endif
     {"f_lasti", (getter)THPPyInterpreterFrame_f_lasti, NULL, NULL, NULL},
     {"f_lineno", (getter)THPPyInterpreterFrame_f_lineno, NULL, NULL, NULL},
     {"f_back", (getter)THPPyInterpreterFrame_f_back, NULL, NULL, NULL},
@@ -313,7 +303,6 @@ const char* get_frame_name(THP_EVAL_API_FRAME_OBJECT* frame) {
   return PyUnicode_AsUTF8(F_CODE(frame)->co_name);
 }
 
-#if IS_PYTHON_3_14_PLUS
 static void dup_obj(_PyStackRef* dst, _PyStackRef src) {
   if (PyStackRef_IsNull(src)) {
     *dst = PyStackRef_NULL;
@@ -321,12 +310,6 @@ static void dup_obj(_PyStackRef* dst, _PyStackRef src) {
     *dst = PyStackRef_DUP(src);
   }
 }
-#else
-static void dup_obj(PyObject** dst, PyObject* src) {
-  Py_XINCREF(src);
-  *dst = src;
-}
-#endif
 
 static PyObject* dynamo_eval_custom_code_impl(
     PyThreadState* tstate,
@@ -340,11 +323,7 @@ static PyObject* dynamo_eval_custom_code_impl(
   // Generate Python function object and _PyInterpreterFrame in a way similar to
   // https://github.com/python/cpython/blob/e715da6db1d1d70cd779dc48e1ba8110c51cc1bf/Python/ceval.c#L1130
   PyFunctionObject* old_func = FUNC(frame);
-#if IS_PYTHON_3_12_PLUS
   size_t size = code->co_framesize;
-#else
-  size_t size = code->co_nlocalsplus + code->co_stacksize + FRAME_SPECIALS_SIZE;
-#endif
 
   PyFunctionObject* func = _PyFunction_CopyWithNewCode(old_func, code);
   if (func == NULL) {
@@ -360,34 +339,17 @@ static PyObject* dynamo_eval_custom_code_impl(
 
   Py_INCREF(func);
   // consumes reference to func
-#if IS_PYTHON_3_14_PLUS
   _PyStackRef func_stackref = PyStackRef_FromPyObjectSteal((PyObject*)func);
   _PyFrame_Initialize(
       tstate, shadow, func_stackref, NULL, code, 0, frame->previous);
-#elif IS_PYTHON_3_12_PLUS
-  _PyFrame_Initialize(shadow, func, NULL, code, 0);
-#else
-  _PyFrame_InitializeSpecials(shadow, func, NULL, code->co_nlocalsplus);
-#endif
 
-#if IS_PYTHON_3_14_PLUS
   _PyStackRef* fastlocals_old = frame->localsplus;
   _PyStackRef* fastlocals_new = shadow->localsplus;
-#else
-  PyObject** fastlocals_old = frame->localsplus;
-  PyObject** fastlocals_new = shadow->localsplus;
-#endif
   Py_ssize_t n_old = F_CODE(frame)->co_nlocalsplus;
   Py_ssize_t n_new = code->co_nlocalsplus;
 
   // localsplus are XINCREF'd by default eval frame, so all values must be
   // valid.
-#if !(IS_PYTHON_3_12_PLUS)
-  // _PyFrame_Initialize in 3.12 already does this
-  for (int i = 0; i < code->co_nlocalsplus; i++) {
-    fastlocals_new[i] = NULL;
-  }
-#endif
 
   // ============== Initialize new frame from old frame ============
   // Python internal for executing a function:
@@ -408,13 +370,12 @@ static PyObject* dynamo_eval_custom_code_impl(
   // |   args   |   new_locals    |    cell_variables |   free_variables    |
   // | <--- from left to right, index from 0 to n - 1 ---> |
   // code.co_varnames == args + new_locals, code.co_nlocals ==
-  // len(code.co_varnames) code.co_freevars == free_variables, and `n <=
-  // code.co_nlocals + len(code.co_cellvars) + len(code.co_freevars)` (Python
-  // expression). There is an extra field in Python C-API: `n ==
-  // code->co_nlocalsplus` (C expression) to retrieve the length of array. The
-  // complexity happens if an argument becomes a cell variable:
-  // `code.co_cellvars > cell_variables`, that cell variable is still stored in
-  // args, with a flag set in corresponding item's `co_localspluskinds` .
+  // len(code.co_varnames), code.co_freevars == free_variables. Use
+  // `code->co_nlocalsplus` (C expression) to retrieve the length of the array.
+  // Note `n <= code.co_nlocals + len(code.co_cellvars) +
+  // len(code.co_freevars)`: when an argument becomes a cell variable it is
+  // still stored in args, with a flag set in the corresponding item's
+  // `co_localspluskinds`.
   //
   // ideally, we need to look up new localsplus from old localsplus by name:
   // for i, name, value in enumerate(localsplusnames_old):
@@ -460,7 +421,7 @@ static PyObject* dynamo_eval_custom_code_impl(
   }
 
   // copy free vars
-  Py_ssize_t nfrees_old = PyCode_GetNFreevars(F_CODE(frame));
+  Py_ssize_t nfrees_old = F_CODE(frame)->co_nfreevars;
 
   for (Py_ssize_t i = 0; i < nfrees_old; i++) {
     dup_obj(&fastlocals_new[n_new - 1 - i], fastlocals_old[n_old - 1 - i]);
@@ -471,8 +432,8 @@ static PyObject* dynamo_eval_custom_code_impl(
   for (Py_ssize_t i = n_old - nfrees_old - 1, j = n_new - nfrees_old - 1;
        i >= total_argcount_old;
        i--, j--) {
-    // conditional test to tell if a variable is not a cell variable, using the
-    // bit flags in `co_localspluskinds`.
+    // `co_localspluskinds` carries a bit flag telling us whether a variable
+    // is a cell variable.
     if (!(_PyLocals_GetKind(F_CODE(frame)->co_localspluskinds, i) &
           CO_FAST_CELL)) {
       break;
@@ -481,27 +442,15 @@ static PyObject* dynamo_eval_custom_code_impl(
     dup_obj(&fastlocals_new[j], fastlocals_old[i]);
   }
 
-  // NOTE: if you want to evaluate frame instead of shadow in 3.12+,
-  // you need to clear_old_frame_if_python_312_plus the shadow frame BEFORE
-  // calling eval_frame_default (i.e. here) and comment out the
-  // clear_old_frame_if_python_312_plus call on the original frame.
+  // NOTE: if you want to evaluate frame instead of shadow, you need to
+  // _PyEval_FrameClearAndPop the shadow frame BEFORE calling
+  // eval_frame_default (i.e. here) and comment out the
+  // _PyEval_FrameClearAndPop call on the original frame.
 
   PyObject* result = dynamo_eval_frame_default(tstate, shadow, throw_flag);
 
-#if IS_PYTHON_3_12_PLUS
-
   // frame is cleared by caller
   Py_DECREF(func);
-
-#else
-
-  // In 3.11, shadow has is_entry set to true, so _PyEvalFrameClearAndPop is not
-  // called, so we manually clear and pop the shadow frame.
-  THP_PyFrame_Clear(shadow);
-  THP_PyThreadState_PopFrame(tstate, shadow);
-  Py_DECREF(func);
-
-#endif
 
   return result;
 }
@@ -539,7 +488,7 @@ static PyObject* dynamo__custom_eval_frame_shim(
   return dynamo__custom_eval_frame(tstate, frame, throw_flag, callback);
 }
 
-#else // !(IS_PYTHON_3_15_PLUS)
+#else
 
 // Fake definitions for everything we removed
 
@@ -575,21 +524,6 @@ static PyTypeObject THPPyInterpreterFrameType = {
 };
 
 #endif // !(IS_PYTHON_3_15_PLUS)
-
-#if !IS_PYTHON_3_13_PLUS
-
-void clear_old_frame_if_python_312_plus(
-    PyThreadState* tstate,
-    THP_EVAL_API_FRAME_OBJECT* frame) {
-#if IS_PYTHON_3_12_PLUS
-
-  THP_PyFrame_Clear(frame);
-  THP_PyThreadState_PopFrame(tstate, frame);
-
-#endif
-}
-
-#endif // !IS_PYTHON_3_13_PLUS
 
 static PyObject* increment_working_threads(
     PyThreadState* tstate,
@@ -840,12 +774,9 @@ static struct PyModuleDef _module = {
     .m_methods = _methods,
     .m_clear = clear_state};
 
-#if IS_PYTHON_3_12_PLUS
-#define _PyEval_RequestCodeExtraIndex PyUnstable_Eval_RequestCodeExtraIndex
-#endif
 
 PyObject* torch_c_dynamo_eval_frame_init(void) {
-  extra_index = _PyEval_RequestCodeExtraIndex(destroy_extra_state);
+  extra_index = PyUnstable_Eval_RequestCodeExtraIndex(destroy_extra_state);
   if (extra_index < 0) {
     PyErr_SetString(
         PyExc_RuntimeError, "dynamo: unable to register extra index");

@@ -33,13 +33,6 @@ int get_fullgraph_compiled_frame_count(void);
 void bump_fullgraph_compiled_frame_count(void);
 bool get_fullgraph_error_on_nested_compile(void);
 
-#if IS_PYTHON_3_13_PLUS
-#define clear_old_frame_if_python_312_plus _PyEval_FrameClearAndPop
-#else
-void clear_old_frame_if_python_312_plus(
-    PyThreadState* tstate,
-    THP_EVAL_API_FRAME_OBJECT* frame);
-#endif
 
 void eval_frame_callback_set(PyObject* obj);
 
