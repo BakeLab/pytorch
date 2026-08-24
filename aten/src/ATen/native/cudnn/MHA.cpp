@@ -44,7 +44,6 @@ bool has_aligned_varlen_layout(const Tensor& tensor) {
 } // namespace at::native
 
 #if defined(USE_ROCM) || !AT_CUDNN_ENABLED() || !defined(CUDNN_VERSION) || \
-    (defined(CUDNN_VERSION) && CUDNN_VERSION < 8900) ||                    \
     !defined(CUDNN_FRONTEND_VERSION) ||                                    \
     (defined(CUDNN_FRONTEND_VERSION) && CUDNN_FRONTEND_VERSION < 10100)
 namespace at {
@@ -162,8 +161,7 @@ void run_cudnn_SDP_bprop_nestedtensor(
 } // namespace native
 } // namespace at
 
-#else // AT_CUDNN_ENABLED && CUDNN_VERSION >= 8900 && CUDNN_FRONTEND_VERSION >=
-      // 10100
+#else // AT_CUDNN_ENABLED && CUDNN_FRONTEND_VERSION >= 10100
 #include <cudnn_frontend.h>
 
 #include <ATen/native/cudnn/MHA.h>

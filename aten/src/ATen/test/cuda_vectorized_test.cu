@@ -10,11 +10,15 @@ using namespace at::native::memory;
 
 constexpr int buffer_size = 1024;
 
-#if defined(CUDA_VERSION) && CUDA_VERSION < 13000
-using double4_t = double4;
-#else
-using double4_t = double4_16a;
-#endif
+struct alignas(16) aligned_double4 {
+  double x;
+  double y;
+  double z;
+  double w;
+};
+
+__managed__ aligned_double4 buffer1[buffer_size];
+__managed__ aligned_double4 buffer2[buffer_size];
 
 // cudaMallocManaged rather than __managed__ globals: on ROCm GPUs without SVM
 // (e.g. SR-IOV VFs), kernels see the unmapped host address of a __managed__ global.
