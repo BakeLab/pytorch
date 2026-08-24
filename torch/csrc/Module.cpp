@@ -5,9 +5,7 @@
 #include <csignal>
 #include <optional>
 
-#ifndef _MSC_VER
 #include <sys/socket.h>
-#endif
 
 #include <ATen/ATen.h>
 #include <ATen/BlasBackend.h>
@@ -25,7 +23,6 @@
 #include <ATen/native/ConvUtils.h>
 #include <ATen/native/ForeachUtils.h>
 #include <ATen/native/Normalization.h>
-#include <c10/core/Contiguity.h>
 #include <c10/core/Device.h>
 #include <c10/core/DispatchKeySet.h>
 #include <c10/core/impl/COW.h>
@@ -88,7 +85,6 @@
 #include <torch/csrc/jit/serialization/pickler_helper.h>
 #include <torch/csrc/monitor/python_init.h>
 #include <torch/csrc/mps/Module.h>
-#include <torch/csrc/mtia/Module.h>
 #include <torch/csrc/multiprocessing/init.h>
 #include <torch/csrc/profiler/python/init.h>
 #include <torch/csrc/tensor/python_tensor.h>
@@ -126,9 +122,7 @@
 
 #ifdef USE_XPU
 #include <ATen/native/transformers/xpu/sdp_utils.h>
-#ifndef _WIN32
 #include <torch/csrc/inductor/static_launcher/xpu.h>
-#endif
 #endif
 
 #ifdef USE_DISTRIBUTED
@@ -137,12 +131,6 @@
 #endif
 #endif
 
-#if defined(USE_VALGRIND)
-#include <callgrind.h>
-#endif
-
-#ifdef USE_ITT
-#include <torch/csrc/itt.h>
 #endif
 
 #include <torch/nativert/python/Bindings.h>
@@ -568,17 +556,6 @@ static PyObject* THPModule_showConfig(PyObject* module, PyObject* noargs) {
 static PyObject* THPModule_cxxFlags(PyObject* module, PyObject* noargs) {
   HANDLE_TH_ERRORS
   return THPUtils_packString(at::get_cxx_flags());
-  END_HANDLE_TH_ERRORS
-}
-
-static PyObject* THPModule_cxxCompiler(PyObject* module, PyObject* noargs) {
-  HANDLE_TH_ERRORS
-  auto [name, version] = at::get_cxx_compiler();
-  auto tuple = PyTuple_New(2);
-  TORCH_CHECK_PYTHON(tuple);
-  PyTuple_SET_ITEM(tuple, 0, THPUtils_packString(name));
-  PyTuple_SET_ITEM(tuple, 1, THPUtils_packString(version));
-  return tuple;
   END_HANDLE_TH_ERRORS
 }
 
@@ -2032,7 +2009,6 @@ static std::initializer_list<PyMethodDef> TorchMethods = {
      nullptr},
     {"_show_config", THPModule_showConfig, METH_NOARGS, nullptr},
     {"_cxx_flags", THPModule_cxxFlags, METH_NOARGS, nullptr},
-    {"_cxx_compiler", THPModule_cxxCompiler, METH_NOARGS, nullptr},
     {"_parallel_info", THPModule_parallelInfo, METH_NOARGS, nullptr},
     {"_get_cpu_capability", THPModule_getCpuCapability, METH_NOARGS, nullptr},
     {"_set_backcompat_broadcast_warn",
@@ -2443,11 +2419,7 @@ extern "C" void _signalHandler(int signum) {
   // If we hit another signal don't run this handler again.
   std::signal(signum, oldAction);
 
-#ifdef _WIN32
-  const char* signame = "<unknown>";
-#else
   const char* signame = strsignal(signum);
-#endif
 
   fprintf(
       stderr,
@@ -2563,9 +2535,6 @@ PyObject* initModule() {
   torch::_export::initExportBindings(module);
   torch::inductor::initAOTIRunnerBindings(module);
   torch::inductor::initAOTIPackageBindings(module);
-#ifdef USE_ITT
-  torch::profiler::initIttBindings(module);
-#endif
 #ifdef USE_CUDA
   torch::cuda::initModule(module);
 #endif
@@ -2573,7 +2542,7 @@ PyObject* initModule() {
   ASSERT_TRUE(StaticCudaLauncher_init(module));
   ASSERT_TRUE(FastCudaLauncher_init(module));
 #endif
-#if defined(USE_XPU) && !defined(_WIN32)
+#if defined(USE_XPU)
   ASSERT_TRUE(StaticXpuLauncher_init(module));
 #endif
 #ifdef USE_MPS
@@ -2583,7 +2552,6 @@ PyObject* initModule() {
 #ifdef USE_XPU
   torch::xpu::initModule(module);
 #endif
-  torch::mtia::initModule(module);
   torch::cpu::initModule(module);
   torch::accelerator::initModule(module);
   torch::instruction_counter::initModule(module);
@@ -2903,87 +2871,6 @@ Call this whenever a new thread is created in order to propagate values from
   ASSERT_TRUE(set_module_attr(
       "_has_eigen_sparse", at::hasEigenSparse() ? Py_True : Py_False));
 
-  py_module.def("_valgrind_supported_platform", []() {
-#if defined(USE_VALGRIND)
-    return true;
-#else
-      return false;
-#endif
-  });
-
-  py_module.def("_valgrind_toggle", []() {
-#if defined(USE_VALGRIND)
-    CALLGRIND_TOGGLE_COLLECT;
-#else
-      TORCH_CHECK(false, "Valgrind is not supported.");
-#endif
-  });
-
-  py_module.def("_valgrind_toggle_and_dump_stats", []() {
-#if defined(USE_VALGRIND)
-    // NB: If we don't toggle collect around dump stats, callgrind_annotate
-    //     won't process the results correctly. Specifically,
-    //     `callgrind_annotate --inclusive=no` will be almost completely empty.
-    CALLGRIND_TOGGLE_COLLECT;
-    CALLGRIND_DUMP_STATS;
-#else
-      TORCH_CHECK(false, "Valgrind is not supported.");
-#endif
-  });
-
-  py_module.def(
-      "_is_contiguous_or_false",
-      [](c10::SymIntArrayRef sizes, c10::SymIntArrayRef strides) {
-        TORCH_CHECK(
-            sizes.size() == strides.size(),
-            "sizes and strides must have the same length");
-        return c10::_is_contiguous_or_false(sizes, strides);
-      });
-  py_module.def(
-      "_is_channels_last_contiguous_2d_or_false",
-      [](c10::SymIntArrayRef sizes, c10::SymIntArrayRef strides) {
-        TORCH_CHECK(
-            sizes.size() == strides.size(),
-            "sizes and strides must have the same length");
-        return c10::_is_channels_last_contiguous_2d_or_false(sizes, strides);
-      });
-  py_module.def(
-      "_is_channels_last_contiguous_3d_or_false",
-      [](c10::SymIntArrayRef sizes, c10::SymIntArrayRef strides) {
-        TORCH_CHECK(
-            sizes.size() == strides.size(),
-            "sizes and strides must have the same length");
-        return c10::_is_channels_last_contiguous_3d_or_false(sizes, strides);
-      });
-  py_module.def(
-      "_is_contiguous",
-      [](c10::SymIntArrayRef sizes,
-         c10::SymIntArrayRef strides,
-         const c10::SymInt& numel) {
-        TORCH_CHECK(
-            sizes.size() == strides.size(),
-            "sizes and strides must have the same length");
-        return c10::_compute_contiguous<c10::SymInt>(sizes, strides, numel);
-      });
-  py_module.def(
-      "_is_channels_last_contiguous_2d",
-      [](c10::SymIntArrayRef sizes, c10::SymIntArrayRef strides) {
-        TORCH_CHECK(
-            sizes.size() == strides.size(),
-            "sizes and strides must have the same length");
-        return c10::_compute_channels_last_contiguous_2d<c10::SymInt>(
-            sizes, strides);
-      });
-  py_module.def(
-      "_is_channels_last_contiguous_3d",
-      [](c10::SymIntArrayRef sizes, c10::SymIntArrayRef strides) {
-        TORCH_CHECK(
-            sizes.size() == strides.size(),
-            "sizes and strides must have the same length");
-        return c10::_compute_channels_last_contiguous_3d<c10::SymInt>(
-            sizes, strides);
-      });
-
   py::class_<WeakTensorRef>(py_module, "_WeakTensorRef")
       .def(py::init([](const py::object& tensor) {
         return WeakTensorRef(THPVariable_Unpack(tensor.ptr()));
@@ -3195,8 +3082,7 @@ Call this whenever a new thread is created in order to propagate values from
 
   py::enum_<at::LinalgBackend>(py_module, "_LinalgBackend")
       .value("Default", at::LinalgBackend::Default)
-      .value("Cusolver", at::LinalgBackend::Cusolver)
-      .value("Magma", at::LinalgBackend::Magma);
+      .value("Cusolver", at::LinalgBackend::Cusolver);
 
   py_module.def("_set_linalg_preferred_backend", [](at::LinalgBackend b) {
     at::globalContext().setLinalgPreferredBackend(b);
@@ -3429,8 +3315,6 @@ Call this whenever a new thread is created in order to propagate values from
 #endif
 
   ASSERT_TRUE(set_module_attr("_has_cuda", has_cuda));
-  ASSERT_TRUE(
-      set_module_attr("_has_magma", at::hasMAGMA() ? Py_True : Py_False));
   ASSERT_TRUE(set_module_attr("_has_mps", has_mps));
   ASSERT_TRUE(set_module_attr("_has_xpu", has_xpu));
   ASSERT_TRUE(
@@ -3450,12 +3334,6 @@ Call this whenever a new thread is created in order to propagate values from
       static_cast<void (*)(
           const at::Tensor&, std::unordered_map<std::string, bool>)>(
           torch::jit::setTensorMetadata));
-  py_module.def(
-      "_copy_backend_meta",
-      &torch::jit::copyBackendMeta,
-      py::arg("src"),
-      py::arg("dst"),
-      py::arg("for_fake") = false);
   py_module.def("_dispatch_key_set", [](const at::Tensor& x) {
     return toString(x.key_set());
   });

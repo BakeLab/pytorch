@@ -24,13 +24,9 @@
 #if defined(PYTORCH_C10_DRIVER_API_SUPPORTED)
 #include <c10/cuda/driver_api.h>
 #endif
-#ifndef _WIN32
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <unistd.h>
-#else
-#include <process.h>
-#endif
 #endif
 
 #include <c10/util/Exception.h>
@@ -95,11 +91,7 @@ std::atomic<size_t> g_expandable_segments_count{0};
 
 #if defined(PYTORCH_C10_DRIVER_API_SUPPORTED) || defined(USE_ROCM)
 static int get_self_pid() {
-#ifdef _WIN32
-  return _getpid();
-#else
   return getpid();
-#endif // _WIN32
 }
 #endif // defined(PYTORCH_C10_DRIVER_API_SUPPORTED) || defined(USE_ROCM)
 
@@ -769,19 +761,13 @@ struct ExpandableSegment {
         header.num_handles);
 // older build setups (e.g. multiwheels) do not have this syscall, added 2020
 // but the kernel on the system might still support it.
-#ifndef _WIN32
 #ifndef SYS_pidfd_open
 #define SYS_pidfd_open 434
 #endif
 #ifndef SYS_pidfd_getfd
 #define SYS_pidfd_getfd 438
 #endif
-#endif // !_WIN32
     if (header.handle_type != Expandable_Segments_Handle_Type::FABRIC_HANDLE) {
-#ifdef _WIN32
-      TORCH_CHECK(
-          false, "IPC expandable segments are not supported on Windows");
-#else
       auto pidfd = syscall(SYS_pidfd_open, header.pid, 0);
       TORCH_CHECK(
           pidfd != -1 || errno != ENOSYS,
@@ -830,14 +816,10 @@ struct ExpandableSegment {
         LOG(INFO) << "use posix fd to import expandable segments.";
         segment->handles_.emplace_back(handle);
       }
-#endif // !_WIN32
     } else {
 #ifdef USE_ROCM
       TORCH_INTERNAL_ASSERT(
           false, "expandable segment with fabric handle not supported");
-#elif defined(_WIN32)
-      TORCH_CHECK(
-          false, "IPC expandable segments are not supported on Windows");
 #else
       for (auto i : c10::irange(header.num_handles)) {
         (void)i;
@@ -1026,13 +1008,11 @@ struct ExpandableSegment {
 #endif
       }
       if (h.shareable_handle) {
-#ifndef _WIN32
         // shareable_handle also holds CUmemFabricHandle for fabric segments;
         // std::get_if skips those (no fd to close) instead of throwing.
         if (auto* fd = std::get_if<int>(&*h.shareable_handle)) {
           close(*fd);
         }
-#endif
       }
 #ifdef USE_ROCM
       C10_CUDA_CHECK(hipMemRelease(h.handle));
@@ -1089,6 +1069,8 @@ struct ExpandableSegment {
   };
   struct ShareHeader {
     // Explicit padding preserves the v3 layout and stable byte-string keys.
+    // All fields have in-class default initializers so ShareHeader header{}
+    // cannot leak indeterminate bytes over IPC.
     int32_t pid = 0;
     uint32_t padding = 0;
     size_t segment_size = 0;

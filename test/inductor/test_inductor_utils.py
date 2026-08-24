@@ -2,8 +2,6 @@
 
 import functools
 import logging
-from types import SimpleNamespace
-from unittest import mock
 
 import sympy
 
@@ -17,13 +15,6 @@ from torch._inductor.test_case import run_tests, TestCase
 from torch._inductor.utils import do_bench_using_profiling
 from torch._inductor.virtualized import NullHandler, V
 from torch.autograd import DeviceType
-from torch.fx.experimental._constant_symnode import ConstantIntNode
-from torch.fx.experimental.symbolic_shapes import DimDynamic, ShapeEnv
-from torch.testing._internal.common_utils import (
-    instantiate_parametrized_tests,
-    parametrize,
-)
-from torch.utils._ordered_set import OrderedSet
 
 
 log = logging.getLogger(__name__)
@@ -171,38 +162,6 @@ class TestBench(TestCase):
             ),
             0.003,
         )
-
-    def test_get_fused_kernel_name_windows_truncation(self):
-        class FakeOrigin:
-            def __init__(self, name):
-                self.name = name
-                self.op = "call_function"
-
-        class FakeIRNode:
-            def __init__(self, origins):
-                self.origins = origins
-
-        class FakeSchedulerNode:
-            def __init__(self, origins):
-                self.node = FakeIRNode(origins)
-
-        origins = OrderedSet(
-            FakeOrigin(f"some_very_long_op_name_that_exceeds_the_limit_{i}")
-            for i in range(10)
-        )
-        node_schedule = [FakeSchedulerNode(origins)]
-
-        # On non-Windows the full descriptive name is kept.
-        with mock.patch("torch._inductor.utils.is_windows", return_value=False):
-            name = utils.get_fused_kernel_name(node_schedule, "inductor_node")
-            self.assertGreater(len(name), 50)
-
-        # On Windows the name is truncated and a hash suffix is appended.
-        with mock.patch("torch._inductor.utils.is_windows", return_value=True):
-            name_win = utils.get_fused_kernel_name(node_schedule, "inductor_node")
-            self.assertLessEqual(len(name_win), 50)
-            self.assertTrue(name_win.startswith("fused_"))
-            self.assertEqual(len(name_win.rsplit("_", 1)[-1]), 8)
 
     def test_do_bench_profile_result_requires_record_function_event(self):
         with self.assertRaisesRegex(RuntimeError, "Failed to capture"):

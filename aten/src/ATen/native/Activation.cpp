@@ -10,9 +10,6 @@
 #include <ATen/TensorOperators.h>
 #include <ATen/OpMathType.h>
 #include <ATen/ScalarOps.h>
-#if defined(C10_MOBILE) && defined(USE_XNNPACK)
-#include <ATen/native/xnnpack/Engine.h>
-#endif
 #include <ATen/core/DistributionsHelper.h>
 #include <ATen/native/Resize.h>
 #include <ATen/MemoryOverlap.h>
@@ -478,11 +475,6 @@ Tensor hardtanh_backward(const Tensor& grad_output, const Tensor& self, const Sc
 }
 
 Tensor hardswish(const Tensor& self) {
-  #if defined(C10_MOBILE) && defined(USE_XNNPACK)
-  if (xnnpack::use_hardswish(self)) {
-    return xnnpack::hardswish(self);
-  }
-  #endif
   Tensor result;
   auto iter = TensorIterator::unary_op(result, self);
   hardswish_stub(iter.device_type(), iter);
@@ -496,12 +488,6 @@ Tensor& hardswish_out(const Tensor& self, Tensor& result) {
 }
 
 Tensor& hardswish_(Tensor& self) {
-  #if defined(C10_MOBILE) && defined(USE_XNNPACK)
-  if (xnnpack::use_hardswish(self)) {
-    xnnpack::hardswish_(self);
-    return self;
-  }
-  #endif
   auto iter = TensorIterator::unary_op(self, self);
   hardswish_stub(iter.device_type(), iter);
   return self;

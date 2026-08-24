@@ -9,7 +9,7 @@ if(NOT TORCH_INSTALL_INCLUDE_DIR)
 endif()
 
 # Normalize paths to forward slashes so they survive embedding inside
-# install(CODE "...") strings on Windows (backslashes are escape chars).
+# install(CODE "...") strings.
 file(TO_CMAKE_PATH "${Python_EXECUTABLE}" _python_exe)
 file(TO_CMAKE_PATH "${PROJECT_SOURCE_DIR}" _project_src)
 file(TO_CMAKE_PATH "${CMAKE_BINARY_DIR}" _cmake_bindir)
@@ -36,105 +36,6 @@ add_custom_target(merge_compile_commands ALL
   VERBATIM
 )
 
-# --- Runtime DLL bundling (Windows) ---
-# The old CI scripts (copy.bat / copy_cpu.bat) copied runtime DLLs into the
-# source tree before setuptools ran.  With scikit-build-core the wheel is
-# built from the cmake install prefix, so we install them via cmake instead.
-if(WIN32 AND BUILD_PYTHON)
-  # OpenMP runtime (libiomp5md.dll) - required by torch_cpu.dll when MKL
-  # threading uses Intel OpenMP.
-  if(MKL_OPENMP_LIBRARY AND MKL_OPENMP_LIBRARY MATCHES "libiomp5md\\.lib$")
-    get_filename_component(_omp_lib_dir "${MKL_OPENMP_LIBRARY}" DIRECTORY)
-    get_filename_component(_omp_prefix "${_omp_lib_dir}" DIRECTORY)
-    # The DLL lives in bin/ next to the lib/ that contains the import library.
-    set(_omp_dll "${_omp_prefix}/bin/libiomp5md.dll")
-    if(EXISTS "${_omp_dll}")
-      install(FILES "${_omp_dll}" DESTINATION "${TORCH_INSTALL_LIB_DIR}")
-    else()
-      # Fallback: DLL in the same directory as the import library.
-      file(GLOB _omp_dll_fallback "${_omp_lib_dir}/libiomp5md.dll")
-      if(_omp_dll_fallback)
-        install(FILES ${_omp_dll_fallback} DESTINATION "${TORCH_INSTALL_LIB_DIR}")
-      endif()
-    endif()
-    # Also install the stubs library if present (libiompstubs5md.dll).
-    file(GLOB _omp_stubs "${_omp_prefix}/bin/libiompstubs5md.dll")
-    if(NOT _omp_stubs)
-      file(GLOB _omp_stubs "${_omp_lib_dir}/libiompstubs5md.dll")
-    endif()
-    if(_omp_stubs)
-      install(FILES ${_omp_stubs} DESTINATION "${TORCH_INSTALL_LIB_DIR}")
-    endif()
-  endif()
-
-  # Flash Attention runtime (aotriton_v2.dll + its liblzma.dll dependency).
-  # aotriton's ExternalProject generates these in torch/lib/ during the build,
-  # after configure, so OPTIONAL defers the existence check to install time;
-  # a configure-time EXISTS guard misses them (WinError 126 loading torch_hip).
-  foreach(_fa_dll aotriton_v2.dll liblzma.dll)
-    install(FILES "${TORCH_SRC_DIR}/lib/${_fa_dll}"
-            DESTINATION "${TORCH_INSTALL_LIB_DIR}" OPTIONAL)
-  endforeach()
-
-  # MSVC OpenMP (libomp140) - TheRock copies this into torch/lib/ before the
-  # wheel build when using MSVC OpenMP instead of MKL libiomp.
-  set(_libomp140 "${TORCH_SRC_DIR}/lib/libomp140.x86_64.dll")
-  if(EXISTS "${_libomp140}")
-    install(FILES "${_libomp140}" DESTINATION "${TORCH_INSTALL_LIB_DIR}")
-  endif()
-
-  # libuv (uv.dll) - required by torch distributed (gloo transport).
-  # libuv_DLL_PATH is an optional CI hint (forwarded via EnvVarForwarding.cmake);
-  # fall back to libuv_ROOT/bin/uv.dll which Windows CI sets.
-  if(USE_DISTRIBUTED)
-    if(libuv_DLL_PATH AND EXISTS "${libuv_DLL_PATH}")
-      install(FILES "${libuv_DLL_PATH}" DESTINATION "${TORCH_INSTALL_LIB_DIR}")
-    elseif(DEFINED ENV{libuv_ROOT})
-      file(GLOB _uv_dll "$ENV{libuv_ROOT}/bin/uv.dll")
-      if(_uv_dll)
-        install(FILES ${_uv_dll} DESTINATION "${TORCH_INSTALL_LIB_DIR}")
-      endif()
-    endif()
-  endif()
-
-  # CUDA runtime DLLs - only for CUDA builds.
-  if(USE_CUDA AND CUDA_TOOLKIT_ROOT_DIR AND NOT "$ENV{PYTORCH_EXTRA_INSTALL_REQUIREMENTS}" MATCHES "cuda-toolkit")
-    # CUDA 13+ moves DLLs to bin/x64.
-    if(IS_DIRECTORY "${CUDA_TOOLKIT_ROOT_DIR}/bin/x64")
-      set(_cuda_bin "${CUDA_TOOLKIT_ROOT_DIR}/bin/x64")
-    else()
-      set(_cuda_bin "${CUDA_TOOLKIT_ROOT_DIR}/bin")
-    endif()
-    set(_cuda_dll_patterns
-      "${_cuda_bin}/cusparse*64_*.dll"
-      "${_cuda_bin}/cublas*64_*.dll"
-      "${_cuda_bin}/cudart*64_*.dll"
-      "${_cuda_bin}/curand*64_*.dll"
-      "${_cuda_bin}/cufft*64_*.dll"
-      "${_cuda_bin}/cusolver*64_*.dll"
-      "${_cuda_bin}/nvrtc*64_*.dll"
-      "${_cuda_bin}/nvJitLink_*.dll"
-      "${CUDA_TOOLKIT_ROOT_DIR}/bin/cudnn*64_*.dll"
-      "${CUDA_TOOLKIT_ROOT_DIR}/extras/CUPTI/lib/x64/cupti64_*.dll"
-      "${CUDA_TOOLKIT_ROOT_DIR}/extras/CUPTI/lib/x64/nvperf_host*.dll"
-      "${CUDA_TOOLKIT_ROOT_DIR}/extras/CUPTI/lib64/cupti64_*.dll"
-      "${CUDA_TOOLKIT_ROOT_DIR}/extras/CUPTI/lib64/nvperf_host*.dll"
-    )
-    foreach(_pattern ${_cuda_dll_patterns})
-      file(GLOB _dlls "${_pattern}")
-      if(_dlls)
-        install(FILES ${_dlls} DESTINATION "${TORCH_INSTALL_LIB_DIR}")
-      endif()
-    endforeach()
-  endif()
-
-  # Retain the legacy NvToolsExt DLL for existing Windows binaries until its
-  # separate deprecation; cuda-toolkit no longer provides it.
-  set(_nvtoolsext "C:/Program Files/NVIDIA Corporation/NvToolsExt/bin/x64/nvToolsExt64_1.dll")
-  if(USE_CUDA AND EXISTS "${_nvtoolsext}")
-    install(FILES "${_nvtoolsext}" DESTINATION "${TORCH_INSTALL_LIB_DIR}")
-  endif()
-endif()
 
 # --- macOS OpenMP embedding ---
 # Copy libomp.dylib / libiomp5.dylib into the wheel and fix rpaths so the

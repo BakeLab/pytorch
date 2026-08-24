@@ -56,9 +56,7 @@ class VectorizedN {
   template <typename Op>
   inline VectorizedN<T, N> unary_op(Op op) const {
     VectorizedN<T, N> result;
-#ifndef _MSC_VER
 #pragma unroll
-#endif
     for (const auto i : c10::irange(N)) {
       result.values[i] = op(values[i]);
     }
@@ -69,9 +67,7 @@ class VectorizedN {
   inline VectorizedN<T, N> binary_op(const VectorizedN<T, N>& other, Op op)
       const {
     VectorizedN<T, N> result;
-#ifndef _MSC_VER
 #pragma unroll
-#endif
     for (const auto i : c10::irange(N)) {
       result.values[i] = op(values[i], other.values[i]);
     }
@@ -84,9 +80,7 @@ class VectorizedN {
       const VectorizedN<T, N>& other2,
       Op op) const {
     VectorizedN<T, N> result;
-#ifndef _MSC_VER
 #pragma unroll
-#endif
     for (const auto i : c10::irange(N)) {
       result.values[i] = op(values[i], other.values[i], other2.values[i]);
     }

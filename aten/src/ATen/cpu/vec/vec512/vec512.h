@@ -57,7 +57,6 @@ inline Vectorized<double> cast<double, int64_t>(
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ GATHER ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#ifndef _MSC_VER
 // MSVC is not working well on complex function overload.
 template <int64_t scale = 1>
 std::enable_if_t<
@@ -74,9 +73,7 @@ std::enable_if_t<
         float>> inline gather(const float* base_addr, const Vectorized<int32_t>& vindex) {
   return _mm512_i32gather_ps(vindex, base_addr, scale);
 }
-#endif
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ MASK GATHER ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#ifndef _MSC_VER
 // MSVC is not working well on complex function overload.
 template <int64_t scale = 1>
 std::
@@ -99,7 +96,6 @@ std::
   auto mask_ = _mm512_movepi32_mask(_mm512_castps_si512(mask.values));
   return _mm512_mask_i32gather_ps(src, mask_, vindex, base_addr, scale);
 }
-#endif
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CONVERT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template <>
