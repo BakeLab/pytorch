@@ -679,8 +679,10 @@
 # /torch/_dispatch/
 # /torch/_environment.py
 # /torch/_guards.py
+# /torch/_importer.py
 # /torch/_jit_internal.py
 # /torch/_linalg_utils.py
+# /torch/_mangling.py
 # /torch/_lobpcg.py
 # /torch/_lowrank.py
 # /torch/_meta_registrations.py
@@ -1021,23 +1023,11 @@
 # /caffe2/serialize/
 # /test/test_serialization.py
 # /torch/serialization.py
-# label: module: package/deploy
-# /test/package/
-# /test/test_package.py
-# /torch/package/
 #
 # [compiler_export_fx]
 # /test/export/
 # /test/fx/
 # /test/higher_order_ops/
-# /test/package/package_bc/test_fx_module.pt
-# label: oncall: export
-# /test/export/
-/torch/_export/ @avikchaudhuri @tugsbayasgalan @zhxchen17 @ydwu4 @angelayi
-/torch/export/ @avikchaudhuri @tugsbayasgalan @zhxchen17 @ydwu4 @angelayi
-/torch/_export/serde/schema.py @SherlockNoMad @zhxchen17
-# label: module: fx
-# /test/fx/
 # /test/test_dynamic_spec_make_fx.py
 # /test/test_fx.py
 # /test/test_fx_experimental.py
