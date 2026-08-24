@@ -3451,7 +3451,6 @@ MOD_SKIPLIST = [
     "torch.nested",
     "torch.nn",
     "torch.overrides",
-    "torch.package",
     "torch.profiler",
     "torch.random",
     "torch.serialization",
@@ -3522,7 +3521,7 @@ BUILTIN_INLINE_WHEN_CALLED.update(
 
 SKIP_DIRS_RE = re.compile(r"match nothing^")
 
-# Skip fbcode paths(including torch.package paths) containing
+# Skip fbcode paths containing
 # one of the following strings.
 FBCODE_SKIP_DIRS: set[str] = set()
 
