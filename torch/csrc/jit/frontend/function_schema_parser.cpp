@@ -338,7 +338,7 @@ struct SchemaParser {
     switch (kind) {
       case TypeKind::TensorType:
       case TypeKind::GeneratorType:
-      case TypeKind::QuantizerType: {
+      {
         return parseTensorDefault(range);
       }
       case TypeKind::StringType:

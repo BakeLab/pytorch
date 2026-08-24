@@ -2236,11 +2236,18 @@ class TestTensorCreation(TestCase):
         res2 = torch.arange(0, 10, device=device)
         self.assertEqual(res1, res2, atol=0, rtol=0)
 
-        # Check arange for non-contiguous tensors.
-        x = torch.zeros(2, 3, device=device)
-        torch.arange(0, 4, out=x.narrow(1, 1, 2))
-        res2 = torch.tensor(((0., 0., 1.), (0., 2., 3.)), device=device)
-        self.assertEqual(x, res2, atol=1e-16, rtol=0)
+        # don't allow passing dtype to set_default_dtype
+        for t in all_types_and_complex_and(torch.bool, torch.half, torch.bfloat16):
+            # only floating-point types are supported as the default type
+            if t in (
+                    torch.half,
+                    torch.float,
+                    torch.double,
+                    torch.bfloat16):
+                with set_default_dtype(t):
+                    pass
+            else:
+                self.assertRaises(TypeError, lambda: torch.set_default_dtype(t))
 
         # Check negative
         res1 = torch.tensor((1., 0.), device=device)

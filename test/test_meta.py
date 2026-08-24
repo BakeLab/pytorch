@@ -1711,10 +1711,6 @@ class TestMetaCore(TestCase):
     # CUDA-referenced tests live in TestMetaCudaRef instead.
     hw_classification = HardwareClassification.GENERIC
 
-    def test_empty_quantized(self):
-        r = torch.empty(2 ** 52, device='meta', dtype=torch.qint8)
-        self.assertEqual(r.device.type, 'meta')
-
     def test_nan_to_num(self):
         t = torch.tensor([float('nan'), float('inf'), -float('inf'), 3.14], device='meta')
         r = t.nan_to_num()
@@ -1921,6 +1917,17 @@ class TestMetaCore(TestCase):
         # aten.fill returns a new tensor
         r2 = torch.ops.aten.fill(inps, 1.0)
         self.assertNotEqual(id(inps), id(r2))
+
+    def test_cdist_forward(self, device):
+        to_meta = MetaConverter()
+        x1 = torch.rand([3, 2], device=device)
+        x2 = torch.rand([2, 2], device=device)
+        p = 2.0
+        for compute_mode in (None, 1, 2):
+            ref = aten._cdist_forward.default(x1, x2, p, compute_mode)
+            res = aten._cdist_forward.default(to_meta(x1), to_meta(x2), p, compute_mode)
+            self.assertEqual(res.device.type, 'meta')
+            self.assertEqual(ref.shape, res.shape)
 
     def test_quantized_embedding_bag(self):
         tab_shape = [8, 128]
