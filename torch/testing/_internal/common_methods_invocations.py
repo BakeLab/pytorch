@@ -31,7 +31,7 @@ from torch.testing._internal.common_device_type import (
     onlyCPU, onlyCUDA, onlyNativeDeviceTypes, onlyOn, disablecuDNN,
     skipCUDAIfNoCusolver, skipCPUIfNoLapack, skipCPUIfNoFFT, skipCUDAIf, precisionOverride,
     skipCPUIfNoMklSparse, toleranceOverride, tol, skipXPU, e4m3_type, e5m2_type, E4M3_MAX_POS, E5M2_MAX_POS,
-    skipCUDAIfNoMagmaAndNoLinalgsolver,
+    skipCUDAIfNoLinalgsolver,
 )
 from torch.testing._internal.common_cuda import (
     PLATFORM_SUPPORTS_FLASH_ATTENTION, PLATFORM_SUPPORTS_FP8,
@@ -45,7 +45,7 @@ from torch.testing._internal.common_quantized import (
 from torch.testing._internal.common_utils import (
     getRocmVersion,
     make_fullrank_matrices_with_distinct_singular_values,
-    TEST_WITH_ROCM, IS_FBCODE, IS_LINUX, IS_WINDOWS, IS_MACOS, MACOS_VERSION, TEST_SCIPY,
+    TEST_WITH_ROCM, IS_FBCODE, IS_LINUX, IS_MACOS, MACOS_VERSION, TEST_SCIPY,
     torch_to_numpy_dtype_dict, numpy_to_torch_dtype, TEST_WITH_ASAN,
     GRADCHECK_NONDET_TOL, slowTest, TEST_WITH_SLOW,
     TEST_WITH_TORCHINDUCTOR, skipIfNoTritonDSL, skipIfNoCuteDSL, skipIfRocm, TEST_XPU,
@@ -12094,29 +12094,7 @@ op_db: list[OpInfo] = [
                    decorators=(precisionOverride({torch.float16: 1e-2,
                                                   torch.bfloat16: 1e-1,
                                                   torch.complex64: 1e-2}),),
-                   skips=(
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_normal',
-                                    device_type='cuda', dtypes=[torch.cdouble], active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                                    device_type='cuda', dtypes=[torch.cdouble], active_if=IS_WINDOWS),
-                       # Failing with wrong imaginary sign on at least some Windows jobs
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_small',
-                                    device_type='cuda', dtypes=[torch.cdouble],
-                                    active_if=IS_WINDOWS),
-                       # Failing with wrong imaginary sign on at least some Windows jobs
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
-                                    device_type='cuda', dtypes=[torch.cdouble],
-                                    active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestBwdGradients', 'test_fn_grad',
-                                    dtypes=[torch.cdouble], active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestBwdGradients', 'test_method_grad',
-                                    dtypes=[torch.cdouble], active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestBwdGradients', 'test_inplace_grad',
-                                    dtypes=[torch.cdouble], active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestFwdGradients', 'test_forward_mode_AD',
-                                    dtypes=[torch.cdouble], active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestFwdGradients', 'test_inplace_forward_mode_AD',
-                                    dtypes=[torch.cdouble], active_if=IS_WINDOWS),)),
+),
     # NOTE: the derivative for inplace acosh is not implemented
     UnaryUfuncInfo('acosh',
                    aliases=('arccosh', ),
@@ -12131,24 +12109,11 @@ op_db: list[OpInfo] = [
                    supports_fwgrad_bwgrad=True,
                    promotes_int_to_float=True,
                    skips=(
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_normal',
-                                    device_type='cuda', dtypes=[torch.cdouble], active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                                    device_type='cuda', dtypes=[torch.cdouble], active_if=IS_WINDOWS),
                        DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
                                     device_type='cpu', dtypes=[torch.cfloat, torch.cdouble]),
                        DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
                                     device_type='cpu', dtypes=[torch.cfloat, torch.cdouble]),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                                    device_type='cuda', dtypes=[torch.cdouble],
-                                    active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
-                                    device_type='cuda', dtypes=[torch.cdouble],
-                                    active_if=IS_WINDOWS),
                        # Failing with wrong imaginary sign on at least some Windows jobs
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_small',
-                                    device_type='cuda', dtypes=[torch.cdouble],
-                                    active_if=IS_WINDOWS),
                    ),
                    # acosh is not defined at x < 1 (real)
                    reference_numerics_filter=NumericsFilter(
@@ -12810,12 +12775,6 @@ op_db: list[OpInfo] = [
                        precisionOverride({torch.bfloat16: 1e-2}),
                    ],
                    skips=(
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                                    device_type='cuda', dtypes=[torch.cdouble],
-                                    active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
-                                    device_type='cuda', dtypes=[torch.cdouble],
-                                    active_if=IS_WINDOWS),
                        DecorateInfo(unittest.skip("Skipped! sparse backward not supported"),
                                     'TestSparseUnaryUfuncs', 'test_sparse_fn_grad'),
                    )),
@@ -12845,12 +12804,6 @@ op_db: list[OpInfo] = [
                                     device_type='cpu', dtypes=[torch.cfloat, torch.cdouble]),
                        DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_normal',
                                     device_type='cpu', dtypes=[torch.cfloat, torch.cdouble]),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                                    device_type='cuda', dtypes=[torch.cdouble],
-                                    active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
-                                    device_type='cuda', dtypes=[torch.cdouble],
-                                    active_if=IS_WINDOWS),
                        DecorateInfo(unittest.skip("Skipped! sparse backward not supported"),
                                     'TestSparseUnaryUfuncs', 'test_sparse_fn_grad'),
                        DecorateInfo(toleranceOverride({torch.float32: tol(atol=1e-4, rtol=1e-4),
@@ -12877,11 +12830,11 @@ op_db: list[OpInfo] = [
                    decorators=(precisionOverride({torch.bfloat16: 1e-2}),),
                    skips=(
                        DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                                    dtypes=[torch.cfloat, torch.cdouble], active_if=(IS_MACOS or IS_WINDOWS)),
+                                    dtypes=[torch.cfloat, torch.cdouble], active_if=(IS_MACOS)),
                        DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
-                                    dtypes=[torch.cfloat, torch.cdouble], active_if=(IS_MACOS or IS_WINDOWS)),
+                                    dtypes=[torch.cfloat, torch.cdouble], active_if=(IS_MACOS)),
                        DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_small',
-                                    dtypes=[torch.cfloat, torch.cdouble], active_if=(IS_MACOS or IS_WINDOWS)),
+                                    dtypes=[torch.cfloat, torch.cdouble], active_if=(IS_MACOS)),
                        DecorateInfo(unittest.skip("Skipped! sparse backward not supported"),
                                     'TestSparseUnaryUfuncs', 'test_sparse_fn_grad'),
                    )),
@@ -12929,15 +12882,6 @@ op_db: list[OpInfo] = [
                                     device_type='cpu', dtypes=[torch.cfloat, torch.cdouble]),
                        DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
                                     device_type='cpu', dtypes=[torch.cfloat, torch.cdouble]),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                                    device_type='cuda', dtypes=[torch.cfloat, torch.cdouble],
-                                    active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
-                                    device_type='cuda', dtypes=[torch.cfloat],
-                                    active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                                    device_type='xpu', dtypes=[torch.cfloat, torch.cdouble],
-                                    active_if=IS_WINDOWS),
                        DecorateInfo(unittest.skip("Skipped! sparse backward not supported"),
                                     'TestSparseUnaryUfuncs', 'test_sparse_fn_grad'),
                    )),
@@ -13110,7 +13054,7 @@ op_db: list[OpInfo] = [
            sample_inputs_func=sample_inputs_linalg_cholesky_inverse,
            gradcheck_wrapper=gradcheck_wrapper_triangular_input_real_positive_diagonal,
            decorators=[
-               skipCUDAIfNoMagmaAndNoLinalgsolver,
+               skipCUDAIfNoLinalgsolver,
                skipCPUIfNoLapack,
                DecorateInfo(
                    toleranceOverride({
@@ -13153,7 +13097,7 @@ op_db: list[OpInfo] = [
            supports_forward_ad=True,
            supports_fwgrad_bwgrad=True,
            gradcheck_wrapper=lambda *args, **kwargs: gradcheck_wrapper_triangular_input(*args, idx=1, **kwargs),
-           decorators=[skipCUDAIfNoMagmaAndNoLinalgsolver, skipCPUIfNoLapack],
+           decorators=[skipCUDAIfNoLinalgsolver, skipCPUIfNoLapack],
            skips=(
                # https://github.com/pytorch/pytorch/issues/165294
                DecorateInfo(skipIfRocm, "TestCommon", "test_noncontiguous_samples", dtypes=(torch.complex64,)),
@@ -13365,25 +13309,15 @@ op_db: list[OpInfo] = [
                    promotes_int_to_float=True,
                    decorators=(precisionOverride({torch.bfloat16: 1e-2}),),
                    skips=(
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
-                                    dtypes=(torch.cfloat, torch.cdouble,), device_type='cpu', active_if=IS_WINDOWS),
                        # This fails on CUDA but passes on ROCm
                        DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
                                     dtypes=(torch.cdouble,), device_type='cuda'),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                                    dtypes=[torch.cfloat, torch.cdouble], active_if=IS_WINDOWS),
                        DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
                                     device_type='cpu',
                                     dtypes=[torch.cfloat, torch.cdouble], active_if=IS_MACOS),
                        # AssertionError: Tensor-likes are not close!
                        # Greatest absolute difference: nan at index (700,) (up to 1e-05 allowed)
                        # Greatest relative difference: nan at index (700,) (up to 0.001 allowed)
-                       DecorateInfo(unittest.expectedFailure, 'TestUnaryUfuncs', 'test_reference_numerics_large',
-                                    device_type='cuda',
-                                    dtypes=(torch.chalf,), active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
-                                    device_type='xpu',
-                                    dtypes=(torch.chalf,), active_if=IS_WINDOWS),
                    )),
     UnaryUfuncInfo('cosh',
                    ref=np_unary_ufunc_integer_promotion_wrapper(np.cosh),
@@ -13401,10 +13335,6 @@ op_db: list[OpInfo] = [
                        DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
                                     dtypes=[torch.cdouble]),
                        DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                                    dtypes=[torch.cfloat, torch.cdouble], active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
-                                    dtypes=[torch.cfloat, torch.cdouble], active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
                                     device_type='cpu',
                                     dtypes=[torch.cfloat, torch.cdouble], active_if=IS_MACOS),
                        DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
@@ -13413,12 +13343,6 @@ op_db: list[OpInfo] = [
                        # AssertionError: Tensor-likes are not close!
                        # Greatest absolute difference: nan at index (6000,) (up to 1e-05 allowed)
                        # Greatest relative difference: nan at index (6000,) (up to 0.001 allowed)
-                       DecorateInfo(unittest.expectedFailure, 'TestUnaryUfuncs', 'test_reference_numerics_large',
-                                    device_type='cuda',
-                                    dtypes=(torch.chalf,), active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
-                                    device_type='xpu',
-                                    dtypes=(torch.chalf,), active_if=IS_WINDOWS),
                    )),
     OpInfo('cov',
            dtypes=all_types_and_complex_and(torch.half, torch.bfloat16),
@@ -13610,13 +13534,6 @@ op_db: list[OpInfo] = [
                    dtypes=all_types_and_complex_and(torch.bool, torch.half, torch.bfloat16),
                    dtypesIfCUDA=all_types_and_complex_and(torch.bool, torch.half, torch.bfloat16, torch.chalf),
                    dtypesIfHpu=custom_types(torch.float32, torch.bfloat16),
-                   skips=(
-                       # Reference: https://github.com/pytorch/pytorch/issues/48010
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                                    device_type='cpu', dtypes=[torch.cfloat, torch.cdouble], active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
-                                    device_type='xpu', dtypes=(torch.chalf,), active_if=IS_WINDOWS),
-                   ),
                    assert_autodiffed=True,
                    supports_forward_ad=True,
                    supports_fwgrad_bwgrad=True,
@@ -14060,12 +13977,6 @@ op_db: list[OpInfo] = [
                        # skips test_reference_numerics due to error in Windows CI.
                        # The np.frexp returns exponent as np.intc dtype on Windows platform,
                        # and np.intc does not have the correspond torch dtype
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_small',
-                                    active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
-                                    active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                                    active_if=IS_WINDOWS),
                    )),
     UnaryUfuncInfo('log1p',
                    ref=np.log1p,
@@ -14098,7 +14009,7 @@ op_db: list[OpInfo] = [
     OpInfo('geqrf',
            dtypes=floating_and_complex_types(),
            sample_inputs_func=sample_inputs_linalg_qr_geqrf,
-           decorators=[skipCUDAIfNoMagmaAndNoLinalgsolver, skipCPUIfNoLapack],
+           decorators=[skipCUDAIfNoLinalgsolver, skipCPUIfNoLapack],
            supports_autograd=False,
            skips=(
                # FIXME: geqrf can't forward with complex inputs that require grad
@@ -14281,11 +14192,6 @@ op_db: list[OpInfo] = [
                    supports_fwgrad_bwgrad=True,
                    promotes_int_to_float=True,
                    decorators=(precisionOverride({torch.bfloat16: 5e-2}),),
-                   skips=(
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                                    device_type='cpu', dtypes=[torch.cfloat, torch.cdouble],
-                                    active_if=IS_WINDOWS),
-                   ),
                    # log(z)->-inf for |z|->0
                    reference_numerics_filter=NumericsFilter(condition=lambda x: torch.abs(x) < 0.1, safe_val=1)),
     UnaryUfuncInfo('log10',
@@ -14298,11 +14204,6 @@ op_db: list[OpInfo] = [
                    supports_forward_ad=True,
                    supports_fwgrad_bwgrad=True,
                    promotes_int_to_float=True,
-                   skips=(
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                                    device_type='cpu', dtypes=[torch.cfloat, torch.cdouble],
-                                    active_if=IS_WINDOWS),
-                   ),
                    # log10(z)->-inf for |z|->0
                    reference_numerics_filter=NumericsFilter(condition=lambda x: torch.abs(x) < 0.1, safe_val=1)),
     UnaryUfuncInfo('log2',
@@ -14418,7 +14319,7 @@ op_db: list[OpInfo] = [
            # https://github.com/pytorch/pytorch/issues/66357
            check_batched_forward_grad=False,
            sample_inputs_func=sample_inputs_lu,
-           decorators=[skipCUDAIfNoMagmaAndNoLinalgsolver, skipCPUIfNoLapack],
+           decorators=[skipCUDAIfNoLinalgsolver, skipCPUIfNoLapack],
            skips=(
                # RuntimeError not raised: Expected RuntimeError when calling with input.device=cpu and out.device=cuda
                DecorateInfo(unittest.expectedFailure, 'TestCommon', 'test_out'),
@@ -14440,7 +14341,7 @@ op_db: list[OpInfo] = [
                             device_type='mps', dtypes=[torch.float32]),
                DecorateInfo(unittest.skip("Tests different backward paths"),
                             "TestCommon", "test_floating_inputs_are_differentiable"),),
-           decorators=[skipCPUIfNoLapack, skipCUDAIfNoMagmaAndNoLinalgsolver]),
+           decorators=[skipCPUIfNoLapack, skipCUDAIfNoLinalgsolver]),
     OpInfo('masked_fill',
            dtypes=all_types_and_complex_and(torch.bool, torch.half, torch.bfloat16, torch.chalf),
            dtypesIfHpu=custom_types(torch.float32, torch.bfloat16, torch.int8, torch.bool, torch.int32),
@@ -15775,7 +15676,7 @@ op_db: list[OpInfo] = [
                ),
                # https://github.com/pytorch/pytorch/issues/182819
                # https://github.com/pytorch/pytorch/issues/182869
-               DecorateInfo(unittest.skip, "TestTorchFunctionRedispatchOpsDevice", "test_redispatch", device_type="cuda", dtypes=(torch.float32, torch.complex64), active_if=TEST_WITH_SLOW or IS_LINUX or IS_WINDOWS)
+               DecorateInfo(unittest.skip, "TestTorchFunctionRedispatchOpsDevice", "test_redispatch", device_type="cuda", dtypes=(torch.float32, torch.complex64), active_if=TEST_WITH_SLOW or IS_LINUX)
            ),
            supports_out=False,),
     OpInfo('nn.functional.conv1d',
@@ -17202,10 +17103,7 @@ op_db: list[OpInfo] = [
             DecorateInfo(unittest.skip("Fails on some jobs works on others!"),
                          'TestUnaryUfuncs', "test_reference_numerics_extremal",
                          dtypes=(torch.complex64, torch.complex128), device_type='cpu',
-                         active_if=(IS_MACOS or IS_WINDOWS)),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                         device_type='xpu', dtypes=[torch.cfloat, torch.cdouble],
-                         active_if=IS_WINDOWS),
+                         active_if=(IS_MACOS)),
         ),
         # tan(j * pi/2 * odd_number) is nan which also make tanhshrink nan.
         reference_numerics_filter=NumericsFilter(
@@ -17917,14 +17815,6 @@ op_db: list[OpInfo] = [
                        # Fails on CUDA but passes on ROCm
                        DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
                                     dtypes=(torch.cdouble,), device_type='cuda'),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                                    dtypes=(torch.cfloat, torch.cdouble,), device_type='cpu', active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
-                                    dtypes=(torch.cfloat, torch.cdouble,), device_type='cpu', active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                                    device_type='xpu', dtypes=(torch.cfloat, torch.cdouble), active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
-                                    device_type='xpu', dtypes=(torch.chalf,), active_if=IS_WINDOWS),
                        DecorateInfo(unittest.skip("Skipped! sparse backward not supported"),
                                     'TestSparseUnaryUfuncs', 'test_sparse_fn_grad'),
                        DecorateInfo(toleranceOverride({torch.float16: tol(atol=1e-3, rtol=2e-3)}),
@@ -17956,15 +17846,10 @@ op_db: list[OpInfo] = [
                    skips=(
                        DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
                                     device_type='cpu', dtypes=[torch.cfloat, torch.cdouble],
-                                    active_if=(IS_MACOS or IS_WINDOWS)),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                                    device_type='xpu', dtypes=[torch.cfloat, torch.cdouble],
-                                    active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
-                                    device_type='xpu', dtypes=(torch.chalf,), active_if=IS_WINDOWS),
+                                    active_if=(IS_MACOS)),
                        DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
                                     device_type='cpu', dtypes=[torch.cfloat, torch.cdouble],
-                                    active_if=(IS_MACOS or IS_WINDOWS)),
+                                    active_if=(IS_MACOS)),
                        DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
                                     dtypes=(torch.cdouble,)),
                        # Reference: https://github.com/pytorch/pytorch/issues/48641
@@ -18288,15 +18173,10 @@ op_db: list[OpInfo] = [
                    skips=(
                        DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
                                     device_type='cpu', dtypes=[torch.cfloat, torch.cdouble],
-                                    active_if=(IS_MACOS or IS_WINDOWS)),
+                                    active_if=(IS_MACOS)),
                        DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
                                     device_type='cpu', dtypes=[torch.cfloat, torch.cdouble],
-                                    active_if=(IS_MACOS or IS_WINDOWS)),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                                    device_type='xpu', dtypes=[torch.cfloat, torch.cdouble],
-                                    active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
-                                    device_type='xpu', dtypes=(torch.chalf,), active_if=IS_WINDOWS),
+                                    active_if=(IS_MACOS)),
                        DecorateInfo(unittest.skip("Skipped! sparse backward not supported"),
                                     'TestSparseUnaryUfuncs', 'test_sparse_fn_grad'),
                        # FIXME:
@@ -18342,15 +18222,10 @@ op_db: list[OpInfo] = [
                    skips=(
                        DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
                                     device_type='cpu', dtypes=[torch.cfloat, torch.cdouble],
-                                    active_if=(IS_MACOS or IS_WINDOWS)),
+                                    active_if=(IS_MACOS)),
                        DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
                                     device_type='cpu', dtypes=[torch.cfloat, torch.cdouble],
-                                    active_if=(IS_MACOS or IS_WINDOWS)),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                                    device_type='xpu', dtypes=[torch.cfloat, torch.cdouble],
-                                    active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
-                                    device_type='xpu', dtypes=(torch.chalf,), active_if=IS_WINDOWS),
+                                    active_if=(IS_MACOS)),
                        DecorateInfo(unittest.skip("Skipped! sparse backward not supported"),
                                     'TestSparseUnaryUfuncs', 'test_sparse_fn_grad'),
                        DecorateInfo(toleranceOverride({torch.complex64: tol(atol=3e-5, rtol=7e-6)}),
@@ -18405,7 +18280,7 @@ op_db: list[OpInfo] = [
            supports_fwgrad_bwgrad=True,
            gradcheck_wrapper=lambda *args, **kwargs: gradcheck_wrapper_triangular_input(*args, idx=1, **kwargs),
            decorators=[
-               skipCUDAIfNoMagmaAndNoLinalgsolver,
+               skipCUDAIfNoLinalgsolver,
                skipCPUIfNoLapack,
                DecorateInfo(
                    toleranceOverride({torch.float32: tol(atol=3e-5, rtol=3e-6)}),
@@ -18456,8 +18331,6 @@ op_db: list[OpInfo] = [
                        DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
                                     dtypes=[torch.cdouble]),
                        # Reference: https://github.com/pytorch/pytorch/issues/48010
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                                    device_type='cpu', dtypes=[torch.cfloat, torch.cdouble], active_if=IS_WINDOWS),
                    )),
     UnaryUfuncInfo('expm1',
                    aliases=('special.expm1', ),
@@ -18691,7 +18564,7 @@ op_db: list[OpInfo] = [
            # We're using at::allclose, which does not have a batching rule
            check_batched_grad=False,
            check_batched_gradgrad=False,
-           decorators=[skipCUDAIfNoMagmaAndNoLinalgsolver, skipCPUIfNoLapack, with_tf32_off],
+           decorators=[skipCUDAIfNoLinalgsolver, skipCPUIfNoLapack, with_tf32_off],
            skips=(
                # Issue with conj and torch dispatch, see https://github.com/pytorch/pytorch/issues/82479
                DecorateInfo(
@@ -18828,10 +18701,6 @@ op_db: list[OpInfo] = [
                      sample_inputs_func=sample_inputs_polygamma,
                      decorators=(
                          DecorateInfo(toleranceOverride({torch.float32: tol(atol=1e-4, rtol=1e-3)}), 'TestUnaryUfuncs'),
-                         DecorateInfo(toleranceOverride({torch.bfloat16: tol(atol=1e1, rtol=1e-1),
-                                                         torch.float32: tol(atol=1e-4, rtol=1e-2)}),
-                                      'TestUnaryUfuncs', 'test_reference_numerics_normal',
-                                      active_if=IS_WINDOWS),
                      ),
                      skips=(
                          DecorateInfo(unittest.skip("Skipped!"), 'TestNormalizeOperators'),
@@ -18989,7 +18858,7 @@ op_db: list[OpInfo] = [
            gradcheck_nondet_tol=GRADCHECK_NONDET_TOL,
            supports_out=False,
            sample_inputs_func=sample_inputs_linalg_invertible,
-           decorators=[skipCUDAIfNoMagmaAndNoLinalgsolver, skipCPUIfNoLapack],
+           decorators=[skipCUDAIfNoLinalgsolver, skipCPUIfNoLapack],
            skips=(
                DecorateInfo(unittest.skip("Skipped!"), 'TestCommon', 'test_variant_consistency_eager',
                             device_type='mps', dtypes=[torch.float32]),
@@ -19083,10 +18952,7 @@ op_db: list[OpInfo] = [
            supports_forward_ad=True,
            supports_fwgrad_bwgrad=True,
            sample_inputs_func=sample_inputs__unsafe_masked_index,
-           skips=(
-               DecorateInfo(slowTest, 'TestDecomp', 'test_quick_core_backward',
-                            dtypes=(torch.float64,), active_if=IS_WINDOWS),
-           ),),
+           ),
     OpInfo('_unsafe_masked_index_put_accumulate',
            dtypes=all_types_and_complex_and(torch.float16, torch.bfloat16, torch.bool),
            supports_out=False,
@@ -19101,10 +18967,7 @@ op_db: list[OpInfo] = [
                ),
            ),
            sample_inputs_func=sample_inputs__unsafe_masked_index_put_accumulate,
-           skips=(
-               DecorateInfo(slowTest, 'TestDecomp', 'test_quick_core_backward',
-                            dtypes=(torch.float64,), active_if=IS_WINDOWS),
-           ),),
+),
     OpInfo('__getitem__',
            dtypes=all_types_and_complex_and(torch.bool, torch.float16, torch.bfloat16, torch.chalf),
            # Runs very slowly on slow gradcheck - alternatively reduce input sizes
@@ -20694,13 +20557,6 @@ DecorateInfo(unittest.skip("Skipped!"), 'TestDecomp', 'test_quick'),
                    supports_forward_ad=True,
                    supports_fwgrad_bwgrad=True,
                    promotes_int_to_float=True,
-                   skips=(
-                       # Reference: https://github.com/pytorch/pytorch/pull/50140#issuecomment-756150214
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                                    dtypes=[torch.float32, torch.float64], active_if=IS_WINDOWS),
-                       DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_large',
-                                    dtypes=[torch.float32, torch.float64], active_if=IS_WINDOWS),
-                   ),
                    # lgamma have multiple singularities at x <= 0
                    reference_numerics_filter=NumericsFilter(condition=lambda x: x < 0.1, safe_val=1)),
     OpInfo(
@@ -20710,7 +20566,7 @@ DecorateInfo(unittest.skip("Skipped!"), 'TestDecomp', 'test_quick'),
         supports_forward_ad=True,
         supports_fwgrad_bwgrad=True,
         sample_inputs_func=sample_inputs_linalg_det_logdet_slogdet,
-        decorators=[skipCUDAIfNoMagmaAndNoLinalgsolver, skipCPUIfNoLapack]),
+        decorators=[skipCUDAIfNoLinalgsolver, skipCPUIfNoLapack]),
     # `log_softmax` supports different dtypes based on whether `dtype` argument,
     # is passed or not. Hence two OpInfo entries, one with dtype and other without.
     OpInfo(
@@ -20964,7 +20820,7 @@ DecorateInfo(unittest.skip("Skipped!"), 'TestDecomp', 'test_quick'),
     OpInfo('norm',
            variant_test_name='nuc',
            sample_inputs_func=sample_inputs_norm_nuc,
-           decorators=[skipCUDAIfNoMagmaAndNoLinalgsolver, skipCPUIfNoLapack],
+           decorators=[skipCUDAIfNoLinalgsolver, skipCPUIfNoLapack],
            check_batched_gradgrad=False,
            # torch.autograd.gradcheck.GradcheckError: While computing batched gradients
            # got: Could not allocate memory to change Tensor SizesAndStrides!
@@ -21323,8 +21179,6 @@ DecorateInfo(unittest.skip("Skipped!"), 'TestDecomp', 'test_quick'),
         supports_gradgrad=True,
         gradcheck_nondet_tol=1e-15,
         skips=(
-            DecorateInfo(slowTest, 'TestDecomp', 'test_comprehensive', dtypes=(torch.float32, torch.float64),
-                         active_if=IS_WINDOWS),
             DecorateInfo(toleranceOverride({torch.float32: tol(atol=2e-5, rtol=2e-6),
                                             torch.float16: tol(atol=5e-3, rtol=4e-3)}),
                          "TestConsistency", "test_output_grad_match", device_type="mps"),
@@ -22467,58 +22321,18 @@ python_ref_db = [
     ElementwiseUnaryPythonRefInfo(
         "_refs.acos",
         torch_opinfo_name="acos",
-        skips=(
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_normal',
-                         device_type='cuda', dtypes=[torch.cdouble],
-                         active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         device_type='cuda', dtypes=[torch.cdouble],
-                         active_if=IS_WINDOWS),
-            # Failing with wrong imaginary sign on at least some Windows jobs
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_small',
-                         device_type='cuda', dtypes=[torch.cdouble],
-                         active_if=IS_WINDOWS),
-            # Failing with wrong imaginary sign on at least some Windows jobs
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_large',
-                         device_type='cuda', dtypes=[torch.cdouble],
-                         active_if=IS_WINDOWS),
-        )
     ),
     ElementwiseUnaryPythonRefInfo(
         "_refs.acosh",
         torch_opinfo_name="acosh",
         skips=(
             DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_normal',
-                         device_type='cuda', dtypes=[torch.cdouble],
-                         active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         device_type='cuda', dtypes=[torch.cdouble],
-                         active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
                          'test_reference_numerics_extremal',
                          device_type='cpu', dtypes=[torch.cfloat, torch.cdouble]),
             DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
                          'test_reference_numerics_large',
                          device_type='cpu', dtypes=[torch.cfloat, torch.cdouble]),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         device_type='cuda', dtypes=[torch.cdouble],
-                         active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_large',
-                         device_type='cuda', dtypes=[torch.cdouble],
-                         active_if=IS_WINDOWS),
             # Failing with wrong imaginary sign on at least some Windows jobs
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_small',
-                         device_type='cuda', dtypes=[torch.cdouble],
-                         active_if=IS_WINDOWS),
         ),
     ),
     ElementwiseUnaryPythonRefInfo(
@@ -22534,16 +22348,6 @@ python_ref_db = [
             ),
             precisionOverride({torch.bfloat16: 1e-2}),
         ],
-        skips=(
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         device_type='cuda', dtypes=[torch.cdouble],
-                         active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_large',
-                         device_type='cuda', dtypes=[torch.cdouble],
-                         active_if=IS_WINDOWS),
-        ),
     ),
     ElementwiseUnaryPythonRefInfo(
         "_refs.asinh",
@@ -22562,14 +22366,6 @@ python_ref_db = [
             DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
                          'test_reference_numerics_normal',
                          device_type='cpu', dtypes=[torch.cfloat, torch.cdouble]),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         device_type='cuda', dtypes=[torch.cdouble],
-                         active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_large',
-                         device_type='cuda', dtypes=[torch.cdouble],
-                         active_if=IS_WINDOWS),
         ),
     ),
     PythonRefInfo(
@@ -23131,18 +22927,6 @@ python_ref_db = [
             DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
                          'test_reference_numerics_small',
                          device_type='cpu', dtypes=[torch.cfloat, torch.cdouble]),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         device_type='cuda', dtypes=[torch.cfloat, torch.cdouble],
-                         active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_large',
-                         device_type='cuda', dtypes=[torch.cfloat, torch.cdouble],
-                         active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         device_type='xpu', dtypes=[torch.cfloat, torch.cdouble],
-                         active_if=IS_WINDOWS),
         ),
     ),
     ElementwiseUnaryPythonRefInfo(
@@ -23159,18 +22943,6 @@ python_ref_db = [
             DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
                          'test_reference_numerics_large',
                          device_type='cpu', dtypes=[torch.cfloat, torch.cdouble]),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         device_type='cuda', dtypes=[torch.cfloat, torch.cdouble],
-                         active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_large',
-                         device_type='cuda', dtypes=[torch.cfloat],
-                         active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         device_type='xpu', dtypes=[torch.cfloat, torch.cdouble],
-                         active_if=IS_WINDOWS),
         ),
     ),
     ElementwiseUnaryPythonRefInfo(
@@ -23201,17 +22973,10 @@ python_ref_db = [
         torch_opinfo_name="cos",
         decorators=(precisionOverride({torch.bfloat16: 1e-2}),),
         skips=(
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_large',
-                         dtypes=(torch.cfloat, torch.cdouble,), device_type='cpu',
-                         active_if=IS_WINDOWS),
             # This fails on CUDA but passes on ROCm
             DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
                          'test_reference_numerics_large',
                          dtypes=(torch.cdouble,), device_type='cuda'),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         dtypes=[torch.cfloat, torch.cdouble], active_if=IS_WINDOWS),
             DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
                          'test_reference_numerics_extremal',
                          device_type='cpu',
@@ -23219,14 +22984,6 @@ python_ref_db = [
             # AssertionError: Tensor-likes are not close!
             # Greatest absolute difference: nan at index (700,) (up to 1e-05 allowed)
             # Greatest relative difference: nan at index (700,) (up to 0.001 allowed)
-            DecorateInfo(unittest.expectedFailure, 'TestUnaryUfuncs',
-                         'test_reference_numerics_large',
-                         device_type='cuda',
-                         dtypes=(torch.chalf,), active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_large',
-                         device_type='xpu',
-                         dtypes=(torch.chalf,), active_if=IS_WINDOWS),
         ),
     ),
     ElementwiseUnaryPythonRefInfo(
@@ -23242,12 +22999,6 @@ python_ref_db = [
                          dtypes=[torch.cdouble]),
             DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
                          'test_reference_numerics_extremal',
-                         dtypes=[torch.cfloat, torch.cdouble], active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_large',
-                         dtypes=[torch.cfloat, torch.cdouble], active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
                          device_type='cpu',
                          dtypes=[torch.cfloat, torch.cdouble], active_if=IS_MACOS),
             DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
@@ -23257,14 +23008,6 @@ python_ref_db = [
             # AssertionError: Tensor-likes are not close!
             # Greatest absolute difference: nan at index (6000,) (up to 1e-05 allowed)
             # Greatest relative difference: nan at index (6000,) (up to 0.001 allowed)
-            DecorateInfo(unittest.expectedFailure, 'TestUnaryUfuncs',
-                         'test_reference_numerics_large',
-                         device_type='cuda',
-                         dtypes=(torch.chalf,), active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_large',
-                         device_type='xpu',
-                         dtypes=(torch.chalf,), active_if=IS_WINDOWS),
         ),
     ),
     ElementwiseUnaryPythonRefInfo(
@@ -23304,16 +23047,6 @@ python_ref_db = [
     ElementwiseUnaryPythonRefInfo(
         "_refs.exp",
         torch_opinfo_name="exp",
-        skips=(
-            # Reference: https://github.com/pytorch/pytorch/issues/48010
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         device_type='cpu', dtypes=[torch.cfloat, torch.cdouble], active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_large',
-                         device_type='xpu', dtypes=[torch.chalf],
-                         active_if=IS_WINDOWS),
-        ),
     ),
     ElementwiseUnaryPythonRefInfo(
         "_refs.expm1",
@@ -23327,13 +23060,6 @@ python_ref_db = [
                          'test_reference_numerics_large',
                          dtypes=[torch.cdouble]),
             # Reference: https://github.com/pytorch/pytorch/issues/48010
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         device_type='cpu', dtypes=[torch.cfloat, torch.cdouble], active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_large',
-                         device_type='xpu',
-                         dtypes=(torch.chalf,), active_if=IS_WINDOWS),
         ),
     ),
     ElementwiseUnaryPythonRefInfo(
@@ -23352,10 +23078,6 @@ python_ref_db = [
         torch_opinfo_name="frexp",
         # Skipped due to numerical failures on Windows CI.
         # This is also skipped in frexp earlier in the file.
-        skips=(
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs', 'test_reference_numerics_extremal',
-                         active_if=IS_WINDOWS),
-        ),
     ),
     ElementwiseUnaryPythonRefInfo(
         "_refs.frac",
@@ -23417,15 +23139,6 @@ python_ref_db = [
         "_refs.lgamma",
         torch_opinfo_name="lgamma",
         decorators=(precisionOverride({torch.float16: 7e-1}),),
-        skips=(
-            # Reference: https://github.com/pytorch/pytorch/pull/50140#issuecomment-756150214
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         dtypes=[torch.float32, torch.float64], active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_large',
-                         dtypes=[torch.float32, torch.float64], active_if=IS_WINDOWS),
-        ),
     ),
     ElementwiseUnaryPythonRefInfo(
         "_refs.special.multigammaln",
@@ -23455,12 +23168,6 @@ python_ref_db = [
         "_refs.log",
         torch_opinfo_name="log",
         decorators=(precisionOverride({torch.bfloat16: 5e-2}),),
-        skips=(
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         device_type='cpu', dtypes=[torch.cfloat, torch.cdouble],
-                         active_if=IS_WINDOWS),
-        ),
     ),
     ElementwiseUnaryPythonRefInfo(
         "_refs.log1p",
@@ -23470,12 +23177,6 @@ python_ref_db = [
         "_refs.log10",
         torch_opinfo_name="log10",
         decorators=(precisionOverride({torch.bfloat16: 5e-2}),),
-        skips=(
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         device_type='cpu', dtypes=[torch.cfloat, torch.cdouble],
-                         active_if=IS_WINDOWS),
-        ),
     ),
     ElementwiseUnaryPythonRefInfo(
         "_refs.log2",
@@ -23633,22 +23334,6 @@ python_ref_db = [
             DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
                          'test_reference_numerics_large',
                          dtypes=(torch.cdouble,), device_type='cuda'),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         dtypes=(torch.cfloat, torch.cdouble,), device_type='cpu',
-                         active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_large',
-                         dtypes=(torch.cfloat, torch.cdouble,), device_type='cpu',
-                         active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         device_type='xpu', dtypes=[torch.cfloat, torch.cdouble],
-                         active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_large',
-                         device_type='xpu',
-                         dtypes=(torch.chalf,), active_if=IS_WINDOWS),
         ),
     ),
     ElementwiseUnaryPythonRefInfo(
@@ -23671,11 +23356,11 @@ python_ref_db = [
             DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
                          'test_reference_numerics_extremal',
                          device_type='cpu', dtypes=[torch.cfloat, torch.cdouble],
-                         active_if=(IS_MACOS or IS_WINDOWS)),
+                         active_if=(IS_MACOS)),
             DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
                          'test_reference_numerics_large',
                          device_type='cpu', dtypes=[torch.cfloat, torch.cdouble],
-                         active_if=(IS_MACOS or IS_WINDOWS)),
+                         active_if=(IS_MACOS)),
             DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
                          'test_reference_numerics_large',
                          dtypes=(torch.cdouble,)),
@@ -23683,14 +23368,6 @@ python_ref_db = [
             DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
                          'test_reference_numerics_large',
                          device_type='cpu', dtypes=[torch.int8]),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         device_type='xpu', dtypes=[torch.cfloat, torch.cdouble],
-                         active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_large',
-                         device_type='xpu',
-                         dtypes=(torch.chalf,), active_if=IS_WINDOWS),
         ),
     ),
     PythonRefInfo(
@@ -23759,19 +23436,11 @@ python_ref_db = [
             DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
                          'test_reference_numerics_extremal',
                          device_type='cpu', dtypes=[torch.cfloat, torch.cdouble],
-                         active_if=(IS_MACOS or IS_WINDOWS)),
+                         active_if=(IS_MACOS)),
             DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
                          'test_reference_numerics_large',
                          device_type='cpu', dtypes=[torch.cfloat, torch.cdouble],
-                         active_if=(IS_MACOS or IS_WINDOWS)),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         device_type='xpu', dtypes=[torch.cfloat, torch.cdouble],
-                         active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_large',
-                         device_type='xpu',
-                         dtypes=(torch.chalf,), active_if=IS_WINDOWS),
+                         active_if=(IS_MACOS)),
         )
     ),
     ElementwiseUnaryPythonRefInfo(
@@ -23786,19 +23455,11 @@ python_ref_db = [
             DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
                          'test_reference_numerics_extremal',
                          device_type='cpu', dtypes=[torch.cfloat, torch.cdouble],
-                         active_if=(IS_MACOS or IS_WINDOWS)),
+                         active_if=(IS_MACOS)),
             DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
                          'test_reference_numerics_large',
                          device_type='cpu', dtypes=[torch.cfloat, torch.cdouble],
-                         active_if=(IS_MACOS or IS_WINDOWS)),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         device_type='xpu', dtypes=[torch.cfloat, torch.cdouble],
-                         active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_large',
-                         device_type='xpu',
-                         dtypes=(torch.chalf,), active_if=IS_WINDOWS),
+                         active_if=(IS_MACOS)),
         ),
     ),
     ElementwiseUnaryPythonRefInfo(
@@ -24252,11 +23913,7 @@ python_ref_db = [
                          'TestUnaryUfuncs', "test_reference_numerics_extremal",
                          dtypes=(torch.complex64, torch.complex128),
                          device_type='cpu',
-                         active_if=(IS_MACOS or IS_WINDOWS)),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         device_type='xpu', dtypes=[torch.cfloat, torch.cdouble],
-                         active_if=IS_WINDOWS),
+                         active_if=(IS_MACOS)),
         ),
     ),
     ElementwiseUnaryPythonRefInfo(

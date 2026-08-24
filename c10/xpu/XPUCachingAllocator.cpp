@@ -2168,9 +2168,6 @@ class DeviceCachingAllocator {
 
   ShareableHandle shareIpcHandle(Block* block) {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-#ifdef _WIN32
-    TORCH_CHECK(false, "IPC sharing is not supported on Windows.");
-#endif
     std::ostringstream ss;
     ss.put(SHAREABLE_HANDLE_VERSION);
     ptrdiff_t offset = 0;
@@ -2303,9 +2300,6 @@ class NativeCachingAllocator : public XPUAllocator {
   // pointer, ensuring each handle is opened at most once per process.
   struct MemHandleCacheEntry {
     MemHandleCacheEntry(c10::DeviceIndex device, std::string& handle) {
-#ifdef _WIN32
-      TORCH_CHECK(false, "IPC sharing is not supported on Windows.");
-#endif
       std::istringstream ss(handle);
       auto version = ss.get();
       TORCH_CHECK(
