@@ -138,8 +138,6 @@ ignores = [
     "third_party/nvfuser/runtime/broadcast.cu",
     "third_party/nvfuser/runtime/grid_reduction.cu",
     "third_party/nvfuser/runtime/helpers.cu",
-    "torch/csrc/jit/codegen/fuser/cuda/resource_strings.h",
-    "torch/csrc/jit/tensorexpr/ir_printer.cpp",
     "torch/csrc/jit/ir/ir.h",
     # generated files we shouldn't frob
     "torch/lib/tmp_install/*",
@@ -179,7 +177,6 @@ hip_platform_files = [
     "third_party/gloo/cmake/Dependencies.cmake",
     "third_party/gloo/gloo/cuda.cu",
     "third_party/nvfuser/CMakeLists.txt",
-    "third_party/tensorpipe/cmake/Hip.cmake",
 ]
 
 

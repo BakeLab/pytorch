@@ -524,7 +524,7 @@ class TestDistributedStateDictSaveLoadWithCaching(ShardedTensorTestBase):
     def world_size(self) -> int:
         return 2
 
-    @with_comms(init_rpc=False, backend=backend)
+    @with_comms(backend=backend)
     @skip_if_lt_x_gpu(2)
     @requires_accelerator_dist_backend()
     @with_temp_dir

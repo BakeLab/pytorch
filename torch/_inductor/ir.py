@@ -180,7 +180,7 @@ _OpOverloads: TypeAlias = torch._ops.OpOverload | torch._ops.HigherOrderOperator
 
 class ArgProperty(TypedDict, total=False):
     name: str
-    type: torch.JitType
+    type: torch._C.Type
     default_value: object
 
 
@@ -4080,7 +4080,7 @@ class View(GenericView):
     ) -> Callable[[Sequence[_T]], Sequence[_V]]:
         try:
             reindex = cls._dynamic_reshape_indexer(old_size, new_size, dense_dim)
-        except (AssertionError, GuardOnDataDependentSymNode, IndexError):
+        except AssertionError, GuardOnDataDependentSymNode, IndexError:
             # optimistic algorithm failed, lets do a fallback
             flat = [sympy_product(old_size)]
             reindex1 = cls._dynamic_reshape_indexer(old_size, flat)
@@ -7564,7 +7564,7 @@ class ExternKernel(InputsKernel):
         real_non_tensor_args: list[
             FakeScriptObject
             | torch._C.Generator
-            | torch._C.ScriptObject
+            | torch.ScriptObject
             | torch.Tensor
             | IntLikeType
         ] = []
@@ -7632,7 +7632,7 @@ class ExternKernel(InputsKernel):
         # strides of inputs and we need to determine accurately what the
         # output stride will be.
         example_args: list[
-            torch.Tensor | torch._C.ScriptObject | FakeScriptObject | torch.Generator
+            torch.Tensor | torch.ScriptObject | FakeScriptObject | torch.Generator
         ] = []
 
         # We need to retain the constant values of fake tensors that we originally
@@ -8098,7 +8098,7 @@ class ExternKernel(InputsKernel):
         def is_mkldnn_tensor(x: IRNode) -> bool:
             try:
                 name = x.get_name()
-            except (AttributeError, NotImplementedError):
+            except AttributeError, NotImplementedError:
                 return False
 
             return name in V.graph.constants and V.graph.constants[name].is_mkldnn
@@ -9924,7 +9924,7 @@ class FallbackKernel(ExternKernelAlloc):
         if isinstance(example_output, torch.Tensor):
             return example_output.device
         if isinstance(
-            example_output, (torch._C.ScriptObject, FakeScriptObject)
+            example_output, (torch.ScriptObject, FakeScriptObject)
         ) or is_custom_class_obj(example_output):
             return torch.device("cpu")
         if isinstance(example_output, dict):
@@ -10014,7 +10014,7 @@ class FallbackKernel(ExternKernelAlloc):
 
         # serialize_outputs
         def handle_single_output(
-            return_type: torch.TensorType | torch.ListType | torch.JitType,
+            return_type: torch.TensorType | torch.ListType | torch._C.Type,
             output: IRNode | Sequence[IRNode],
         ) -> export_schema.Argument:
             if isinstance(return_type, (torch.TensorType, torch.NoneType)):
@@ -10292,7 +10292,7 @@ class FallbackKernel(ExternKernelAlloc):
         if not V.graph.cpp_wrapper or not isinstance(kernel, torch._ops.OpOverload):
             return False
 
-        def is_number(t: torch.JitType) -> bool:
+        def is_number(t: torch._C.Type) -> bool:
             if isinstance(t, torch.OptionalType):
                 return is_number(t.getElementType())
             return isinstance(t, torch.NumberType)
@@ -10302,7 +10302,7 @@ class FallbackKernel(ExternKernelAlloc):
                 return False
             try:
                 dtype = v.get_dtype()
-            except (AttributeError, NotImplementedError):
+            except AttributeError, NotImplementedError:
                 return False
             return (
                 dtype is not None
@@ -10370,14 +10370,14 @@ class FallbackKernel(ExternKernelAlloc):
             # those for scalar-promotion inference rather than failing the compile.
             try:
                 dt = v.get_dtype()
-            except (AttributeError, NotImplementedError):
+            except AttributeError, NotImplementedError:
                 dt = None
             if dt is not None:
                 tensor_dtypes.append(dt)
             if device is None:
                 try:
                     device = v.get_device()
-                except (AttributeError, NotImplementedError):
+                except AttributeError, NotImplementedError:
                     device = None
         if device is None:
             device = torch.device("cpu")
@@ -10637,7 +10637,7 @@ class FallbackKernel(ExternKernelAlloc):
             elif isinstance(output, torch.SymInt):
                 return output.node.expr
             elif isinstance(
-                output, (torch._C.ScriptObject, FakeScriptObject)
+                output, (torch.ScriptObject, FakeScriptObject)
             ) or is_custom_class_obj(output):
                 return OpaqueMultiOutput(
                     NoneLayout(device=device),

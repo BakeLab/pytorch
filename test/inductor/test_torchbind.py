@@ -8,7 +8,7 @@ import torch._dynamo
 import torch._functorch
 import torch._inductor
 import torch._inductor.decomposition
-from torch._higher_order_ops.torchbind import CallTorchBind, enable_torchbind_tracing
+from torch._higher_order_ops.torchbind import CallTorchBind
 from torch._inductor import aot_compile, ir
 from torch._inductor.codecache import WritableTempFile
 from torch._inductor.package import package_aoti
@@ -71,8 +71,7 @@ class TestTorchbind(TestCase):
         orig_res = m(*inputs)
 
         # We can't directly torch.compile because dynamo doesn't trace ScriptObjects yet
-        with enable_torchbind_tracing():
-            ep = torch.export.export(m, inputs, strict=False)
+        ep = torch.export.export(m, inputs, strict=False)
 
         return ep, inputs, orig_res, m
 
@@ -334,8 +333,7 @@ class TestTorchbind(TestCase):
         orig_res = m(*inputs)
 
         # We can't directly torch.compile because dynamo doesn't trace ScriptObjects yet
-        with enable_torchbind_tracing():
-            ep = torch.export.export(m, inputs, strict=False)
+        ep = torch.export.export(m, inputs, strict=False)
 
         pt2_path = torch._inductor.aoti_compile_and_package(ep)
         optimized = torch._inductor.aoti_load_package(pt2_path)
@@ -366,8 +364,7 @@ class TestTorchbind(TestCase):
         m2 = Foo(q2)
 
         # We can't directly torch.compile because dynamo doesn't trace ScriptObjects yet
-        with enable_torchbind_tracing():
-            ep = torch.export.export(m2, inputs, strict=False)
+        ep = torch.export.export(m2, inputs, strict=False)
 
         pt2_path = torch._inductor.aoti_compile_and_package(ep)
         optimized = torch._inductor.aoti_load_package(pt2_path)
@@ -387,8 +384,7 @@ class TestTorchbind(TestCase):
         inputs = (torch.classes._TorchScriptTesting._Foo(10, 20), torch.ones(2, 3))
 
         # We can't directly torch.compile because dynamo doesn't trace ScriptObjects yet
-        with enable_torchbind_tracing():
-            ep = torch.export.export(m, inputs, strict=False)
+        ep = torch.export.export(m, inputs, strict=False)
 
         from torch._dynamo.exc import UserError
 
@@ -414,8 +410,7 @@ class TestTorchbind(TestCase):
         inputs = (torch.ones(2, 3),)
         orig_res = m(*inputs)
 
-        with enable_torchbind_tracing():
-            ep = torch.export.export(m, inputs, strict=False)
+        ep = torch.export.export(m, inputs, strict=False)
 
         pt2_path = torch._inductor.aoti_compile_and_package(ep)
         optimized = torch._inductor.aoti_load_package(pt2_path)

@@ -63,7 +63,6 @@ from torch.testing._internal.common_utils import (
     TEST_Z3,
     TestCase,
 )
-from torch.testing._internal.jit_utils import JitTestCase
 import torch.utils._pytree as pytree
 
 try:
@@ -87,9 +86,7 @@ def symbolic_trace_with_rewrite(root: torch.nn.Module | Callable) -> GraphModule
     )
 
 
-class TestFXExperimental(JitTestCase):
-    hw_classification = HardwareClassification.GENERIC
-
+class TestFXExperimental(TestCase):
     def test_find_single_partition(self):
         class TestModule(torch.nn.Module):
             def forward(self, a, b):
@@ -2129,9 +2126,8 @@ class {test_classname}(torch.nn.Module):
                 torch.testing.assert_close(orig_out, new_out)
 
 
-class TestNormalizeOperators(JitTestCase):
-    hw_classification = HardwareClassification.CPU
-
+class TestNormalizeOperators(TestCase):
+    @onlyCPU
     @ops(op_db, allowed_dtypes=(torch.float,))
     def test_normalize_operator_exhaustive(self, device, dtype, op):
         # These ops currently don't trace in FX for various reasons (i.e. they take a list of tensors)

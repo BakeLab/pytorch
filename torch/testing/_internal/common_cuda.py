@@ -614,13 +614,6 @@ def with_tf32_off(f):
 
     return wrapped
 
-def _get_magma_version():
-    if 'Magma' not in torch.__config__.show():
-        return (0, 0)
-    position = torch.__config__.show().find('Magma ')
-    version_str = torch.__config__.show()[position + len('Magma '):].split('\n')[0]
-    return tuple(int(x) for x in version_str.split("."))
-
 def _get_torch_cuda_version():
     if torch.version.cuda is None:
         return (0, 0)
@@ -732,28 +725,6 @@ def xfailIfSM12X(func):
 
 def xfailIfDistributedNotSupported(func):
     return func if not (IS_MACOS or IS_JETSON) else unittest.expectedFailure(func)
-
-def _xfail_cuda_on_windows_wrapper(test_fn):
-    """Wraps a test to xfail when running on a CUDA device.
-
-    Works for both device-parameterized tests (device_type == "cuda") and plain
-    TestCase CUDA tests (device_type is None). Only passes through for tests
-    explicitly running on a non-CUDA device type (e.g. "cpu", "xpu").
-    """
-    @functools.wraps(test_fn)
-    def wrapper(slf, *args, **kwargs):
-        import pytest
-        device_type = getattr(slf, "device_type", None)
-        if device_type is not None and device_type != "cuda":
-            return test_fn(slf, *args, **kwargs)
-        try:
-            test_fn(slf, *args, **kwargs)
-        except Exception as e:
-            pytest.xfail(f"Expected failure for {test_fn.__name__}: {e}")
-
-        raise AssertionError(f"Test {test_fn.__name__} was expected to fail but succeeded.")
-    return wrapper
-
 
 def xfailCUDAIfSM89OrLaterOnWindows(test_fn):
     """Mark a CUDA test as expected failure on Windows with NVIDIA SM >= 8.9.

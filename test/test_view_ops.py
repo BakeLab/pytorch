@@ -13,7 +13,6 @@ from torch.testing._internal.common_device_type import (
     dtypesIfMPS,
     expectedFailureMPS,
     instantiate_device_type_tests,
-    skipLazy,
     skipMeta,
     skipXLA,
     skipXPUIf,
@@ -133,7 +132,6 @@ class TestViewOps(TestCase):
         self.assertTrue(s is t)
 
     @skipIfTorchDynamo("TorchDynamo fails with unknown reason")
-    @skipLazy
     @dtypes(*all_types_and_complex_and(torch.half, torch.bool))
     def test_view_dtype_new(self, device, dtype):
         dtypes = {value: key for (key, value) in numpy_to_torch_dtype_dict.items()}
@@ -249,7 +247,6 @@ class TestViewOps(TestCase):
 
     # Test the extra error checks that happen when the view dtype
     # has a greater element size than the original dtype
-    @skipLazy
     @dtypes(*all_types_and_complex_and(torch.half, torch.bfloat16, torch.bool))
     @dtypesIfMPS(*all_mps_types_and(torch.bool))
     def test_view_dtype_upsize_errors(self, device, dtype):
@@ -286,7 +283,6 @@ class TestViewOps(TestCase):
             ):
                 a.view(view_dtype)
 
-    @skipLazy
     def test_view_as_complex(self, device):
         def fn(contiguous_input=True, dim0=0, dim1=1):
             t = torch.randn(3, 2, 2, device=device)
@@ -373,7 +369,6 @@ class TestViewOps(TestCase):
         )
         self.assertEqual(res.shape, xs.shape[:-1])
 
-    @skipLazy
     @dtypes(*complex_types(), torch.complex32)
     def test_view_as_real(self, device, dtype):
         def fn(contiguous_input=True):
@@ -419,7 +414,6 @@ class TestViewOps(TestCase):
         )
         self.assertEqual(res.shape, xs.shape + (2,))
 
-    @skipLazy
     @dtypes(*all_types_and_complex_and(torch.half, torch.bfloat16, torch.bool))
     @dtypesIfMPS(*all_mps_types_and(torch.bool))
     def test_view_tensor_split(self, device, dtype):
@@ -431,7 +425,6 @@ class TestViewOps(TestCase):
         for a_split_dim1_tensor in a_split_dim1:
             self.assertTrue(self.is_view_of(a, a_split_dim1_tensor))
 
-    @skipLazy
     @dtypes(*all_types_and_complex_and(torch.half, torch.bfloat16, torch.bool))
     def test_view_tensor_hsplit(self, device, dtype):
         t = make_tensor((4, 4, 4), dtype=dtype, device=device, low=-9, high=9)
@@ -441,7 +434,6 @@ class TestViewOps(TestCase):
         t[2, 2, 2] = 7
         self.assertEqual(t_hsplit[1][2, 0, 2], t[2, 2, 2])
 
-    @skipLazy
     @dtypes(*all_types_and_complex_and(torch.half, torch.bfloat16, torch.bool))
     def test_view_tensor_vsplit(self, device, dtype):
         t = make_tensor((4, 4, 4), dtype=dtype, device=device, low=-9, high=9)
@@ -451,7 +443,6 @@ class TestViewOps(TestCase):
         t[2, 2, 2] = 7
         self.assertEqual(t_vsplit[1][0, 2, 2], t[2, 2, 2])
 
-    @skipLazy
     @dtypes(*all_types_and_complex_and(torch.half, torch.bfloat16, torch.bool))
     def test_view_tensor_dsplit(self, device, dtype):
         t = make_tensor((4, 4, 4), dtype=dtype, device=device, low=-9, high=9)
@@ -461,7 +452,6 @@ class TestViewOps(TestCase):
         t[2, 2, 2] = 7
         self.assertEqual(t_dsplit[1][2, 2, 0], t[2, 2, 2])
 
-    @skipLazy
     @dtypes(*all_types_and(torch.half, torch.bfloat16))
     @dtypesIfMPS(*all_mps_types_and(torch.bool))
     def test_imag_noncomplex(self, device, dtype):
@@ -470,7 +460,6 @@ class TestViewOps(TestCase):
         with self.assertRaises(TypeError):
             torch.imag(t)
 
-    @skipLazy
     @dtypes(*complex_types())
     def test_real_imag_view(self, device, dtype):
         def compare_with_numpy(contiguous_input=True):
@@ -501,7 +490,6 @@ class TestViewOps(TestCase):
         self.assertEqual(a[5:].real, a.real[5:])
         self.assertEqual(a[5:].imag, a.imag[5:])
 
-    @skipLazy
     @dtypes(*complex_types())
     def test_conj_imag_view(self, device, dtype) -> None:
         t = _make_tensor((4, 5), dtype, device)
@@ -516,7 +504,6 @@ class TestViewOps(TestCase):
             self.assertEqual(v_imag, t_numpy_conj.imag)
             self.assertTrue(v_imag.is_neg())
 
-    @skipLazy
     def test_conj_view_with_shared_memory(self, device) -> None:
         a = _make_tensor((4, 5), torch.cfloat, device)
         b = a.conj()
@@ -526,7 +513,6 @@ class TestViewOps(TestCase):
         self.assertEqual(torch.add(b, c), torch.add(b, c, out=a))
         self.assertEqual(torch.add(b, c), b.add_(c))
 
-    @skipLazy
     @dtypes(
         *product(
             complex_types(),
@@ -581,7 +567,6 @@ class TestViewOps(TestCase):
         self.assertEqual(t[2, 0], v[0])
 
     # Lazy hasn't implemented unbind yet.
-    @skipLazy
     def test_unbind_view(self, device) -> None:
         t = torch.zeros((5, 5), device=device)
         tup = torch.unbind(t)
@@ -593,7 +578,6 @@ class TestViewOps(TestCase):
             self.assertEqual(t[idx, 0], v[0])
 
     # TODO: opinfo this or move to unbind's test suite
-    @skipLazy
     @expectedFailureMPS  # MPS doesn't support float64
     def test_unbind(self, device):
         stacked = torch.randn(3, 10, 10, device=device, requires_grad=True)
@@ -619,7 +603,6 @@ class TestViewOps(TestCase):
 
     # TODO: Fix this test for LTC. There is an interaction with dynamic shapes here that is broken,
     # causing asserts to trigger.
-    @skipLazy
     def test_expand_view(self, device) -> None:
         t = torch.ones((5, 1), device=device)
         v = t.expand(5, 5)
@@ -764,7 +747,6 @@ class TestViewOps(TestCase):
         v[6] = 0
         self.assertEqual(t[1, 1], v[6])
 
-    @skipLazy
     @expectedFailureMPS  # MPS doesn't support float64
     def test_as_strided_gradients(self, device):
         def test(x, prepro_fn, size, strides, offset=None):
@@ -849,7 +831,6 @@ class TestViewOps(TestCase):
 
     @skipMeta
     # self.is_view_of reports false positives for lazy
-    @skipLazy
     def test_contiguous_nonview(self, device):
         t = torch.ones(5, 5, device=device)
         nv = t.t().contiguous()
@@ -877,7 +858,6 @@ class TestViewOps(TestCase):
 
     @skipMeta
     # self.is_view_of reports false positives for lazy
-    @skipLazy
     def test_reshape_nonview(self, device):
         t = torch.ones(5, 5, device=device)
         nv = torch.reshape(t.t(), (25,))
@@ -888,7 +868,6 @@ class TestViewOps(TestCase):
 
     # This test use as_strided to construct a tensor with overlapping memory,
     # which is not handled by the functionalization pass.
-    @skipLazy
     @skipXLA
     def test_flatten_view(self, device):
         def test_writes_propagate(t, v):
@@ -928,7 +907,6 @@ class TestViewOps(TestCase):
         test_writes_propagate(t, v3)
         self.assertTrue(self.is_view_of_same_base(t, v3))
 
-    @skipLazy
     def test_flatten_nonview(self, device):
         def assert_is_nonview(t, nv):
             idx_t = (0,) * t.ndim
@@ -995,17 +973,6 @@ class TestViewOps(TestCase):
         t[rows, cols] = 0
         self.assertEqual(t[2, 2], 0)
 
-    @skipLazy
-    @dtypes(torch.half, torch.float, torch.long, torch.bool)
-    def test_resize_view_preserves_storage(self, device, dtype):
-        base = make_tensor((20,), device=device, dtype=dtype)
-        expected = base.clone()
-        view = base[5:15]
-        view.resize_(30)
-        self.assertEqual(view[:10], expected[5:15])
-        self.assertEqual(base, expected)
-
-    @skipLazy
     def test_chunk_view(self, device):
         t = torch.zeros(3, 3, device=device)
         l = torch.chunk(t, 3)
@@ -1016,7 +983,6 @@ class TestViewOps(TestCase):
             v[0, 0] = idx + 1
             self.assertEqual(t[idx, 0], v[0, 0])
 
-    @skipLazy
     def test_split_view(self, device):
         t = torch.zeros(3, 3, device=device)
         l = torch.split(t, [1, 1, 1])
@@ -1092,7 +1058,6 @@ class TestViewOps(TestCase):
         self.assertEqual(expected1, out1)
         self.assertEqual(expected2, out2)
 
-    @skipLazy  # Lazy backend has issues with this operation
     def test_maybe_view_chunk_cat(self, device):
         """Test _maybe_view_chunk_cat is equivalent to torch.cat(torch.chunk(...))"""
         from torch._utils import _maybe_view_chunk_cat
@@ -2191,7 +2156,7 @@ class TestOldViewOpsDeviceType(TestCase):
 
 
 instantiate_device_type_tests(
-    TestViewOps, globals(), include_lazy=True, allow_mps=True, allow_xpu=True
+    TestViewOps, globals(), allow_mps=True, allow_xpu=True
 )
 instantiate_device_type_tests(
     TestOldViewOpsDeviceType, globals(), allow_mps=True, allow_xpu=True

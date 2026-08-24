@@ -3290,10 +3290,29 @@ class FakeTensorMode(TorchDispatchMode):
 
         self.invalidate_written_to_constants(func, flat_arg_fake_tensors, args, kwargs)
 
-        real = (
-            run_real_op(self, func, args, kwargs)
-            if self.propagate_real_tensors
-            else None
+        def maybe_to_real_tensor(
+            t: T,
+        ) -> T | Tensor | torch.ScriptObject | None:
+            if isinstance(t, FakeTensor):  # noqa: ISINSTANCE_FAKE_TENSOR
+                return t.real_tensor
+            elif isinstance(t, py_sym_types):
+                if self.shape_env is None:
+                    raise AssertionError(
+                        "self.shape_env must not be None for symbolic types"
+                    )
+                return t.node.pytype(
+                    t.node.expr.xreplace(self.shape_env.backed_var_to_val).xreplace(
+                        self.shape_env.real_tensor_prop_unbacked_vals
+                    )
+                )
+            elif isinstance(t, FakeScriptObject):
+                return t.real_obj
+            else:
+                return t
+
+        from torch.fx.experimental.symbolic_shapes import (
+            compute_unbacked_bindings,
+            free_unbacked_symbols,
         )
 
         def maybe_propagate_real_tensors(fake_out: T) -> T:
