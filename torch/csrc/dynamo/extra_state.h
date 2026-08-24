@@ -97,9 +97,60 @@ typedef struct PrecompileEntry PrecompileEntry;
 
 #endif
 
-// This is passed as freefunc to _PyEval_RequestCodeExtraIndex. This acts as a
+// Helper to extract the first cache_entry for a given isolate_recompiles scope.
+// Ownership contract
+// args
+//  - extra_state: Borrowed
+//  - isolate_recompiles_id: The scope to extract from (-1 = default)
+// return
+//  - CacheEntry: Borrowed.
+CacheEntry* extract_cache_entry(
+    ExtraState* extra_state,
+    int64_t isolate_recompiles_id);
+
+// Returns either the previously stored frame state or an empty dict.
+// Ownership contract
+// args
+//  - extra_state: Borrowed
+// return
+//  - extra_state->frame_state: Borrowed.
+FrameState* extract_frame_state(ExtraState* extra_state);
+
+// Returns the FrameExecStrategy stored in extra_state.
+// Ownership contract
+// args
+//  - extra_state: Borrowed
+FrameExecStrategy extra_state_get_exec_strategy(ExtraState* extra_state);
+
+// Set the FrameExecStrategy to be done to all frames with code object
+// corresponding to this extra_state. Ownership contract
+// - extra_state: Borrowed
+void extra_state_set_exec_strategy(
+    ExtraState* extra_state,
+    FrameExecStrategy strategy);
+
+// Get the exec strategy for a specific isolate_recompiles region.
+// Falls back to the global strategy if no per-region strategy is set.
+FrameExecStrategy extra_state_get_region_exec_strategy(
+    ExtraState* extra_state,
+    int64_t isolate_recompiles_id);
+
+// Set the exec strategy for a specific isolate_recompiles region.
+void extra_state_set_region_exec_strategy(
+    ExtraState* extra_state,
+    int64_t isolate_recompiles_id,
+    FrameExecStrategy strategy);
+
+// Ownership contract
+// args
+//  - code: Borrowed
+// return
+//  - extra_state: Borrowed.
+ExtraState* get_extra_state(PyCodeObject* code);
+
+// This is passed as freefunc to PyUnstable_Eval_RequestCodeExtraIndex. This acts as a
 // deleter for the object on extra scratch space. This function is called
-// internally in _PyCode_SetExtra and also during the code deallocation.
+// internally in PyUnstable_Code_SetExtra and also during the code deallocation.
 
 // Destroys the extra state by deleting cache_entry, frame state and finally
 // freeing the constructed extra state.
@@ -110,7 +161,7 @@ typedef struct PrecompileEntry PrecompileEntry;
 void destroy_extra_state(void* obj);
 
 // Clears the existing object sitting on the extra scratch spance and sets it
-// up with the new state. Note that _PyCode_SetExtra calls the
+// up with the new state. Note that PyUnstable_Code_SetExtra calls the
 // destroy_extra_state deleter internally, and therefore we don't call it
 // explicitly here.
 
