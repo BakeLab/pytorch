@@ -17,7 +17,7 @@ import torch
 import torch.distributed as dist
 from torch._C._distributed_c10d import Backend as C10DBackend
 from torch.distributed.logging_handlers import _log_handlers
-from torch.monitor import _WaitCounter
+from torch._monitor import _WaitCounter
 
 
 __all__: list[str] = []

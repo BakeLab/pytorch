@@ -81,7 +81,6 @@
     "Set",
     "ShardedOptimStateDictConfig",
     "ShardedStateDictConfig",
-    "ShardedTensor",
     "StateDictConfig",
     "StateDictType",
     "Tuple",
@@ -643,9 +642,6 @@
     "kineto_available",
     "record_function"
   ],
-  "torch.quasirandom": [
-    "Optional"
-  ],
   "torch.random": [
     "Generator"
   ],
@@ -787,41 +783,12 @@
     "Sequence",
     "Union"
   ],
-  "torch.utils.benchmark.utils.compare": [
-    "Colorize",
-    "Table",
-    "optional_min"
-  ],
-  "torch.utils.benchmark.utils.cpp_jit": [
-    "Any",
-    "CallgrindModuleType",
-    "List",
-    "Optional",
-    "TimeitModuleType"
-  ],
-  "torch.utils.benchmark.utils.fuzzer": [
-    "dtype_size",
-    "prod"
-  ],
-  "torch.utils.benchmark.utils.sparse_fuzzer": [
-    "FuzzedTensor",
-    "Number",
-    "Optional",
-    "Tuple",
-    "Union"
-  ],
-  "torch.utils.benchmark.utils.timer": [
-    "CPPTimer",
-    "timer"
-  ],
   "torch.utils.data": [
     "_DatasetKind",
     "argument_validation",
     "default_collate",
     "default_convert",
-    "functional_datapipe",
     "get_worker_info",
-    "guaranteed_datapipes_determinism",
     "non_deterministic",
     "runtime_validation",
     "runtime_validation_disabled"
@@ -830,9 +797,6 @@
     "default_collate",
     "default_convert",
     "get_worker_info"
-  ],
-  "torch.utils.data.datapipes.dataframe": [
-    "DFIterDataPipe"
   ],
   "torch.utils.dlpack": [
     "Any",
@@ -1098,12 +1062,6 @@
     "dataclass",
     "no_type_check"
   ],
-  "torch.distributed.algorithms.model_averaging.hierarchical_model_averager": [
-    "Dict",
-    "Iterable",
-    "OrderedDict",
-    "Union"
-  ],
   "torch.distributed.argparse_util": [
     "Action"
   ],
@@ -1197,25 +1155,6 @@
   "torch.distributed.elastic.utils.distributed": [
     "closing",
     "get_logger"
-  ],
-  "torch.distributed.fsdp.sharded_grad_scaler": [
-    "Any",
-    "Dict",
-    "GradScaler",
-    "Iterable",
-    "List",
-    "OptState",
-    "Optional",
-    "ProcessGroup",
-    "Sequence",
-    "Tuple",
-    "Union",
-    "defaultdict",
-    "overload"
-  ],
-  "torch.distributed.launch": [
-    "get_args_parser",
-    "run"
   ],
   "torch.distributed.run": [
     "ArgumentParser",
@@ -1632,16 +1571,6 @@
     "Dict",
     "dedent"
   ],
-  "torch.monitor": [
-    "Aggregation",
-    "Event",
-    "EventHandlerHandle",
-    "Stat",
-    "data_value_t",
-    "log_event",
-    "register_event_handler",
-    "unregister_event_handler"
-  ],
   "torch.multiprocessing.pool": [
     "SimpleQueue"
   ],
@@ -1717,54 +1646,6 @@
     "Tuple",
     "abstractmethod"
   ],
-  "torch.utils.benchmark": [
-    "Number",
-    "Optional",
-    "Tuple",
-    "Union",
-    "timer"
-  ],
-  "torch.utils.benchmark.examples.op_benchmark": [
-    "BinaryOpFuzzer",
-    "Timer",
-    "UnaryOpFuzzer"
-  ],
-  "torch.utils.benchmark.examples.spectral_ops_fuzz_test": [
-    "ArgumentParser",
-    "Iterable",
-    "SpectralOpFuzzer",
-    "namedtuple"
-  ],
-  "torch.utils.benchmark.op_fuzzers.binary": [
-    "FuzzedParameter",
-    "FuzzedTensor",
-    "Fuzzer",
-    "ParameterAlias"
-  ],
-  "torch.utils.benchmark.op_fuzzers.sparse_binary": [
-    "FuzzedParameter",
-    "FuzzedSparseTensor",
-    "Fuzzer",
-    "ParameterAlias"
-  ],
-  "torch.utils.benchmark.op_fuzzers.sparse_unary": [
-    "FuzzedParameter",
-    "FuzzedSparseTensor",
-    "Fuzzer",
-    "ParameterAlias"
-  ],
-  "torch.utils.benchmark.op_fuzzers.spectral": [
-    "power_range"
-  ],
-  "torch.utils.benchmark.op_fuzzers.unary": [
-    "FuzzedParameter",
-    "FuzzedTensor",
-    "Fuzzer",
-    "ParameterAlias"
-  ],
-  "torch.utils.benchmark.utils.compile": [
-    "bench_loop"
-  ],
   "torch.utils.bundled_inputs": [
     "Any",
     "Callable",
@@ -1782,10 +1663,6 @@
   ],
   "torch.utils.collect_env": [
     "namedtuple"
-  ],
-  "torch.utils.data.datapipes.utils.snapshot": [
-    "IterDataPipe",
-    "apply_random_seed"
   ],
   "torch.utils.flop_counter": [
     "addmm_flop",
@@ -1911,11 +1788,6 @@
     "signpost",
     "SignpostType"
   ],
-  "torch.utils.benchmark.examples.sparse.op_benchmark": [
-    "BinaryOpSparseFuzzer",
-    "Timer",
-    "UnaryOpSparseFuzzer"
-  ],
   "torch.version": [
     "get_file_path"
   ],
@@ -1965,10 +1837,6 @@
   "torch.mtia": [
     "DeferredMtiaCallError",
     "StreamContext"
-  ],
-  "torch.utils.data.datapipes.dataframe.dataframe_wrapper": [
-    "Any",
-    "Optional"
   ],
   "torch.utils.hipify.hipify_python": [
     "TrieNode"
