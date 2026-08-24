@@ -467,13 +467,7 @@ inline Tensor asTensor(const Tensor& value, const Tensor& target) {
 }
 inline Tensor asTensor(const Scalar& value, const Tensor& target) {
   at::AutoDispatchBelowADInplaceOrView guard;
-  // TODO: This qint special case looks very suspicious...
-  if (isQIntType(target.scalar_type())) {
-    return scalarToTensor(
-        value, at::device(kCPU).dtype(kFloat), at::Device(kCPU));
-  } else {
-    return scalarToTensor(value, target.options(), target.device());
-  }
+  return scalarToTensor(value, target.options(), target.device());
 }
 
 // To match numpy semantics:
@@ -719,7 +713,7 @@ inline bool try_dispatch_index_fill_(
     const std::vector<Tensor>& indices,
     const Scalar& value) {
   const auto self_dtype = self.scalar_type();
-  if (isQIntType(self_dtype) || isFloat8Type(self_dtype)) {
+  if (isFloat8Type(self_dtype)) {
     return false;
   }
 
