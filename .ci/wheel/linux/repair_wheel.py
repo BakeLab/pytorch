@@ -150,6 +150,162 @@ def arch_extra_deps(arch: str, use_cuda: bool) -> list[Path]:
     return deps
 
 
+# ROCm shared libs to bundle. Discovered under $ROCM_HOME/{lib,lib64}.
+ROCM_SO_FILES: list[str] = [
+    "libMIOpen.so",
+    "libamdhip64.so",
+    "libhipblas.so",
+    "libhipfft.so",
+    "libhiprand.so",
+    "libhipsolver.so",
+    "libhipsparse.so",
+    "libhsa-runtime64.so",
+    "libamd_comgr.so",
+    "librccl.so",
+    "librocblas.so",
+    "librocfft.so",
+    "libamd_smi.so",
+    "librocrand.so",
+    "librocsolver.so",
+    "librocsparse.so",
+    "libroctracer64.so",
+    "libroctx64.so",
+    "libhipblaslt.so",
+    "libhipsparselt.so",
+    "libhiprtc.so",
+    "librocprofiler-sdk.so",
+    "librocprofiler-register.so",
+    "libhsa-amd-aqlprofile64.so",
+    "librocm-core.so",
+    "librocroller.so",
+]
+
+# hipFile only ships with ROCm 7.14 and later, where it is required.
+_version_file = Path(os.environ.get("ROCM_HOME", "/opt/rocm")) / ".info" / "version"
+_rocm_version = _version_file.read_text().strip() if _version_file.is_file() else ""
+if tuple(int(x) for x in _rocm_version.split(".")[:2] if x.isdigit()) >= (7, 14):
+    ROCM_SO_FILES.append("libhipfile.so")
+
+
+def rocm_os_deps() -> list[Path]:
+    """OS-side runtime deps that must travel with ROCm wheels."""
+    os_release = Path("/etc/os-release").read_text()
+    if "Ubuntu" in os_release:
+        prefix = "/usr/lib/x86_64-linux-gnu"
+        libtinfo = "/lib/x86_64-linux-gnu/libtinfo.so.6"
+        libdrm_dir = "/usr/lib/x86_64-linux-gnu"
+    else:  # AlmaLinux / CentOS / RHEL
+        prefix = "/usr/lib64"
+        # CentOS Linux had libtinfo.so.5; AlmaLinux ships .6.
+        libtinfo_5 = Path("/usr/lib64/libtinfo.so.5")
+        libtinfo = (
+            str(libtinfo_5) if libtinfo_5.exists() else "/usr/lib64/libtinfo.so.6"
+        )
+        libdrm_dir = "/opt/amdgpu/lib64"
+    return [
+        Path(f"{prefix}/libnuma.so.1"),
+        Path(f"{prefix}/libelf.so.1"),
+        Path(libtinfo),
+        Path(f"{prefix}/libdw.so.1"),
+        Path(f"{libdrm_dir}/libdrm.so.2"),
+        Path(f"{libdrm_dir}/libdrm_amdgpu.so.1"),
+    ]
+
+
+def find_rocm_lib(rocm_home: Path, basename: str) -> Path | None:
+    """Locate a ROCm library, falling back from lib/ to lib64/ to a wider search."""
+    for sub in ("lib", "lib64"):
+        for hit in (rocm_home / sub).rglob(basename + "*"):
+            if hit.is_file() and hit.name.startswith(basename):
+                return hit
+    for hit in rocm_home.rglob(basename + "*"):
+        if hit.is_file() and hit.name.startswith(basename):
+            return hit
+    return None
+
+
+def rocm_arch_filter(arch_list: str) -> list[str]:
+    return [a for a in arch_list.split(";") if a]
+
+
+def rocm_lib_kernels(
+    rocm_home: Path, lib_subdir: str, archs: list[str]
+) -> list[AuxFile]:
+    """Per-gfx kernel files under $ROCM_HOME/lib/<lib_subdir>/library/ plus the non-gfx common files."""
+    src_dir = rocm_home / "lib" / lib_subdir / "library"
+    if not src_dir.is_dir():
+        return []
+    files: list[AuxFile] = []
+    for entry in sorted(src_dir.iterdir()):
+        if not entry.is_file():
+            continue
+        # Pick gfx-specific files matching the arch set, plus common (non-gfx) files.
+        name = entry.name
+        if "gfx" in name and not any(a in name for a in archs):
+            continue
+        files.append(AuxFile(src=entry, rel_dest=f"lib/{lib_subdir}/library/{name}"))
+    return files
+
+
+def rocm_bundle(
+    rocm_home: Path, gpu_arch_version: str
+) -> tuple[list[BundledLib], list[AuxFile]]:
+    """Build the ROCm bundle spec: shared libs and auxiliary kernel/db files.
+
+    Versioned ROCm sonames (libfoo.so.6) get renamed to bare .so to match the
+    NEEDED entries that hipcc emits, mirroring the original build_rocm.sh
+    fname_without_so_number behaviour. NEEDED entries inside the wheel are
+    rewritten to the renamed copies via patchelf in repair_wheel().
+    """
+    libs: list[BundledLib] = []
+    so_files = list(ROCM_SO_FILES)
+    # librocm_smi64.so is only needed for ROCm7.2 and earlier
+    if gpu_arch_version and tuple(map(int, gpu_arch_version.split(".")[:2])) <= (7, 2):
+        so_files.append("librocm_smi64.so")
+    for stem in so_files:
+        path = find_rocm_lib(rocm_home, stem)
+        if path is None:
+            sys.exit(f"Required ROCm library not found: {stem}")
+        # Strip the SO version: libfoo.so.6.1 -> libfoo.so. The ROCm-built
+        # binaries in the wheel link against the bare .so SONAME.
+        libs.append(BundledLib(src=path, dest_name=stem, needed_alias=stem))
+    for os_lib in rocm_os_deps():
+        if os_lib.is_file():
+            libs.append(BundledLib(src=os_lib, dest_name=os_lib.name))
+        else:
+            # Silently omitting one of these produces a wheel that imports but
+            # misbehaves at runtime, and it took a release candidate to notice.
+            print(
+                f"WARNING: OS dependency not present on the builder, "
+                f"not bundled into the wheel: {os_lib}",
+                file=sys.stderr,
+            )
+
+    archs = rocm_arch_filter(os.environ.get("PYTORCH_ROCM_ARCH", ""))
+    aux: list[AuxFile] = []
+    for sub in ("rocblas", "hipblaslt", "hipsparselt"):
+        aux += rocm_lib_kernels(rocm_home, sub, archs)
+    miopen_db = rocm_home / "share/miopen/db"
+    if miopen_db.is_dir():
+        for entry in sorted(miopen_db.iterdir()):
+            if entry.is_file() and any(a in entry.name for a in archs):
+                aux.append(AuxFile(src=entry, rel_dest=f"share/miopen/db/{entry.name}"))
+    rccl_dir = rocm_home / "share/rccl/msccl-algorithms"
+    if rccl_dir.is_dir():
+        for entry in sorted(rccl_dir.iterdir()):
+            if entry.is_file():
+                aux.append(
+                    AuxFile(
+                        src=entry,
+                        rel_dest=f"share/rccl/msccl-algorithms/{entry.name}",
+                    )
+                )
+    amdgpu_ids = Path("/opt/amdgpu/share/libdrm/amdgpu.ids")
+    if amdgpu_ids.is_file():
+        aux.append(AuxFile(src=amdgpu_ids, rel_dest="share/libdrm/amdgpu.ids"))
+    return libs, aux
+
+
 def patchelf(*args: str) -> None:
     subprocess.run([PATCHELF, *args], check=True)
 

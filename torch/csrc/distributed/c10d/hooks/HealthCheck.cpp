@@ -2,11 +2,7 @@
 
 #include <torch/csrc/distributed/c10d/hooks/HealthCheck.hpp>
 
-#include <nlohmann/json.hpp>
-
 #include <utility>
-
-#include <torch/csrc/distributed/c10d/control_plane/Handlers.hpp>
 
 namespace c10d {
 
@@ -26,19 +22,4 @@ std::vector<std::string> HealthCheck::unhealthyBackends() const {
   return {unhealthy_backends_.begin(), unhealthy_backends_.end()};
 }
 
-namespace {
-
-// NOLINTNEXTLINE(facebook-avoid-non-const-global-variables)
-control_plane::RegisterHandler healthCheckHandler(
-    "c10d_health_check",
-    [](const control_plane::Request&, control_plane::Response& res) {
-      auto backends = HealthCheck::get()->unhealthyBackends();
-      nlohmann::json status{
-          {"healthy", backends.empty()},
-          {"unhealthy_backends", std::move(backends)}};
-      res.setContent(status.dump(), "application/json");
-      res.setStatus(200);
-    });
-
-} // namespace
 } // namespace c10d

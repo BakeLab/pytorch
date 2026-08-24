@@ -672,9 +672,7 @@ if not torch._C._autograd_init():
 from torch._C._autograd import (
     _add_metadata_json,
     _disable_profiler,
-    _disable_profiler_legacy,
     _enable_profiler,
-    _enable_profiler_legacy,
     _enable_record_function,
     _get_sequence_nr,
     _is_kineto_stopped,
@@ -692,7 +690,6 @@ from torch._C._autograd import (
     _toggle_collection_dynamic,
     DeviceType,
     kineto_available,
-    ProfilerEvent,
     SavedTensor,
 )
 from torch._C._profiler import ProfilerActivity, ProfilerConfig, ProfilerState
