@@ -297,12 +297,7 @@ def _registered_module_for_globals(
     if not isinstance(module_name, str) or module_name.startswith("namedtuple_"):
         return None
 
-    if "torch_package" in module_name:
-        module = torch.package.package_importer._package_imported_modules.get(
-            module_name
-        )
-    else:
-        module = sys.modules.get(module_name)
+    module = sys.modules.get(module_name)
 
     if isinstance(module, types.ModuleType) and module.__dict__ is f_globals:
         return module_name, module
@@ -2606,16 +2601,8 @@ class InstructionTranslatorBase(
         ):
             return memo
 
-        if "torch_package" in module_name:
-            cached_value = torch.package.package_importer._package_imported_modules[
-                module_name
-            ]
-            alias = (
-                module_name.replace(">", "_").replace("<", "_").replace(".", "_dot_")
-            )
-        else:
-            cached_value = _import_module(module_name)
-            alias = f"__import_{module_name.replace('.', '_dot_')}"
+        cached_value = _import_module(module_name)
+        alias = f"__import_{module_name.replace('.', '_dot_')}"
 
         value = cached_value if module is None else module
         if module is not None and (
