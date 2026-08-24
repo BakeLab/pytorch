@@ -1160,9 +1160,7 @@ class ListVariable(BaseListVariable):
     _cpython_type = list
     # CPython 3.14 stopped including the repr of the searched value (gh-121288)
     _index_not_found_msg = (
-        "list.index(x): x not in list"
-        if sys.version_info >= (3, 14)
-        else "{!r} is not in list"
+        'list.index(x): x not in list'
     )
 
     def tp_richcompare_impl(
@@ -1422,9 +1420,7 @@ class DequeVariable(BaseListVariable):
     # tp_hash = PyObject_HashNotImplemented (unhashable)
     _cpython_type = collections.deque
     _index_not_found_msg = (
-        "deque.index(x): x not in deque"
-        if sys.version_info >= (3, 14)
-        else "{!r} is not in deque"
+        'deque.index(x): x not in deque'
     )
     _remove_not_found_msg = (
         "deque.remove(x): x not in deque"
