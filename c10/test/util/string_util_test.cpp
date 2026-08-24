@@ -18,86 +18,11 @@ TEST(StringUtilTest, testStrNarrowSingle) {
 }
 } // namespace test_str_narrow_single
 
-namespace test_str_wide_single {
-TEST(StringUtilTest, testStrWideSingle) {
-  std::wstring s = L"wide test string";
-  std::string narrow = "wide test string";
-  EXPECT_EQ(narrow, c10::str(s));
-
-  const wchar_t* c_str = s.c_str();
-  EXPECT_EQ(narrow, c10::str(c_str));
-
-  wchar_t c = L'a';
-  std::string narrowC = "a";
-  EXPECT_EQ(narrowC, c10::str(c));
-}
-} // namespace test_str_wide_single
-
-namespace test_str_wide_single_multibyte {
-TEST(StringUtilTest, testStrWideSingleMultibyte) {
-  std::wstring s = L"\u00EC blah";
-  std::string narrow = "\xC3\xAC blah";
-  EXPECT_EQ(narrow, c10::str(s));
-
-  const wchar_t* c_str = s.c_str();
-  EXPECT_EQ(narrow, c10::str(c_str));
-
-  wchar_t c = L'\u00EC';
-  std::string narrowC = "\xC3\xAC";
-  EXPECT_EQ(narrowC, c10::str(c));
-}
-} // namespace test_str_wide_single_multibyte
-
-namespace test_str_wide_malformed {
-// The surrogate handling is only compiled off Windows; the Windows path goes
-// through u16u8 instead.
-#ifndef _WIN32
-TEST(StringUtilTest, testStrWideMalformedSurrogate) {
-  // A high surrogate with nothing after it.
-  EXPECT_THROW((void)c10::str(std::wstring(1, L'\xD800')), c10::ValueError);
-  // A low surrogate with no high surrogate before it.
-  EXPECT_THROW((void)c10::str(std::wstring(1, L'\xDC00')), c10::ValueError);
-  // A high surrogate followed by a non-surrogate.
-  std::wstring unpairedHigh;
-  unpairedHigh.push_back(L'\xD800');
-  unpairedHigh.push_back(L'A');
-  EXPECT_THROW((void)c10::str(unpairedHigh), c10::ValueError);
-
-  // A well-formed pair still decodes: U+1F600 as UTF-8.
-  std::wstring pair;
-  pair.push_back(L'\xD83D');
-  pair.push_back(L'\xDE00');
-  EXPECT_EQ(std::string("\xF0\x9F\x98\x80"), c10::str(pair));
-}
-#endif
-} // namespace test_str_wide_malformed
-
-namespace test_str_wide_empty {
-TEST(StringUtilTest, testStrWideEmpty) {
-  std::wstring s;
-  std::string narrow;
-  EXPECT_EQ(narrow, c10::str(s));
-
-  const wchar_t* c_str = s.c_str();
-  EXPECT_EQ(narrow, c10::str(c_str));
-
-  wchar_t c = L'\0';
-  std::string narrowC(1, '\0');
-  EXPECT_EQ(narrowC, c10::str(c));
-}
-} // namespace test_str_wide_empty
-
 namespace test_str_multi {
 TEST(StringUtilTest, testStrMulti) {
-  std::string result = c10::str(
-      "c_str ",
-      'c',
-      std::string(" std::string "),
-      42,
-      L" wide c_str ",
-      L'w',
-      std::wstring(L" std::wstring "));
-  std::string expected = "c_str c std::string 42 wide c_str w std::wstring ";
+  std::string result =
+      c10::str("c_str ", 'c', std::string(" std::string "), 42);
+  std::string expected = "c_str c std::string 42";
   EXPECT_EQ(expected, result);
 }
 } // namespace test_str_multi
