@@ -2030,18 +2030,9 @@ class OutputGraph(OutputGraphCommon):
             if k in cell_and_freevars:
                 continue
             # Do not load variable if it is NULL.
-            if sys.version_info >= (3, 12):
-                # NOTE: do not use isinstance, since it realizes lazy VT's
-                # Continuation function will load the NULL for v.
-                if type.__instancecheck__(NullVariable, v):
-                    meta.locals_null_keys.append(k)
-                    continue
-            else:
-                # A variable should never be NULL in < 3.12
-                if type.__instancecheck__(NullVariable, v):
-                    raise AssertionError(
-                        "variable should never be NULL in Python < 3.12"
-                    )
+            if type.__instancecheck__(NullVariable, v):
+                meta.locals_null_keys.append(k)
+                continue
             meta.locals_names[k] = len(meta.locals_names)
             if isinstance(v, ContextWrappingVariable):
                 target_values = (

@@ -534,27 +534,19 @@ def skipIfNotPy311(fn: Callable[_P, _T]) -> Callable[_P, _T]:
 
 
 def skipIfNotPy312(fn: Callable[_P, _T]) -> Callable[_P, _T]:
-    if sys.version_info >= (3, 12):
-        return fn
-    return unittest.skip("Requires Python 3.12+")(fn)
+    return fn
 
 
 def skipIfOnlyNotPy312(fn: Callable[_P, _T]) -> Callable[_P, _T]:
-    if sys.version_info >= (3, 13) or sys.version_info < (3, 12):
-        return unittest.skip("Requires Python 3.12")(fn)
-    return fn
+    return unittest.skip("Requires Python 3.12")(fn)
 
 
 def xfailIfPy312(fn: Callable[_P, _T]) -> Callable[_P, _T]:
-    if sys.version_info >= (3, 12):
-        return unittest.expectedFailure(fn)
-    return fn
+    return unittest.expectedFailure(fn)
 
 
 def skipIfPy312(fn: Callable[_P, _T]) -> Callable[_P, _T]:
-    if sys.version_info >= (3, 12):
-        return unittest.skip("Not supported in Python 3.12+")(fn)
-    return fn
+    return unittest.skip("Not supported in Python 3.12+")(fn)
 
 
 # Controls tests generated in test/inductor/test_torchinductor_dynamic_shapes.py

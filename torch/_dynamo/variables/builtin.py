@@ -29,7 +29,6 @@ import itertools
 import logging
 import math
 import operator
-import sys
 import types
 import typing
 from collections.abc import Callable, Iterable, Sequence
@@ -192,9 +191,8 @@ _BUILTIN_CONSTANT_FOLDABLE_METHODS: dict[type, frozenset[str]] = {
     bool: frozenset({"__new__", "from_bytes"}),
     float: frozenset({"fromhex", "hex"}),
 }
-if sys.version_info >= (3, 14):
-    _BUILTIN_CONSTANT_FOLDABLE_METHODS[float] |= frozenset({"from_number"})
-    _BUILTIN_CONSTANT_FOLDABLE_METHODS[complex] = frozenset({"from_number"})
+_BUILTIN_CONSTANT_FOLDABLE_METHODS[float] |= frozenset({"from_number"})
+_BUILTIN_CONSTANT_FOLDABLE_METHODS[complex] = frozenset({"from_number"})
 
 
 _HandlerCallback = Callable[
@@ -649,7 +647,7 @@ def _uses_custom_classinfo_check(
             _uses_custom_classinfo_check(item) for item in typing.get_args(type_info)
         )
     if typing.get_origin(type_info) is typing.Union:
-        typing_union_uses_instancecheck = sys.version_info >= (3, 12)
+        typing_union_uses_instancecheck = True
         return any(
             _uses_custom_classinfo_check(
                 item,
@@ -1682,10 +1680,7 @@ class BuiltinVariable(BaseBuiltinVariable):
         # the same name shadows the cell, matching CPython (except for 3.12, which is backwards): the two share a name
         # but not a localsplus slot, and the fast slot wins while it holds a value (an empty one is skipped below,
         # leaving the cell contents visible).
-        if sys.version_info[:2] == (3, 12):
-            its = (tx.symbolic_locals.items(), tx.symbolic_cellvars.items())
-        else:
-            its = (tx.symbolic_cellvars.items(), tx.symbolic_locals.items())
+        its = (tx.symbolic_cellvars.items(), tx.symbolic_locals.items())
 
         for name, value in itertools.chain(*its):
             if name not in frame_local_names:
@@ -3071,22 +3066,14 @@ class BuiltinVariable(BaseBuiltinVariable):
 
         strict = ConstantVariable.create(False)
         if kwargs:
-            if sys.version_info >= (3, 14):
-                if not (len(kwargs) == 1 and "strict" in kwargs):
-                    raise_args_mismatch(
-                        tx,
-                        "map",
-                        "1 kwargs (`strict`)",
-                        f"{len(kwargs)} kwargs",
-                    )
-                strict = kwargs.pop("strict", ConstantVariable.create(False))
-            else:
+            if not (len(kwargs) == 1 and "strict" in kwargs):
                 raise_args_mismatch(
                     tx,
                     "map",
-                    "0 kwargs",
+                    "1 kwargs (`strict`)",
                     f"{len(kwargs)} kwargs",
                 )
+            strict = kwargs.pop("strict", ConstantVariable.create(False))
 
         iterables = [generic_getiter(tx, seq) for seq in seqs]
         iter_args = TupleVariable(iterables, mutation_type=ValueMutationNew())

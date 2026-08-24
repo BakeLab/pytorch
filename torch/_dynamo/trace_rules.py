@@ -2190,11 +2190,8 @@ torch_c_binding_in_graph_functions = dict.fromkeys(
 )
 
 
-if sys.version_info >= (3, 12):
-    torch_c_binding_in_graph_functions["math.sumprod"] = TorchInGraphFunctionVariable
-
-if sys.version_info >= (3, 13):
-    torch_c_binding_in_graph_functions["math.fma"] = TorchInGraphFunctionVariable
+torch_c_binding_in_graph_functions["math.sumprod"] = TorchInGraphFunctionVariable
+torch_c_binding_in_graph_functions["math.fma"] = TorchInGraphFunctionVariable
 
 # In graph functions (including constant folding) that are not C bindings
 # NOTE: [Cacheability of in-graph torch functions]

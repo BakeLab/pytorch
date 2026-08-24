@@ -1164,9 +1164,7 @@ class ListVariable(BaseListVariable):
     _cpython_type = list
     # CPython 3.14 stopped including the repr of the searched value (gh-121288)
     _index_not_found_msg = (
-        "list.index(x): x not in list"
-        if sys.version_info >= (3, 14)
-        else "{!r} is not in list"
+        'list.index(x): x not in list'
     )
 
     def tp_richcompare_impl(
@@ -1430,9 +1428,7 @@ class DequeVariable(BaseListVariable):
     # tp_hash = PyObject_HashNotImplemented (unhashable)
     _cpython_type = collections.deque
     _index_not_found_msg = (
-        "deque.index(x): x not in deque"
-        if sys.version_info >= (3, 14)
-        else "{!r} is not in deque"
+        'deque.index(x): x not in deque'
     )
     _remove_not_found_msg = (
         "deque.remove(x): x not in deque"
@@ -2993,11 +2989,9 @@ class SliceVariable(VariableTracker):
 
     def is_hashable(self) -> bool:
         # Slices became hashable in Python 3.12 (CPython slicehash).
-        return sys.version_info >= (3, 12)
+        return True
 
     def hash_impl(self, tx: "InstructionTranslatorBase") -> tuple[int, bool]:
-        if sys.version_info < (3, 12):
-            raise_type_error(tx, "unhashable type: 'slice'")
         # CPython slicehash: https://github.com/python/cpython/blob/e76aa128fe/Objects/sliceobject.c#L667
         s = self.as_python_constant()
         try:

@@ -99,33 +99,17 @@ class Instruction:
         self.positions = other.positions
 
 
-if sys.version_info >= (3, 13):
-
-    def convert_instruction(i: dis.Instruction) -> Instruction:
-        return Instruction(
-            i.opcode,
-            i.opname,
-            i.arg,
-            i.argval,
-            i.offset,
-            i.line_number,
-            i.is_jump_target,
-            i.positions,
-        )
-
-else:
-
-    def convert_instruction(i: dis.Instruction) -> Instruction:
-        return Instruction(
-            i.opcode,
-            i.opname,
-            i.arg,
-            i.argval,
-            i.offset,
-            i.starts_line,
-            i.is_jump_target,
-            i.positions,
-        )
+def convert_instruction(i: dis.Instruction) -> Instruction:
+    return Instruction(
+        i.opcode,
+        i.opname,
+        i.arg,
+        i.argval,
+        i.offset,
+        i.line_number,
+        i.is_jump_target,
+        i.positions,
+    )
 
 
 class _NotProvided:
@@ -133,15 +117,8 @@ class _NotProvided:
         return "_NotProvided"
 
 
-if sys.version_info >= (3, 12):
-
-    def inst_has_op_bits(name: str) -> bool:
-        return name in ("LOAD_ATTR", "LOAD_GLOBAL", "LOAD_SUPER_ATTR")
-
-else:
-
-    def inst_has_op_bits(name: str) -> bool:
-        return name == "LOAD_GLOBAL"
+def inst_has_op_bits(name: str) -> bool:
+    return name in ("LOAD_ATTR", "LOAD_GLOBAL", "LOAD_SUPER_ATTR")
 
 
 def create_instruction(
@@ -280,31 +257,13 @@ def add_push_null(
             raise AssertionError(f"expected insts[{idx}].arg to be not None")
         insts[idx].arg |= 1  # type: ignore[operator]
 
-    if sys.version_info >= (3, 13):
-        # In 3.13, NULL follows the callable
-        if inst_has_op_bits(insts[-1].opname) and not inst_has_bit_set(-1):
-            # All insts with op bits have the push_null bit as the last one.
-            # Only set the bit if it hasn't been set - otherwise, we need
-            # to add another PUSH_NULL.
-            set_inst_bit(-1)
-        else:
-            insts = insts + [create_instruction("PUSH_NULL")]
-    elif sys.version_info >= (3, 12):
-        # LOAD_ATTR/LOAD_SUPER_ATTR at the end
-        # We assume that `insts` will only load 1 object, so
-        # LOAD_GLOBAL at the end doesn't need to be checked
-        if inst_has_op_bits(insts[-1].opname) and not inst_has_bit_set(-1):
-            set_inst_bit(-1)
-        elif insts[0].opname == "LOAD_GLOBAL" and not inst_has_bit_set(0):
-            set_inst_bit(0)
-        else:
-            insts = [create_instruction("PUSH_NULL")] + insts
+    if inst_has_op_bits(insts[-1].opname) and not inst_has_bit_set(-1):
+        # All insts with op bits have the push_null bit as the last one.
+        # Only set the bit if it hasn't been set - otherwise, we need
+        # to add another PUSH_NULL.
+        set_inst_bit(-1)
     else:
-        # 3.11 introduced NULL preceding callable
-        if inst_has_op_bits(insts[0].opname) and not inst_has_bit_set(0):
-            set_inst_bit(0)
-        else:
-            insts = [create_instruction("PUSH_NULL")] + insts
+        insts = insts + [create_instruction("PUSH_NULL")]
     return insts
 
 
@@ -323,7 +282,7 @@ def add_push_null_call_function_ex(
             )
         insts = inst_or_insts
 
-    idx = -1 if sys.version_info >= (3, 13) else 0
+    idx = -1
     if insts[idx].opname == "LOAD_GLOBAL":
         if insts[idx].arg is None:
             raise AssertionError(
@@ -333,10 +292,7 @@ def add_push_null_call_function_ex(
             insts[idx].arg |= 1  # type: ignore[operator]
             return insts
 
-    if sys.version_info >= (3, 13):
-        insts = insts + [create_instruction("PUSH_NULL")]
-    else:
-        insts = [create_instruction("PUSH_NULL")] + insts
+    insts = insts + [create_instruction("PUSH_NULL")]
 
     return insts
 
@@ -386,10 +342,8 @@ def create_call_function(nargs: int, push_null: bool) -> list[Instruction]:
     if push_null:
         output.append(create_instruction("PUSH_NULL"))
         # 3.13 swapped NULL and callable
-        rots = nargs + 1 if sys.version_info >= (3, 13) else nargs + 2
+        rots = nargs + 1
         output.extend(create_rot_n(rots))
-    if sys.version_info < (3, 12):
-        output.append(create_instruction("PRECALL", arg=nargs))
     output.append(create_instruction("CALL", arg=nargs))
     return output
 
@@ -405,35 +359,25 @@ def create_call_function_ex(
     so we don't push another NULL for the kwargs.
     """
     output = []
-    if sys.version_info >= (3, 14) and not has_kwargs and not ignore_314_kwargs_push:
+    if not has_kwargs and not ignore_314_kwargs_push:
         output.append(create_instruction("PUSH_NULL"))
         has_kwargs = True
     if push_null:
         output.append(create_instruction("PUSH_NULL"))
         # 3.13 swapped NULL and callable
         # if flags == 1, 2 values popped - otherwise if flags == 0, 1 value
-        rots = (
-            int(has_kwargs) + 2 if sys.version_info >= (3, 13) else int(has_kwargs) + 3
-        )
+        rots = int(has_kwargs) + 2
         output.extend(create_rot_n(rots))
     output.append(create_instruction("CALL_FUNCTION_EX", arg=int(has_kwargs)))
     return output
 
 
 def create_call_method(nargs: int) -> list[Instruction]:
-    if sys.version_info >= (3, 12):
-        return [create_instruction("CALL", arg=nargs)]
-    return [
-        create_instruction("PRECALL", arg=nargs),
-        create_instruction("CALL", arg=nargs),
-    ]
+    return [create_instruction("CALL", arg=nargs)]
 
 
 def create_load_method(name: str) -> Instruction:
-    if sys.version_info >= (3, 12):
-        # in 3.12, create a LOAD_ATTR instruction with the low bit set
-        return create_instruction("LOAD_ATTR", arg=1, argval=name)
-    return create_instruction("LOAD_METHOD", argval=name)
+    return create_instruction("LOAD_ATTR", arg=1, argval=name)
 
 
 def create_swap(n: int) -> list[Instruction]:
@@ -462,19 +406,9 @@ def get_call_callable_depth(opname: str, arg: int) -> int:
     """
     if opname in ("CALL", "CALL_KW"):
         kw_extra = 1 if opname == "CALL_KW" else 0
-        if sys.version_info >= (3, 13):
-            return arg + 2 + kw_extra
-        else:
-            # 3.11-3.12: NULL is always at bottom (Dynamo normalizes
-            # LOAD_METHOD to NULL + bound_method)
-            return arg + 1 + kw_extra
+        return arg + 2 + kw_extra
     elif opname == "CALL_FUNCTION_EX":
-        if sys.version_info >= (3, 14):
-            return 4
-        elif sys.version_info >= (3, 13):
-            return 3 + (arg & 1)
-        else:
-            return 2 + (arg & 1)
+        return 4
     else:
         raise ValueError(f"not a call instruction: {opname}")
 
@@ -485,29 +419,13 @@ def create_binary_slice(
     """
     BINARY_SLICE and STORE_SLICE (if `set` is True) for all Python versions
     """
-    if sys.version_info >= (3, 14):
-        subscr_inst = (
-            create_instruction("STORE_SUBSCR") if store else create_binary_subscr()
-        )
-        return [
-            create_load_const(slice(start, end)),
-            subscr_inst,
-        ]
-    elif sys.version_info >= (3, 12):
-        inst_name = "STORE_SLICE" if store else "BINARY_SLICE"
-        return [
-            create_load_const(start),
-            create_load_const(end),
-            create_instruction(inst_name),
-        ]
-    else:
-        inst_name = "STORE_SUBSCR" if store else "BINARY_SUBSCR"
-        return [
-            create_load_const(start),
-            create_load_const(end),
-            create_instruction("BUILD_SLICE", arg=2),
-            create_instruction(inst_name),
-        ]
+    subscr_inst = (
+        create_instruction("STORE_SUBSCR") if store else create_binary_subscr()
+    )
+    return [
+        create_load_const(slice(start, end)),
+        subscr_inst,
+    ]
 
 
 def create_copy(i: int) -> list[Instruction]:
@@ -535,14 +453,12 @@ def create_print_value(value: Any) -> list[Instruction]:
 
 
 def create_binary_subscr() -> Instruction:
-    if sys.version_info < (3, 14):
-        return create_instruction("BINARY_SUBSCR")
     # https://github.com/python/cpython/blob/0e46c0499413bc5f9f8336fe76e2e67cf93f64d8/Include/opcode.h#L36
     return create_instruction("BINARY_OP", arg=26)
 
 
 def create_build_tuple(n: int) -> Instruction:
-    if sys.version_info >= (3, 14) and n == 0:
+    if n == 0:
         return create_load_const(())
     return create_instruction("BUILD_TUPLE", arg=n)
 
@@ -1137,17 +1053,7 @@ def remove_jump_if_none(instructions: list[Instruction]) -> None:
             # need both argval and arg set correctly now (not later)
             is_op.argval = is_op.arg
 
-            if sys.version_info < (3, 12):
-                jump_op = create_instruction(
-                    (
-                        "POP_JUMP_FORWARD_IF_TRUE"
-                        if "FORWARD" in inst.opname
-                        else "POP_JUMP_BACKWARD_IF_TRUE"
-                    ),
-                    target=inst.target,
-                )
-            else:
-                jump_op = create_instruction("POP_JUMP_IF_TRUE", target=inst.target)
+            jump_op = create_instruction("POP_JUMP_IF_TRUE", target=inst.target)
 
             replace_insts = [
                 create_instruction("LOAD_CONST", argval=None),
@@ -1166,7 +1072,7 @@ def remove_binary_store_slice(instructions: list[Instruction]) -> None:
         new_insts.append(inst)
         if inst.opname in ("BINARY_SLICE", "STORE_SLICE"):
             # new instruction
-            if sys.version_info >= (3, 14) and inst.opname == "BINARY_SLICE":
+            if inst.opname == 'BINARY_SLICE':
                 subscr_inst = create_binary_subscr()
             else:
                 subscr_inst = create_instruction(inst.opname.replace("SLICE", "SUBSCR"))
@@ -1196,8 +1102,6 @@ def remove_load_attr_method_variant(instructions: list[Instruction]) -> None:
                 create_instruction("LOAD_ATTR", arg=inst.arg & ~1, argval=inst.argval),
                 create_instruction("PUSH_NULL"),
             ]
-            if sys.version_info < (3, 13):
-                replace_insts.append(create_instruction("SWAP", arg=2))
             new_insts.extend(overwrite_instruction(inst, replace_insts))
         else:
             new_insts.append(inst)
@@ -1284,8 +1188,7 @@ def explicit_super(code: types.CodeType, instructions: list[Instruction]) -> Non
         if inst.opname == "LOAD_GLOBAL" and inst.argval == "super":
             nexti = instructions[idx + 1]
             if nexti.arg == 0 and (
-                (sys.version_info >= (3, 12) and nexti.opname == "CALL")
-                or (sys.version_info < (3, 12) and nexti.opname == "PRECALL")
+                nexti.opname == 'CALL'
             ):
                 if "__class__" not in cell_and_free:
                     raise AssertionError(
@@ -1473,16 +1376,13 @@ def fix_vars(
             # 3.12 LOAD_ATTR requires both arg and argval, like LOAD_GLOBAL
             if instructions[i].argval is _NotProvided:
                 raise AssertionError("LOAD_ATTR instruction must have argval set")
-            if sys.version_info >= (3, 12):
-                if instructions[i].arg is None:
-                    raise AssertionError(
-                        "LOAD_ATTR instruction must have arg set in Python 3.12+"
-                    )
-                instructions[i].arg = (get_name_index(instructions[i].argval) << 1) + (
-                    cast(int, instructions[i].arg) % 2
+            if instructions[i].arg is None:
+                raise AssertionError(
+                    "LOAD_ATTR instruction must have arg set in Python 3.12+"
                 )
-            else:
-                instructions[i].arg = get_name_index(instructions[i].argval)
+            instructions[i].arg = (get_name_index(instructions[i].argval) << 1) + (
+                cast(int, instructions[i].arg) % 2
+            )
         elif instructions[i].opname == "LOAD_SUPER_ATTR":
             if instructions[i].arg is None:
                 raise AssertionError("LOAD_SUPER_ATTR instruction must have arg set")
@@ -1495,10 +1395,6 @@ def fix_vars(
                 + 2
             )
         elif instructions[i].opname in FUSED_INSTS:
-            if sys.version_info < (3, 13):
-                raise AssertionError(
-                    f"fused instruction {instructions[i].opname} requires Python 3.13+"
-                )
             if not isinstance(instructions[i].argval, tuple):
                 raise AssertionError(
                     f"fused instruction {instructions[i].opname} argval must be a tuple, "
@@ -1517,8 +1413,7 @@ def fix_vars(
         elif instructions[i].opcode in HAS_LOCAL:
             if should_compute_arg():
                 if (
-                    sys.version_info >= (3, 13)
-                    and instructions[i].argval not in varnames
+                    instructions[i].argval not in varnames
                 ):
                     # instructions like LOAD_FAST used for both local and free vars
                     instructions[i].arg = freenames[instructions[i].argval]
@@ -1734,14 +1629,10 @@ def _cached_cleaned_instructions(
     virtualize_jumps(instructions)
     strip_extended_args(instructions)
     if not safe:
-        if sys.version_info < (3, 12):
-            explicit_super(code, instructions)
         remove_jump_if_none(instructions)
-        if sys.version_info >= (3, 12):
-            remove_binary_store_slice(instructions)
-            remove_load_attr_method_variant(instructions)
-        if sys.version_info >= (3, 13):
-            remove_fused_load_store(instructions)
+        remove_binary_store_slice(instructions)
+        remove_load_attr_method_variant(instructions)
+        remove_fused_load_store(instructions)
         if config.debug_force_graph_break_on_leaf_return:
             add_graph_break_if_leaf_instructions(instructions)
     update_offsets(instructions)
@@ -1858,19 +1749,17 @@ def bytecode_from_template(
             inst.argval = varname_map[inst.argval]
 
     if noreturn:
-        if sys.version_info >= (3, 12):
-            # replace RETURN_CONST with LOAD_CONST RETURN_VALUE
-            new_insts = []
-            for inst in insts:
-                if inst.opname == "RETURN_CONST":
-                    inst.opcode = dis.opmap["LOAD_CONST"]
-                    inst.opname = "LOAD_CONST"
-                    new_insts.append(inst)
-                    # no need to propagate target/exn table
-                    new_insts.append(create_instruction("RETURN_VALUE"))
-                else:
-                    new_insts.append(inst)
-            insts = new_insts
+        new_insts = []
+        for inst in insts:
+            if inst.opname == "RETURN_CONST":
+                inst.opcode = dis.opmap["LOAD_CONST"]
+                inst.opname = "LOAD_CONST"
+                new_insts.append(inst)
+                # no need to propagate target/exn table
+                new_insts.append(create_instruction("RETURN_VALUE"))
+            else:
+                new_insts.append(inst)
+        insts = new_insts
 
         # pyrefly: ignore [implicit-any]
         returns = []

@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import copy
 import dataclasses
-import sys
 from typing import Any, cast, TYPE_CHECKING
 
 from .bytecode_transformation import (
@@ -65,8 +64,6 @@ IS_TRACING_RESUME_PROLOGUE_VARNAME = "__is_tracing_resume_prologue"
 # If is_resume - this codegen is for a resume function
 def _initial_push_null(insts: list[Instruction]) -> None:
     insts.append(create_instruction("PUSH_NULL"))
-    if sys.version_info < (3, 13):
-        insts.append(create_instruction("SWAP", arg=2))
 
 
 # Generates bytecode from template and splits the code where LOAD_FAST dummy is present.
@@ -210,8 +207,6 @@ class ReenterWith:
 
         create_ctx: list[Instruction] = []
         # Do not push NULL in Python 3.14+ since the NULL should be on the symbolic stack.
-        if sys.version_info < (3, 14):
-            _initial_push_null(create_ctx)
         create_ctx.extend(
             [
                 *load_args,
@@ -489,10 +484,6 @@ class ContinueExecutionCache:
 
             # 3.12+: store NULL into variables that were NULL
             if argnames_null:
-                if sys.version_info < (3, 12):
-                    raise AssertionError(
-                        f"argnames_null requires Python 3.12+, got {sys.version_info}"
-                    )
                 for v in argnames_null:
                     if v in args:
                         raise AssertionError(
