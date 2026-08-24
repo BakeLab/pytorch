@@ -100,15 +100,6 @@ TYPE_STUBS = [
             "tools/autograd/deprecated.yaml",
         ],
     ),
-    (
-        "Datapipes type stubs",
-        None,
-        [],
-        [
-            sys.executable,
-            "torch/utils/data/datapipes/gen_pyi.py",
-        ],
-    ),
 ]
 
 

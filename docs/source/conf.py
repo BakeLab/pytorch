@@ -435,11 +435,6 @@ coverage_ignore_functions = [
     # torch.backends.cudnn.rnn
     "get_cudnn_mode",
     "init_dropout_state",
-    # torch.cuda.amp.autocast_mode
-    "custom_bwd",
-    "custom_fwd",
-    # torch.cuda.amp.common
-    "amp_definitely_not_available",
     # torch.cuda.nccl
     "all_gather",
     "all_reduce",
@@ -517,7 +512,6 @@ coverage_ignore_functions = [
     "get_all",
     "synchronize",
     "store_timeout",
-    # torch.distributed.fsdp.wrap
     # torch.distributed.nn.functional
     "all_to_all",
     "all_to_all_single",
@@ -837,87 +831,6 @@ coverage_ignore_functions = [
     "BuildExtension",
     # torch.utils.data.dataloader
     "DataLoader",
-    # torch.utils.data.datapipes.dataframe.dataframe_wrapper
-    "PandasWrapper",
-    "default_wrapper",
-    # torch.utils.data.datapipes.dataframe.dataframes
-    "Capture",
-    "CaptureA",
-    "CaptureAdd",
-    "CaptureCall",
-    "CaptureControl",
-    "CaptureDataFrame",
-    "CaptureDataFrameWithDataPipeOps",
-    "CaptureF",
-    "CaptureGetAttr",
-    "CaptureGetItem",
-    "CaptureInitial",
-    "CaptureLikeMock",
-    "CaptureMul",
-    "CaptureSetItem",
-    "CaptureSub",
-    "CaptureVariable",
-    "CaptureVariableAssign",
-    "DataFrameTracedOps",
-    "DataFrameTracer",
-    # torch.utils.data.datapipes.dataframe.datapipes
-    "ConcatDataFramesPipe",
-    "DataFramesAsTuplesPipe",
-    "ExampleAggregateAsDataFrames",
-    "FilterDataFramesPipe",
-    "PerRowDataFramesPipe",
-    "ShuffleDataFramesPipe",
-    # torch.utils.data.datapipes.dataframe.structures
-    "DataChunkDF",
-    # torch.utils.data.datapipes.datapipe
-    "DFIterDataPipe",
-    "DataChunk",
-    "IterDataPipe",
-    "MapDataPipe",
-    # torch.utils.data.datapipes.iter.callable
-    "CollatorIterDataPipe",
-    "MapperIterDataPipe",
-    # torch.utils.data.datapipes.iter.combinatorics
-    "SamplerIterDataPipe",
-    "ShufflerIterDataPipe",
-    # torch.utils.data.datapipes.iter.combining
-    "ConcaterIterDataPipe",
-    "DemultiplexerIterDataPipe",
-    "ForkerIterDataPipe",
-    "MultiplexerIterDataPipe",
-    "ZipperIterDataPipe",
-    # torch.utils.data.datapipes.iter.filelister
-    "FileListerIterDataPipe",
-    # torch.utils.data.datapipes.iter.fileopener
-    "FileOpenerIterDataPipe",
-    # torch.utils.data.datapipes.iter.grouping
-    "BatcherIterDataPipe",
-    "GrouperIterDataPipe",
-    "UnBatcherIterDataPipe",
-    # torch.utils.data.datapipes.iter.routeddecoder
-    "RoutedDecoderIterDataPipe",
-    # torch.utils.data.datapipes.iter.selecting
-    "FilterIterDataPipe",
-    # torch.utils.data.datapipes.iter.sharding
-    "SHARDING_PRIORITIES",
-    "ShardingFilterIterDataPipe",
-    # torch.utils.data.datapipes.iter.utils
-    "IterableWrapperIterDataPipe",
-    # torch.utils.data.datapipes.map.callable
-    "MapperMapDataPipe",
-    # torch.utils.data.datapipes.map.combinatorics
-    "ShufflerIterDataPipe",
-    # torch.utils.data.datapipes.map.combining
-    "ConcaterMapDataPipe",
-    "ZipperMapDataPipe",
-    # torch.utils.data.datapipes.map.grouping
-    "BatcherMapDataPipe",
-    # torch.utils.data.datapipes.map.utils
-    "SequenceWrapperMapDataPipe",
-    # torch.utils.data.datapipes.utils.decoder
-    "Decoder",
-    "ImageHandler",
-    "MatHandler",
     # torch.utils.data.dataset
     "ConcatDataset",
     # torch.utils.data.distributed
