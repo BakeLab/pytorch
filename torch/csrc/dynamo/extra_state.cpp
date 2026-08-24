@@ -10,11 +10,6 @@
 #include <torch/csrc/dynamo/framelocals_mapping.h>
 #include <torch/csrc/dynamo/guards.h>
 
-#if IS_PYTHON_3_12_PLUS
-#define _PyCode_GetExtra PyUnstable_Code_GetExtra
-#define _PyCode_SetExtra PyUnstable_Code_SetExtra
-#endif
-
 namespace {
 // Short-term fix for: https://github.com/pytorch/pytorch/issues/166926
 #ifdef Py_GIL_DISABLED
@@ -26,12 +21,6 @@ bool use_lru = false;
 bool use_lru = true;
 #endif
 
-ExtraState* get_extra_state(PyCodeObject* code) {
-  ExtraState* extra = nullptr;
-  _PyCode_GetExtra((PyObject*)code, extra_index, (void**)&extra);
-  return extra;
-}
-
 ExtraState* get_or_init_extra_state(PyCodeObject* code) {
   ExtraState* extra_state = get_extra_state(code);
   if (extra_state != nullptr) {
@@ -39,7 +28,7 @@ ExtraState* get_or_init_extra_state(PyCodeObject* code) {
   }
   extra_state = new ExtraState(code);
   NULL_CHECK(extra_state);
-  _PyCode_SetExtra((PyObject*)code, extra_index, extra_state);
+  set_extra_state(code, extra_state);
   // freed by destroy_extra_state (since we need to pass these objects to C)
   // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
   return extra_state;
@@ -98,7 +87,7 @@ void set_region_exec_strategy(
   }
 }
 
-bool backend_match(PyObject* saved_backend, PyObject* backend) {
+static bool backend_match(PyObject* saved_backend, PyObject* backend) {
   // Pointer equality check for common case
   if (saved_backend != backend) {
     int result = PyObject_RichCompareBool(saved_backend, backend, Py_EQ);
@@ -196,6 +185,12 @@ bool try_lookup_without_guard_eval_in_list(
 
 } // namespace
 
+ExtraState* get_extra_state(PyCodeObject* code) {
+  ExtraState* extra = nullptr;
+  PyUnstable_Code_GetExtra((PyObject*)code, extra_index, (void**)&extra);
+  return extra;
+}
+
 Py_ssize_t extra_index = -1;
 
 ExtraState::ExtraState(PyCodeObject* orig_code_arg)
@@ -255,7 +250,7 @@ void destroy_extra_state(void* obj) {
 void set_extra_state(PyCodeObject* code, ExtraState* extra_state) {
   ExtraState* old_extra_state = get_extra_state(code);
   CHECK(extra_state == nullptr || old_extra_state != extra_state);
-  _PyCode_SetExtra((PyObject*)code, extra_index, extra_state);
+  PyUnstable_Code_SetExtra((PyObject*)code, extra_index, extra_state);
 }
 
 bool get_frame_exec_strategy(
