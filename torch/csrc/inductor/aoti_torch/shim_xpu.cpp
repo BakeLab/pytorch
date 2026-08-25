@@ -108,7 +108,6 @@ AOTITorchError aoti_torch_xpu_caching_allocator_raw_delete(void* ptr) {
   });
 }
 
-#if AT_MKLDNN_ENABLED()
 #include <ATen/native/mkldnn/xpu/Conv.h>
 #include <ATen/native/mkldnn/xpu/qconv.h>
 #include <ATen/native/mkldnn/xpu/qlinear.h>
@@ -458,5 +457,3 @@ AOTITorchError aoti_torch_xpu__qconv2d_pointwise_binary_tensor(
     *ret0 = new_tensor_handle(std::move(tmp_result));
   });
 }
-
-#endif // AT_MKLDNN_ENABLED()

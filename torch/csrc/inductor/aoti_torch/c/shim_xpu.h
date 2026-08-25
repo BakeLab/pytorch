@@ -57,7 +57,6 @@ AOTI_TORCH_EXPORT AOTITorchError
 aoti_torch_xpu_caching_allocator_raw_delete(void* ptr);
 #endif // TORCH_FEATURE_VERSION >= TORCH_VERSION_2_16_0
 
-#if AT_MKLDNN_ENABLED()
 
 AOTI_TORCH_EXPORT AOTITorchError
 aoti_torch_xpu_mkldnn__convolution_pointwise_binary(
@@ -212,7 +211,6 @@ aoti_torch_xpu__qconv2d_pointwise_binary_tensor(
     const char** unary_algorithm,
     AtenTensorHandle* ret0);
 
-#endif // AT_MKLDNN_ENABLED()
 #ifdef __cplusplus
 } // extern "C"
 #endif

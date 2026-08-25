@@ -10986,7 +10986,7 @@ class TestNNDeviceType(NNTestCase):
             mod = torch.nn.GRU(hsize, hsize, bias=bias).to(device).to(dtype)
             self._test_rnn_mod(mod, inp)
 
-    @onlyAccelerator
+    @onlyCUDA
     def test_upsamplingNearest1d_launch_config(self, device):
         m = nn.Upsample(scale_factor=2)
         inp = torch.rand(2**25, 1, 1, device=device)

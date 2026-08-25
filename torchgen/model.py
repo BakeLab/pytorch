@@ -298,7 +298,6 @@ dispatch_keys = [
     DispatchKey.CPU,
     DispatchKey.SparseCPU,
     DispatchKey.SparseCsrCPU,
-    DispatchKey.MkldnnCPU,
     DispatchKey.CUDA,
     DispatchKey.MPS,
     DispatchKey.XPU,

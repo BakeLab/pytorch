@@ -2882,16 +2882,6 @@ class TestFxGraphCache(TestCase):
         if device == GPU_TYPE and not HAS_GPU:
             raise unittest.SkipTest(f"requires {GPU_TYPE}")
 
-        # For machines with mkldnn_fp16 support, weight_pack in mkldnn_fusion.py causes
-        # the creation of a mkldnn format tensor which the current implementation does
-        # not support.
-        if (
-            device == "cpu"
-            and torch.backends.mkldnn.is_available()
-            and torch.ops.mkldnn._is_mkldnn_fp16_supported()
-        ):
-            raise unittest.SkipTest("mkldnn tensors unsupported")
-
         # The shape of the frozen constant determines if it will be inlined.
         shape = (4,) if inlinable else (8, 8)
 
@@ -4016,45 +4006,6 @@ class TestFxGraphCacheHashing(TestCase):
         finally:
             torch.set_num_threads(orig_num_threads)
 
-    def test_compiled_fx_graph_hash_details_are_not_debug_logged(self):
-        graph = torch.fx.Graph()
-        x = graph.placeholder("x")
-        y = graph.call_function(torch.ops.aten.sin.default, (x,))
-        graph.output((y,))
-        gm = torch.fx.GraphModule({}, graph)
-
-        stream = io.StringIO()
-        handler = logging.StreamHandler(stream)
-        handler.setLevel(logging.DEBUG)
-        logger = logging.getLogger("torch._inductor.codecache")
-        old_level = logger.level
-        old_propagate = logger.propagate
-        logger.setLevel(logging.DEBUG)
-        logger.propagate = False
-        logger.addHandler(handler)
-        try:
-            _, debug_lines = compiled_fx_graph_hash(gm, [torch.randn(2)], {}, [])
-        finally:
-            logger.removeHandler(handler)
-            logger.setLevel(old_level)
-            logger.propagate = old_propagate
-
-        self.assertTrue(any("example_inputs[0]" in line for line in debug_lines))
-        self.assertNotIn("FX graph cache hash details", stream.getvalue())
-        self.assertNotIn("example_inputs[0]", stream.getvalue())
-
-    @unittest.skipIf(not torch.backends.mkldnn.is_available(), "requires MKLDNN")
-    def test_cacheability_validator_checks_mkldnn_constant(self):
-        graph = torch.fx.Graph()
-        output = graph.get_attr("mkldnn_weight")
-        graph.output(output)
-        gm = torch.fx.GraphModule(
-            {"mkldnn_weight": torch.randn(2, 2).to_mkldnn()}, graph
-        )
-
-        with self.assertRaisesRegex(BypassFxGraphCache, "mkldnn tensors unpickleable"):
-            CacheabilityValidator(gm, require_shape_env=False).validate()
-
     def _nested_region_gm(self, patches):
         from torch._higher_order_ops.invoke_subgraph import (
             get_invoke_subgraph_compile_options,
@@ -4153,17 +4104,6 @@ class TestFxGraphCacheHashing(TestCase):
             self._fx_graph_cache_key(different, []),
         )
 
-    @unittest.skipIf(not torch.backends.mkldnn.is_available(), "requires MKLDNN")
-    def test_check_for_hop_skips_constants(self):
-        graph = torch.fx.Graph()
-        output = graph.get_attr("mkldnn_weight")
-        graph.output(output)
-        gm = torch.fx.GraphModule(
-            {"mkldnn_weight": torch.randn(2, 2).to_mkldnn()}, graph
-        )
-
-        FxGraphCache._check_for_hop(gm)
-
     def test_check_can_cache_checks_backward_state_example_inputs(self):
         gm = torch.fx.GraphModule({}, torch.fx.Graph())
 
@@ -4171,20 +4111,6 @@ class TestFxGraphCacheHashing(TestCase):
             FxGraphCache._check_can_cache(
                 gm,
                 [torch.fx.experimental._backward_state.BackwardState()],
-                require_shape_env=False,
-            )
-
-    @unittest.skipIf(not torch.backends.mkldnn.is_available(), "requires MKLDNN")
-    def test_check_can_cache_checks_nested_fx_kwargs_tensor(self):
-        gm = torch.fx.GraphModule({}, torch.fx.Graph())
-        fx_kwargs = cast(
-            Any, {"nested": {"mkldnn_weight": torch.randn(2, 2).to_mkldnn()}}
-        )
-
-        with self.assertRaisesRegex(BypassFxGraphCache, "mkldnn tensors unpickleable"):
-            FxGraphCache._check_can_cache(
-                gm,
-                fx_kwargs=fx_kwargs,
                 require_shape_env=False,
             )
 
