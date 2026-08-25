@@ -5,11 +5,8 @@
 #include <nccl.h>
 #include <torch/csrc/cuda/nccl.h>
 
-#if NCCL_VERSION_CODE >= NCCL_VERSION(2, 27, 0)
 #define NCCL_HAS_SYMMEM_SUPPORT
-#endif
 
-#if NCCL_VERSION_CODE >= NCCL_VERSION(2, 28, 0)
 // The RCCL device API requires the 2.30.4 API and an nccl_device.h that host
 // translation units can compile. Header presence and version macros alone do
 // not establish host compatibility, so CMake probes the installed header.
@@ -18,7 +15,6 @@
      defined(RCCL_DEVICE_HEADER_HOST_COMPATIBLE))
 #define NCCL_HAS_SYMMEM_DEVICE_SUPPORT
 #include <nccl_device.h>
-#endif
 #endif
 
 // Host-side device-communicator setup: ncclDevCommCreate together with

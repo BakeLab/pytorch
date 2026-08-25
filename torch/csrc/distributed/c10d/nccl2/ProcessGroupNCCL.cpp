@@ -299,7 +299,6 @@ void ProcessGroupNCCL::init(at::Device device) {
 
 ncclConfig_t ProcessGroupNCCL::commConfig() {
   ncclConfig_t config = options_c10d_->config;
-#if NCCL_VERSION_CODE >= NCCL_VERSION(2, 27, 0)
   if (config.commName != nullptr) {
     return config;
   }
@@ -307,7 +306,6 @@ ncclConfig_t ProcessGroupNCCL::commConfig() {
     comm_name_ = defaultCommName(getGroupDesc(), name_);
   }
   config.commName = comm_name_.c_str();
-#endif
   return config;
 }
 
@@ -422,7 +420,6 @@ c10::intrusive_ptr<::c10d::Backend> ProcessGroupNCCL::split(
   ncclConfig_t config =
       newRank == -1 ? ncclOpts->config : cloneNcclConfig(ncclOpts->config);
   [[maybe_unused]] bool defaultName = false;
-#if NCCL_VERSION_CODE >= NCCL_VERSION(2, 27, 0)
   if (newRank != -1 && config.commName == nullptr) {
     // NCCL keeps the pointer for the child comm's lifetime, so leak it as the
     // NCCLConfig pybind setter does.
@@ -430,7 +427,6 @@ c10::intrusive_ptr<::c10d::Backend> ProcessGroupNCCL::split(
         defaultCommName(ncclOpts->group_desc, ncclOpts->group_name).c_str());
     defaultName = true;
   }
-#endif
 
   // Collective on the parent comm: every parent rank calls commSplit exactly
   // once, members with their color and non-members with NCCL_SPLIT_NOCOLOR.
@@ -465,13 +461,11 @@ c10::intrusive_ptr<::c10d::Backend> ProcessGroupNCCL::split(
   auto childOpts = Options::create(ncclOpts->is_high_priority_stream);
   childOpts->timeout = ncclOpts->timeout;
   childOpts->config = config;
-#if NCCL_VERSION_CODE >= NCCL_VERSION(2, 27, 0)
   if (defaultName) {
     // Keep the default out of the child's Options: splitGroup and shrink clone
     // them, and a grandchild must compute its own name, not inherit this one.
     childOpts->config.commName = nullptr;
   }
-#endif
   // Do not inherit enable_reconfigure: reconfigure() performs blocking
   // rendezvous on this shared Store connection.
   childOpts->group_name = ncclOpts->group_name;
@@ -1504,7 +1498,6 @@ c10::intrusive_ptr<WorkNCCL> ProcessGroupNCCL::allToAllSingleImpl(
   size_t chunk_size = input.numel() / comm_size_;
   const auto data_type = getNcclDataType(input);
 
-#if NCCL_VERSION_CODE >= NCCL_VERSION(2, 28, 0)
   waitForNcclOperation(
       nccl_api_->allToAll(
           input.data_ptr(),
@@ -1516,38 +1509,6 @@ c10::intrusive_ptr<WorkNCCL> ProcessGroupNCCL::allToAllSingleImpl(
           native_config),
       timeout,
       "NCCL AllToAll failed");
-#else
-  size_t offset = chunk_size * wordSize(data_type);
-  char* sptr = static_cast<char*>(input.data_ptr());
-  char* rptr = static_cast<char*>(output.data_ptr());
-  NCCL_CHECK(
-      nccl_api_, nccl_comm_, nccl_api_->groupStart(), "NCCL GroupStart failed");
-
-  try {
-    for (int i = 0; i < comm_size_; ++i) {
-      // Send to rank i
-      NCCL_CHECK_NONBLOCKING(
-          nccl_api_,
-          nccl_comm_,
-          nccl_api_->send(
-              sptr + i * offset, chunk_size, data_type, i, nccl_comm_, stream),
-          "NCCL Send failed in allToAllSingleImpl");
-
-      // Receive from rank i
-      NCCL_CHECK_NONBLOCKING(
-          nccl_api_,
-          nccl_comm_,
-          nccl_api_->recv(
-              rptr + i * offset, chunk_size, data_type, i, nccl_comm_, stream),
-          "NCCL Recv failed in allToAllSingleImpl");
-    }
-  } catch (...) {
-    NCCL_CHECK_IGNORE(nccl_api_, nccl_api_->groupEnd(), "NCCL GroupEnd failed");
-    throw;
-  }
-
-  waitForNcclOperation(nccl_api_->groupEnd(), timeout, "NCCL GroupEnd failed");
-#endif
 
   // Record end event after NCCL operation
   work->recordEnd();
