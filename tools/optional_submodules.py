@@ -69,14 +69,6 @@ def checkout_nccl_ep() -> None:
         check_call(["git", "checkout", "--detach", revision], cwd=source_dir)
 
 
-def checkout_eigen() -> None:
-    eigen_tag = _read_file(third_party_path / "eigen_pin.txt")
-    print(f"-- Checkout Eigen release tag: {eigen_tag}")
-    eigen_basedir = third_party_path / "eigen"
-    if not eigen_basedir.exists():
-        _checkout_by_tag("https://gitlab.com/libeigen/eigen", eigen_tag)
-
-
 if __name__ == "__main__":
     import sys
 
@@ -84,7 +76,6 @@ if __name__ == "__main__":
         # If no arguments are given checkout all optional dependency
         checkout_nccl()
         checkout_nccl_ep()
-        checkout_eigen()
     else:
         # Otherwise just call top-level function of choice
         globals()[sys.argv[1]]()
