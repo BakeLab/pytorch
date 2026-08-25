@@ -170,14 +170,6 @@ void Context::setUserEnabledCuDNN(bool e) {
   enabled_cudnn = e;
 }
 
-bool Context::userEnabledMkldnn() const {
-  return enabled_mkldnn;
-}
-
-void Context::setUserEnabledMkldnn(bool e) {
-  enabled_mkldnn = e;
-}
-
 bool Context::deterministicCuDNN() const {
   return deterministic_cudnn;
 }
@@ -780,14 +772,6 @@ bool Context::hasMKL() {
 #endif
 }
 
-bool Context::hasMKLDNN() {
-#if AT_MKLDNN_ENABLED()
-  return true;
-#else
-  return false;
-#endif
-}
-
 bool Context::hasOpenMP() {
 #ifdef _OPENMP
   return true;
@@ -807,9 +791,6 @@ bool Context::hasLAPACK() {
 at::QEngine Context::qEngine() const {
   static auto _quantized_engine = []() {
     at::QEngine qengine = at::kNoQEngine;
-#if AT_MKLDNN_ENABLED()
-    qengine = at::kONEDNN;
-#endif
 
 #ifdef USE_FBGEMM
     if (fbgemm::fbgemmSupportedCPU()) {
@@ -841,9 +822,6 @@ const std::vector<at::QEngine>& Context::supportedQEngines() {
     std::vector<at::QEngine> engines = {};
     // Engines are listed in priority order: later one wins
     // By default we prefer FBGEMM if we're running on server side
-#if AT_MKLDNN_ENABLED()
-    engines.push_back(at::kONEDNN);
-#endif
 
 #ifdef USE_FBGEMM
     if (fbgemm::fbgemmSupportedCPU()) {
