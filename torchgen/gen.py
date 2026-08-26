@@ -2,18 +2,16 @@ from __future__ import annotations
 
 import argparse
 import functools
-import json
 import keyword
 import os
 from collections import defaultdict, namedtuple, OrderedDict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Literal, TYPE_CHECKING, TypeVar
+from typing import Literal, TYPE_CHECKING, TypeVar
 from typing_extensions import assert_never
 
 import yaml
 
-import torchgen.api.dispatcher as dispatcher
 import torchgen.api.meta as meta
 import torchgen.api.native as native
 import torchgen.api.structured as structured
@@ -34,7 +32,6 @@ from torchgen.context import (
     method_with_native_function,
     native_function_manager,
     with_native_function,
-    with_native_function_and_indices,
 )
 from torchgen.gen_aoti_c_shim import (
     gen_aoti_c_shim_files,
@@ -72,7 +69,6 @@ from torchgen.model import (
     SchemaKind,
     SelfArgument,
     STRUCTURED_DISPATCH_KEYS,
-    TensorOptionsArguments,
     Type,
     Variant,
     ViewSchemaKind,
@@ -98,7 +94,7 @@ from torchgen.utils import (
     NamespaceHelper,
     Target,
 )
-from torchgen.yaml_utils import YamlDumper, YamlLoader
+from torchgen.yaml_utils import YamlLoader
 
 
 if TYPE_CHECKING:
@@ -1057,21 +1053,6 @@ C10_ALWAYS_INLINE
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 
-def format_yaml(data: object) -> str:
-    # Ignore alias in Dumper
-    YamlDumper.ignore_aliases = lambda self, data: True  # type: ignore[assignment]
-
-    # Support serializing OrderedDict
-    def dict_representer(dumper: Any, data: Any) -> Any:
-        return dumper.represent_dict(data.items())
-
-    YamlDumper.add_representer(OrderedDict, dict_representer)  # type: ignore[no-untyped-call]
-    # Some yaml parsers (e.g. Haskell's) don't understand line breaks.
-    # width=1e9 turns off optional line breaks and improves
-    # the portability of the outputted yaml.
-    return yaml.dump(data, default_flow_style=False, Dumper=YamlDumper, width=1e9)  # type: ignore[no-any-return, call-overload]
-
-
 # For some reason, some defaults we write to YAML are written as native
 # YAML objects, rather than doing them uniformly as strings.  This
 # function detects those cases and converts them into native Python
@@ -1111,274 +1092,6 @@ def dynamic_type(t: Type) -> str:
     return cpp.argumenttype_type(
         t, mutable=False, binds="__placeholder__", symint=False
     ).cpp_type()
-
-
-def compute_method_of_yaml(variants: set[Variant]) -> list[str]:
-    # This is written out explicitly to ensure that Tensor and
-    # namespace are put into the list in the right order
-    method_of = ["Type"]
-    if Variant.method in variants:
-        method_of.append("Tensor")
-    if Variant.function in variants:
-        method_of.append("namespace")
-    return method_of
-
-
-def compute_returns_yaml(
-    f: NativeFunction,
-) -> tuple[list[dict[str, str]], dict[str, str]]:
-    # Note [name and field_name]
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # To understand name_to_field_name, we must first talk about this
-    # schema:
-    #
-    #   lstsq.X(Tensor self, Tensor A, *, Tensor(a!) X, Tensor(b!) qr) -> (Tensor(a!) solution, Tensor(b!) QR)
-    #
-    # There is something very odd about this schema: it is an out
-    # variant of the function (that is to say, it will convert into
-    # at::lstsq_out() in the C++ API), but the names of the output
-    # return arguments don't match the keyword argument names of
-    # the inputs.  It TURNS OUT that in this situation, the historical
-    # Declarations.yaml we want to output is this (abbreviated to
-    # only show relevant fields):
-    #
-    #   arguments:
-    #     ...
-    #   - field_name: solution
-    #     name: X
-    #   - field_name: QR
-    #     name: qr
-    #     ...
-    #
-    #   returns:
-    #   - field_name: solution
-    #     name: X
-    #   - field_name: QR
-    #     name: qr
-    #
-    # The name of the return fields is stored in 'field_name', and the
-    # name of the arguments is stored in 'name'.  So when we process
-    # arguments, we need a way to get at the corresponding return.  At
-    # the moment, this is most conveniently done by constructing a
-    # mapping from name (the argument concept) to field_name (the
-    # return concept) while processing return arguments, since we don't
-    # directly maintain this correspondence in the modeling of function
-    # schema itself.
-    #
-    # See also https://github.com/pytorch/pytorch/issues/43114
-    name_to_field_name: dict[str, str] = {}
-
-    # Compute the returns field of the YAML entry
-    names = cpp.return_names(f)
-    returns = []
-    for i, (r, name) in enumerate(zip(f.func.returns, names)):
-        ret = {
-            "dynamic_type": dynamic_type(r.type),
-            "name": name,
-            # legacy, report ints
-            "type": cpp.return_type(r, symint=False).cpp_type(),
-        }
-
-        if r.name:
-            # See Note [name and field_name]
-            ret["field_name"] = r.name
-            if f.func.is_out_fn():
-                name_to_field_name[f.func.arguments.out[i].name] = r.name
-
-        returns.append(ret)
-
-    return returns, name_to_field_name
-
-
-# arguments in yaml roughly corresponds to the public C++ API
-def compute_cpp_argument_yaml(
-    cpp_a: Binding,
-    *,
-    schema_order: bool,
-    kwarg_only_set: set[str],
-    out_arg_set: set[str],
-    name_to_field_name: dict[str, str],
-) -> object:
-    if isinstance(cpp_a.argument, TensorOptionsArguments):
-        arg: dict[str, object] = {
-            "annotation": None,
-            "dynamic_type": "at::TensorOptions",
-            "is_nullable": False,
-            "name": cpp_a.name,
-            "type": cpp_a.type,
-            "kwarg_only": True,
-        }
-        if cpp_a.default is not None:
-            arg["default"] = cpp_a.default
-        return arg
-    elif isinstance(cpp_a.argument, SelfArgument):
-        raise AssertionError
-    elif isinstance(cpp_a.argument, Argument):
-        return compute_argument_yaml(
-            cpp_a.argument,
-            schema_order=schema_order,
-            kwarg_only_set=kwarg_only_set,
-            out_arg_set=out_arg_set,
-            name_to_field_name=name_to_field_name,
-        )
-
-
-def compute_argument_yaml(
-    a: Argument,
-    *,
-    schema_order: bool,
-    kwarg_only_set: set[str],
-    out_arg_set: set[str],
-    name_to_field_name: dict[str, str],
-) -> object:
-    arg: dict[str, object] = {
-        "annotation": str(a.annotation) if a.annotation else None,
-        "dynamic_type": dynamic_type(a.type),
-        "is_nullable": a.type.is_nullable(),
-        "name": a.name,
-        # legacy, report ints
-        "type": cpp.argument_type(a, binds="__placeholder__", symint=False).cpp_type(),
-    }
-    if a.default is not None:
-        arg["default"] = pythonify_default(
-            cpp.default_expr(a.default, a.type, symint=False)
-        )
-    if a.name in kwarg_only_set:
-        arg["kwarg_only"] = True
-    if a.name in out_arg_set:
-        arg["output"] = True
-        arg["allocate"] = True
-        # See Note [name and field_name]
-        if a.name in name_to_field_name:
-            arg["field_name"] = name_to_field_name[a.name]
-    # Historically, booleans don't get their size recorded, because it
-    # is already built into the cpp type (e.g., std::array<bool, 4>)
-    l = a.type.is_list_like()
-    if l is not None and l.size is not None and str(l.elem) != "bool":
-        arg["size"] = l.size
-    return arg
-
-
-@with_native_function
-def compute_declaration_yaml(f: NativeFunction) -> object:
-    returns, name_to_field_name = compute_returns_yaml(f)
-
-    # These sets are used to conveniently test if an argument is a
-    # kwarg-only or out argument
-    kwarg_only_set = {a.name for a in f.func.arguments.flat_kwarg_only}
-    out_arg_set = {a.name for a in f.func.arguments.out}
-
-    sig_group = CppSignatureGroup.from_native_function(
-        f, method=False, fallback_binding=False
-    )
-    cpp_args = sig_group.signature.arguments()
-    arguments = [
-        compute_cpp_argument_yaml(
-            cpp_a,
-            schema_order=False,
-            kwarg_only_set=kwarg_only_set,
-            out_arg_set=out_arg_set,
-            name_to_field_name=name_to_field_name,
-        )
-        for cpp_a in cpp_args
-    ]
-
-    schema_order_jit_arguments = list(f.func.schema_order_arguments())
-
-    schema_order_arguments = [
-        compute_argument_yaml(
-            a,
-            schema_order=True,
-            kwarg_only_set=kwarg_only_set,
-            out_arg_set=out_arg_set,
-            name_to_field_name=name_to_field_name,
-        )
-        for a in schema_order_jit_arguments
-    ]
-
-    cpp_schema_order_types = [
-        # NB: method here doesn't matter
-        r.type
-        for a in schema_order_jit_arguments
-        for r in cpp.argument(
-            a,
-            method=False,
-            cpp_no_default_args=set(),
-            faithful=False,
-            symint=False,
-            has_tensor_options=False,
-        )
-    ]
-
-    # legacy, report ints
-    cpp_returns = cpp.returns_type(f.func.returns, symint=False).cpp_type()
-    schema_order_cpp_signature = f"{cpp_returns} ({', '.join(cpp_schema_order_types)})"
-
-    is_factory_method = (
-        any(isinstance(a.argument, TensorOptionsArguments) for a in cpp_args)
-        and Variant.method not in f.variants
-    )
-
-    return OrderedDict(
-        [
-            ("name", cpp.name(f.func)),
-            ("operator_name", str(f.func.name.name)),
-            ("overload_name", str(f.func.name.overload_name)),
-            ("manual_kernel_registration", f.manual_kernel_registration),
-            (
-                "category_override",
-                f.category_override if f.category_override is not None else "",
-            ),
-            ("schema_string", f"aten::{f.func}"),
-            ("arguments", arguments),
-            ("schema_order_cpp_signature", schema_order_cpp_signature),
-            ("schema_order_arguments", schema_order_arguments),
-            ("method_of", compute_method_of_yaml(f.variants)),
-            ("mode", "native"),
-            ("python_module", "" if f.python_module is None else f.python_module),
-            ("returns", returns),
-            ("inplace", f.func.name.name.inplace),
-            ("is_factory_method", is_factory_method),
-            ("abstract", f.is_abstract),
-            ("device_guard", f.device_guard),
-            ("with_gil", False),
-            ("deprecated", False),
-            ("has_math_kernel", f.has_composite_implicit_autograd_kernel),
-        ]
-    )
-
-
-# See Note [Auto generated composite kernels]
-def has_autogenerated_composite_kernel(f: NativeFunction) -> bool:
-    return (f.structured or f.structured_delegate is not None) and (
-        f.func.kind() == SchemaKind.functional or f.func.kind() == SchemaKind.inplace
-    )
-
-
-@with_native_function_and_indices
-def compute_registration_declarations(
-    f: NativeFunction, backend_indices: dict[DispatchKey, BackendIndex]
-) -> str:
-    name = dispatcher.name(f.func)
-    returns_type = dispatcher.returns_type(f.func.returns).cpp_type()
-    args = dispatcher.arguments(f.func)
-    args_str = ", ".join(a.no_default().decl() for a in args)
-    comment_data: dict[str, str] = {
-        "schema": f"aten::{f.func}",
-        # TODO: What exactly is the semantics of the 'dispatch' field?
-        "dispatch": str(
-            {k for k, v in backend_indices.items() if v.has_kernel(f)}
-            != {DispatchKey.CompositeImplicitAutograd}
-            and {k for k, v in backend_indices.items() if v.has_kernel(f)}
-            != {
-                DispatchKey.CompositeImplicitAutograd,
-                DispatchKey.CompositeImplicitAutogradNestedTensor,
-            }
-        ),
-        "default": str(f.has_composite_kernel or has_autogenerated_composite_kernel(f)),
-    }
-    return f"""{returns_type} {name}({args_str}); // {json.dumps(comment_data)}
-"""
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
@@ -1856,127 +1569,6 @@ def get_native_function_schema_registrations(
     return (aten_schema_registrations, schema_registrations)
 
 
-def gen_aggregated_headers(
-    *,
-    native_functions: Sequence[NativeFunction],
-    grouped_native_functions: Sequence[NativeFunction | NativeFunctionsGroup],
-    structured_native_functions: Sequence[NativeFunctionsGroup],
-    static_dispatch_idx: list[BackendIndex],
-    selector: SelectiveBuilder,
-    backend_indices: dict[DispatchKey, BackendIndex],
-    cpu_fm: FileManager,
-    device_fms: dict[str, FileManager],
-    functions_keys: set[DispatchKey],
-    dispatch_keys: Sequence[DispatchKey],
-    rocm: bool,
-) -> None:
-    # Buck doesn't support dynamic output files, so we aggregate all operator
-    # headers into a single file
-    cpu_fm.write(
-        "NativeMetaFunctions.h",
-        lambda: {
-            "NativeMetaFunctions_includes": [],
-            "NativeMetaFunctions_declarations": list(
-                mapMaybe(compute_meta_function_declaration, structured_native_functions)
-            ),
-        },
-    )
-    method_native_functions = [
-        fn for fn in native_functions if Variant.method in fn.variants
-    ]
-    non_method_native_functions = [
-        fn for fn in native_functions if fn not in method_native_functions
-    ]
-    cpu_fm.write(
-        "MethodOperators.h",
-        lambda: {
-            "MethodOperators_includes": [],
-            "MethodOperators_declarations": list(
-                mapMaybe(
-                    ComputeOperators(
-                        Target.DECLARATION,
-                        static_dispatch_backend_indices=static_dispatch_idx,
-                    ),
-                    method_native_functions,
-                )
-            ),
-        },
-    )
-    cpu_fm.write(
-        "Operators.h",
-        lambda: {
-            "Operators_includes": ["#include <ATen/MethodOperators.h>"],
-            "Operators_declarations": list(
-                mapMaybe(
-                    ComputeOperators(
-                        Target.DECLARATION,
-                        static_dispatch_backend_indices=static_dispatch_idx,
-                    ),
-                    non_method_native_functions,
-                )
-            ),
-        },
-    )
-    cpu_fm.write(
-        "Functions.h",
-        lambda: {
-            "static_dispatch_extra_headers": static_dispatch_extra_headers(
-                static_dispatch_idx
-            ),
-            "Functions_includes": ["#include <ATen/Operators.h>"],
-            "Functions_declarations": list(
-                mapMaybe(
-                    ComputeFunction(),
-                    native_functions,
-                )
-            ),
-        },
-    )
-    declarations = get_native_function_declarations(
-        grouped_native_functions=grouped_native_functions,
-        backend_indices=backend_indices,
-    )
-    cpu_fm.write(
-        "NativeFunctions.h",
-        lambda: {
-            "NativeFunctions_includes": ["#include <ATen/NativeMetaFunctions.h>"],
-            "NativeFunctions_declarations": declarations,
-        },
-    )
-
-    for dispatch_key in dispatch_keys:
-        fm = file_manager_from_dispatch_key(dispatch_key, device_fms, cpu_fm)
-        if dispatch_key in functions_keys:
-            inl_headers = f"#include <ATen/{dispatch_key}Functions_inl.h>"
-
-            fm.write_with_template(
-                f"{dispatch_key}Functions.h",
-                "DispatchKeyFunctions.h",
-                lambda: {
-                    "dispatch_key": str(dispatch_key),
-                    "inline_headers": inl_headers,
-                },
-            )
-            fm.write_with_template(
-                f"{dispatch_key}Functions_inl.h",
-                "DispatchKeyFunctions_inl.h",
-                lambda: {
-                    "DispatchKeyFunctions_inl_includes": [],
-                    "dispatch_namespace": dispatch_key.lower(),
-                    "dispatch_namespaced_declarations": get_namespaced_declaration(
-                        grouped_native_functions=grouped_native_functions,
-                        dispatch_key=dispatch_key,
-                        backend_idx=backend_indices[dispatch_key],
-                        selector=selector,
-                        rocm=rocm,
-                        symint=True,
-                    ),
-                },
-            )
-
-        del fm
-
-
 def gen_per_operator_headers(
     *,
     native_functions: Sequence[NativeFunction],
@@ -2082,7 +1674,6 @@ def gen_per_operator_headers(
     for category, suffix in [
         ("Functions", ""),
         ("Operators", "_ops"),
-        ("NativeMetaFunctions", "_meta"),
         ("NativeFunctions", "_native"),
     ]:
         cpu_fm.write(
@@ -2188,7 +1779,6 @@ def gen_headers(
     dispatch_keys: Sequence[DispatchKey],
     functions_keys: set[DispatchKey],
     rocm: bool,
-    per_operator_headers: bool,
     native_aot_manifests: dict[tuple[DispatchKey, str], NativeAotManifest]
     | None = None,
 ) -> None:
@@ -2203,42 +1793,19 @@ def gen_headers(
         for (_, op), m in native_aot_manifests.items()
         if m.matches_group(g)
     }
-    native_aot_groups_by_op.update(
-        {
-            op: f
-            for f in native_functions
-            for (_, op), m in native_aot_manifests.items()
-            if not m.structured and op == str(f.func.name)
-        }
+    gen_per_operator_headers(
+        native_functions=native_functions,
+        grouped_native_functions=grouped_native_functions,
+        static_dispatch_idx=static_dispatch_idx,
+        selector=selector,
+        backend_indices=backend_indices,
+        cpu_fm=cpu_fm,
+        device_fms=device_fms,
+        ops_fm=ops_fm,
+        dispatch_keys=dispatch_keys,
+        functions_keys=functions_keys,
+        rocm=rocm,
     )
-    if per_operator_headers:
-        gen_per_operator_headers(
-            native_functions=native_functions,
-            grouped_native_functions=grouped_native_functions,
-            static_dispatch_idx=static_dispatch_idx,
-            selector=selector,
-            backend_indices=backend_indices,
-            cpu_fm=cpu_fm,
-            device_fms=device_fms,
-            ops_fm=ops_fm,
-            dispatch_keys=dispatch_keys,
-            functions_keys=functions_keys,
-            rocm=rocm,
-        )
-    else:
-        gen_aggregated_headers(
-            native_functions=native_functions,
-            grouped_native_functions=grouped_native_functions,
-            structured_native_functions=structured_native_functions,
-            static_dispatch_idx=static_dispatch_idx,
-            selector=selector,
-            backend_indices=backend_indices,
-            cpu_fm=cpu_fm,
-            device_fms=device_fms,
-            dispatch_keys=dispatch_keys,
-            functions_keys=functions_keys,
-            rocm=rocm,
-        )
 
     core_fm.write(
         "TensorBody.h",
@@ -2270,16 +1837,6 @@ def gen_headers(
             "function_redispatch_definitions": list(
                 mapMaybe(ComputeRedispatchFunction(), native_functions)
             ),
-        },
-    )
-
-    cpu_fm.write(
-        "RegistrationDeclarations.h",
-        lambda: {
-            "registration_declarations": [
-                compute_registration_declarations(f, backend_indices)
-                for f in native_functions
-            ],
         },
     )
 
@@ -2359,7 +1916,6 @@ def gen_source_files(
     functions_keys: set[DispatchKey],
     rocm: bool,
     force_schema_registration: bool,
-    per_operator_headers: bool,
     skip_dispatcher_op_registration: bool,
     update_aoti_c_shim: bool,
     aoti_backends: set[DispatchKey | None],
@@ -2382,58 +1938,46 @@ def gen_source_files(
 
     for dispatch_key in dispatch_keys:
         fm = file_manager_from_dispatch_key(dispatch_key, device_fms, cpu_fm)
-        if per_operator_headers:
 
-            def operator_headers() -> list[str]:
-                headers = []
-                for g in grouped_native_functions:
-                    is_registered = False
-                    if backend_index.has_kernel(g):
-                        is_registered = True
-                    # The above has_kernel test on a group will only test for
-                    # the existence of out dispatch, because that's how
-                    # structured kernels work. But sometimes functions can be
-                    # grouped but not be structured, and then you need to check
-                    # each individual piece, as they may have manual dispatch
-                    # entries.
-                    elif isinstance(g, NativeFunctionsGroup) and any(
-                        backend_index.has_kernel(fn) for fn in g.functions()
-                    ):
-                        is_registered = True
-                    # TODO: this condition is a bit questionable
-                    # (It has to do with the fact that structured kernels get generated kernels
-                    # to the Meta + CompositeExplicitAutogradNonFunctional keys).
-                    elif g.structured and dispatch_key in (
-                        DispatchKey.Meta,
-                        DispatchKey.CompositeExplicitAutogradNonFunctional,
-                    ):
-                        is_registered = True
-                    if not is_registered:
-                        continue
+        def operator_headers() -> list[str]:
+            headers = []
+            for g in grouped_native_functions:
+                is_registered = False
+                if backend_index.has_kernel(g):
+                    is_registered = True
+                # The above has_kernel test on a group will only test for
+                # the existence of out dispatch, because that's how
+                # structured kernels work. But sometimes functions can be
+                # grouped but not be structured, and then you need to check
+                # each individual piece, as they may have manual dispatch
+                # entries.
+                elif isinstance(g, NativeFunctionsGroup) and any(
+                    backend_index.has_kernel(fn) for fn in g.functions()
+                ):
+                    is_registered = True
+                # TODO: this condition is a bit questionable
+                # (It has to do with the fact that structured kernels get generated kernels
+                # to the Meta + CompositeExplicitAutogradNonFunctional keys).
+                elif g.structured and dispatch_key in (
+                    DispatchKey.Meta,
+                    DispatchKey.CompositeExplicitAutogradNonFunctional,
+                ):
+                    is_registered = True
+                if not is_registered:
+                    continue
 
-                    headers.append(f"#include <ATen/ops/{g.root_name}_native.h>")
-                    if (
-                        dispatch_key
-                        == DispatchKey.CompositeExplicitAutogradNonFunctional
-                    ):
-                        headers.append(f"#include <ATen/ops/{g.root_name}.h>")
-                    if dispatch_key in functions_keys:
-                        headers.append(
-                            f"#include <ATen/ops/{g.root_name}_{dispatch_namespace}_dispatch.h>"
-                        )
-
-                return sorted(set(headers))
-
-        else:
-
-            def operator_headers() -> list[str]:
-                headers = ["#include <ATen/NativeFunctions.h>"]
-                if dispatch_key == DispatchKey.CompositeExplicitAutogradNonFunctional:
-                    headers.append("#include <ATen/Functions.h>")
+                headers.append(f"#include <ATen/ops/{g.root_name}_native.h>")
+                if (
+                    dispatch_key
+                    == DispatchKey.CompositeExplicitAutogradNonFunctional
+                ):
+                    headers.append(f"#include <ATen/ops/{g.root_name}.h>")
                 if dispatch_key in functions_keys:
-                    headers.append(f"#include <ATen/{dispatch_key!s}Functions.h>")
-                return headers
+                    headers.append(
+                        f"#include <ATen/ops/{g.root_name}_{dispatch_namespace}_dispatch.h>"
+                    )
 
+            return sorted(set(headers))
         backend_index = backend_indices[dispatch_key]
         dispatch_namespace = str(dispatch_key).lower()
 
@@ -2456,7 +2000,6 @@ def gen_source_files(
             "external_backend_headers": "",
             "dispatch_headers": dest.gen_registration_headers(
                 backend_index,
-                per_operator_headers,
                 rocm,
                 has_native_aot=bool(native_aot_manifests_for_key),
             ),
@@ -2854,15 +2397,6 @@ def gen_source_files(
     )
 
 
-def gen_declarations_yaml(
-    cpu_fm: FileManager, native_functions: Sequence[NativeFunction]
-) -> None:
-    cpu_fm.write(
-        "Declarations.yaml",
-        lambda: format_yaml([compute_declaration_yaml(f) for f in native_functions]),
-    )
-
-
 def get_torchgen_root() -> Path:
     """
     If you're depending on torchgen out-of-tree, you can use the root to figure
@@ -2888,11 +2422,6 @@ def main() -> None:
         "--dry-run",
         action="store_true",
         help="run without writing any files (still updates outputs)",
-    )
-    parser.add_argument(
-        "--per-operator-headers",
-        action="store_true",
-        help="generate separate headers per operator in ATen/ops",
     )
     parser.add_argument(
         "-d",
@@ -2994,8 +2523,8 @@ def main() -> None:
         "--generate",
         type=str,
         nargs="*",
-        choices=["headers", "sources", "declarations_yaml"],
-        default=["headers", "sources", "declarations_yaml"],
+        choices=["headers", "sources"],
+        default=["headers", "sources"],
         help="Generate only a subset of files",
     )
     parser.add_argument(
@@ -3187,7 +2716,6 @@ def main() -> None:
             functions_keys=functions_keys,
             rocm=options.rocm,
             force_schema_registration=options.force_schema_registration,
-            per_operator_headers=options.per_operator_headers,
             skip_dispatcher_op_registration=options.skip_dispatcher_op_registration,
             update_aoti_c_shim=options.update_aoti_c_shim,
             aoti_backends=aoti_backends,
@@ -3212,12 +2740,9 @@ def main() -> None:
             dispatch_keys=dispatch_keys,
             functions_keys=functions_keys,
             rocm=options.rocm,
-            per_operator_headers=options.per_operator_headers,
             native_aot_manifests=native_aot_manifests,
         )
 
-    if "declarations_yaml" in options.generate:
-        gen_declarations_yaml(native_functions=native_functions, cpu_fm=cpu_fm)
 
     if options.output_dependencies:
         depfile_path = Path(options.output_dependencies).resolve()

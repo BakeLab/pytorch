@@ -230,18 +230,12 @@ if(INTERN_BUILD_ATEN_OPS)
     set(generated_unboxing_sources "")
   endif()
 
-  set(GEN_PER_OPERATOR_FLAG)
-  if(USE_PER_OPERATOR_HEADERS)
-    list(APPEND GEN_PER_OPERATOR_FLAG "--per-operator-headers")
-  endif()
-
   set(GEN_COMMAND
       "${Python_EXECUTABLE}" -m torchgen.gen
       --source-path ${CMAKE_CURRENT_LIST_DIR}/../aten/src/ATen
       --install_dir ${CMAKE_BINARY_DIR}/aten/src/ATen
       --headeronly-install-dir ${CMAKE_BINARY_DIR}/torch/headeronly/core
-      ${GEN_PER_OPERATOR_FLAG}
-      ${GEN_ROCM_FLAG}
+        ${GEN_ROCM_FLAG}
       ${GEN_MPS_FLAG}
       ${GEN_XPU_FLAG}
       ${CUSTOM_BUILD_FLAGS}
@@ -256,15 +250,8 @@ if(INTERN_BUILD_ATEN_OPS)
   # source alone is what nvcc was given. This runs after both (caffe2/ is a
   # subdirectory of the top-level list file), so ${TORCH_CUDA_ARCH_LIST} here is it.
   file(WRITE "${CMAKE_BINARY_DIR}/native_aot/arch_list.txt" "${TORCH_CUDA_ARCH_LIST}")
-  # Native-AOT declarations are codegen inputs: they add DispatchStub
-  # declarations and structured-wrapper call sites (torchgen/native_aot.py;
-  # the loader torchgen consumes is torchgen/native_aot_decl.py, already
-  # covered by all_python above).
-  file(GLOB native_aot_manifests CONFIGURE_DEPENDS
-       "${CMAKE_CURRENT_LIST_DIR}/../torch/_native/ops/*/aot.py")
-  set(declarations_yaml_templates "")
 
-  foreach(gen_type "headers" "sources" "declarations_yaml")
+  foreach(gen_type "headers" "sources")
     # The codegen outputs may change dynamically as PyTorch is
     # developed, but add_custom_command only supports dynamic inputs.
     #
@@ -339,7 +326,7 @@ if(INTERN_BUILD_ATEN_OPS)
   add_custom_target(ATEN_CPU_FILES_GEN_TARGET DEPENDS
       ${generated_headers} ${core_generated_headers} ${cpu_vec_generated_headers} ${ops_generated_headers}
       ${generated_sources} ${core_generated_sources} ${cpu_vec_generated_sources} ${ops_generated_sources}
-      ${generated_declarations_yaml} ${generated_unboxing_sources})
+      ${generated_unboxing_sources})
   add_custom_target(ATEN_CUDA_FILES_GEN_TARGET DEPENDS
       ${cuda_generated_headers} ${cuda_generated_sources})
   add_library(ATEN_CPU_FILES_GEN_LIB INTERFACE)
@@ -347,10 +334,8 @@ if(INTERN_BUILD_ATEN_OPS)
   add_dependencies(ATEN_CPU_FILES_GEN_LIB ATEN_CPU_FILES_GEN_TARGET)
   add_dependencies(ATEN_CUDA_FILES_GEN_LIB ATEN_CUDA_FILES_GEN_TARGET)
 
-  if(USE_PER_OPERATOR_HEADERS)
-    target_compile_definitions(ATEN_CPU_FILES_GEN_LIB INTERFACE AT_PER_OPERATOR_HEADERS)
-    target_compile_definitions(ATEN_CUDA_FILES_GEN_LIB INTERFACE AT_PER_OPERATOR_HEADERS)
-  endif()
+  target_compile_definitions(ATEN_CPU_FILES_GEN_LIB INTERFACE AT_PER_OPERATOR_HEADERS)
+  target_compile_definitions(ATEN_CUDA_FILES_GEN_LIB INTERFACE AT_PER_OPERATOR_HEADERS)
 
   if(USE_XPU)
     add_custom_target(ATEN_XPU_FILES_GEN_TARGET DEPENDS
@@ -358,9 +343,7 @@ if(INTERN_BUILD_ATEN_OPS)
     add_library(ATEN_XPU_FILES_GEN_LIB INTERFACE)
     add_dependencies(ATEN_XPU_FILES_GEN_LIB ATEN_XPU_FILES_GEN_TARGET)
 
-    if(USE_PER_OPERATOR_HEADERS)
-      target_compile_definitions(ATEN_XPU_FILES_GEN_LIB INTERFACE AT_PER_OPERATOR_HEADERS)
-    endif()
+    target_compile_definitions(ATEN_XPU_FILES_GEN_LIB INTERFACE AT_PER_OPERATOR_HEADERS)
   endif()
   # Handle source files that need to be compiled multiple times for
   # different vectorization options
