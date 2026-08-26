@@ -4,11 +4,7 @@
 #include <c10/core/impl/LocalDispatchKeySet.h>
 #include <c10/core/impl/TorchDispatchModeTLS.h>
 
-#ifndef AT_PER_OPERATOR_HEADERS
-#include <ATen/Functions.h>
-#else
 #include <ATen/ops/equal.h>
-#endif
 
 namespace at {
 

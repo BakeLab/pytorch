@@ -6,11 +6,7 @@
 #include <c10/cuda/CUDACachingAllocator.h>
 #include <c10/cuda/CUDAGuard.h>
 
-#ifndef AT_PER_OPERATOR_HEADERS
-#include <ATen/NativeFunctions.h>
-#else
 #include <ATen/ops/resize_native.h>
-#endif
 
 namespace at::native {
 

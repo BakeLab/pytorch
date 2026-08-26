@@ -12,10 +12,6 @@
 #include <c10/util/Exception.h>
 #include <ATen/TensorSubclassLikeUtils.h>
 
-#ifndef AT_PER_OPERATOR_HEADERS
-#include <ATen/Functions.h>
-#include <ATen/NativeFunctions.h>
-#else
 #include <ATen/ops/binary_cross_entropy_backward_native.h>
 #include <ATen/ops/binary_cross_entropy_native.h>
 #include <ATen/ops/binary_cross_entropy_with_logits_native.h>
@@ -57,7 +53,6 @@
 #include <ATen/ops/where.h>
 #include <ATen/ops/xlogy.h>
 #include <ATen/ops/zeros_like.h>
-#endif
 
 constexpr float EPSILON = 1e-12;
 
