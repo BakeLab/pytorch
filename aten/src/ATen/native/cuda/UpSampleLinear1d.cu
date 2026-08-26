@@ -11,13 +11,8 @@
 #include <ATen/native/cuda/UpSample.cuh>
 #include <ATen/native/cuda/KernelUtils.cuh>
 
-#ifndef AT_PER_OPERATOR_HEADERS
-#include <ATen/Functions.h>
-#include <ATen/NativeFunctions.h>
-#else
 #include <ATen/ops/upsample_linear1d_native.h>
 #include <ATen/ops/upsample_linear1d_backward_native.h>
-#endif
 
 #include <limits>
 

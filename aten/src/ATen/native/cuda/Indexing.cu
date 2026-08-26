@@ -19,10 +19,6 @@
 #include <ATen/cuda/CUDAUtils.h>
 #include <ATen/cuda/DeviceUtils.cuh>
 
-#ifndef AT_PER_OPERATOR_HEADERS
-#include <ATen/Functions.h>
-#include <ATen/NativeFunctions.h>
-#else
 #include <ATen/ops/_assert_async.h>
 #include <ATen/ops/aminmax.h>
 #include <ATen/ops/arange.h>
@@ -38,7 +34,6 @@
 #include <ATen/ops/masked_fill_native.h>
 #include <ATen/ops/scatter_reduce_native.h>
 #include <ATen/ops/_sparse_coo_tensor_with_dims_and_tensors.h>
-#endif
 
 #include <ATen/cuda/CUDAContext.h>
 #include <ATen/cuda/cub.h>

@@ -10,10 +10,8 @@
 #include <ATen/ops/repeat_native.h>
 #include <fmt/format.h>
 
-#ifndef AT_PER_OPERATOR_HEADERS
-#include <ATen/Functions.h>
-#include <ATen/NativeFunctions.h>
-#endif
+#include <ATen/ops/view_as_complex.h>
+#include <ATen/ops/view_as_real.h>
 
 namespace at::native {
 

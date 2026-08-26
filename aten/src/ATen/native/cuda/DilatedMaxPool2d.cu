@@ -14,12 +14,8 @@
 #include <c10/util/safe_conv.h>
 #include <ATen/native/cuda/LaunchUtils.h>
 
-#ifndef AT_PER_OPERATOR_HEADERS
-#include <ATen/NativeFunctions.h>
-#else
 #include <ATen/ops/max_pool2d_with_indices_native.h>
 #include <ATen/ops/max_pool2d_with_indices_backward_native.h>
-#endif
 
 namespace at::native {
 namespace {

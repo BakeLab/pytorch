@@ -16,10 +16,6 @@
 #include <c10/util/TypeCast.h>
 #include <fmt/format.h>
 
-#ifndef AT_PER_OPERATOR_HEADERS
-#include <ATen/Functions.h>
-#include <ATen/NativeFunctions.h>
-#else
 #include <ATen/ops/as_strided.h>
 #include <ATen/ops/empty.h>
 #include <ATen/ops/full.h>
@@ -30,7 +26,6 @@
 #include <ATen/ops/sort_native.h>
 #include <ATen/ops/topk_native.h>
 #include <ATen/ops/zeros.h>
-#endif
 namespace at::native {
 namespace {
 

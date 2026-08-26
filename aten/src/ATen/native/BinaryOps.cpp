@@ -11,10 +11,6 @@
 #include <ATen/TensorMeta.h>
 #include <ATen/native/ElementwiseRefMeta.h>
 
-#ifndef AT_PER_OPERATOR_HEADERS
-#include <ATen/Functions.h>
-#include <ATen/NativeFunctions.h>
-#else
 #include <ATen/ops/_add_relu_native.h>
 #include <ATen/ops/_efficientzerotensor.h>
 #include <ATen/ops/_test_serialization_subcmul_native.h>
@@ -145,7 +141,6 @@
 #include <ATen/ops/xlogy.h>
 #include <ATen/ops/xlogy_native.h>
 #include <ATen/ops/xor_native.h>
-#endif
 
 namespace at::meta {
 

@@ -8,13 +8,8 @@
 #include <ATen/native/SparseTensorUtils.h>
 #include <c10/util/irange.h>
 
-#ifndef AT_PER_OPERATOR_HEADERS
-#include <ATen/Functions.h>
-#include <ATen/NativeFunctions.h>
-#else
 #include <ATen/ops/arange.h>
 #include <ATen/ops/tensor.h>
-#endif
 
 #ifdef GPUCC
 #define NAME "flatten_indices_cuda"

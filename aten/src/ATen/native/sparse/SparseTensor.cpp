@@ -15,10 +15,6 @@
 #include <ATen/native/CPUBlas.h>
 #include <c10/util/irange.h>
 
-#ifndef AT_PER_OPERATOR_HEADERS
-#include <ATen/Functions.h>
-#include <ATen/NativeFunctions.h>
-#else
 #include <ATen/ops/_coalesce.h>
 #include <ATen/ops/_coalesce_native.h>
 #include <ATen/ops/_coalesced_native.h>
@@ -66,7 +62,6 @@
 #include <ATen/ops/view_as_complex_native.h>
 #include <ATen/ops/zeros.h>
 #include <ATen/ops/ones.h>
-#endif
 
 namespace at::native {
 

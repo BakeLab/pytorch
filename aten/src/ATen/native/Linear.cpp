@@ -10,10 +10,6 @@
 #include <c10/util/MaybeOwned.h>
 #include <ATen/TensorSubclassLikeUtils.h>
 
-#ifndef AT_PER_OPERATOR_HEADERS
-#include <ATen/Functions.h>
-#include <ATen/NativeFunctions.h>
-#else
 #include <ATen/ops/_trilinear.h>
 #include <ATen/ops/_trilinear_native.h>
 #include <ATen/ops/_unsafe_view.h>
@@ -29,7 +25,6 @@
 #include <ATen/ops/mul.h>
 #include <ATen/ops/tensordot_native.h>
 #include <ATen/ops/zeros.h>
-#endif
 
 #include <cctype>
 #include <deque>

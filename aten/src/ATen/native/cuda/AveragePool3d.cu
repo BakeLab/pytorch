@@ -13,13 +13,8 @@
 #include <c10/macros/Macros.h>
 #include <c10/util/safe_conv.h>
 
-#ifndef AT_PER_OPERATOR_HEADERS
-#include <ATen/Functions.h>
-#include <ATen/NativeFunctions.h>
-#else
 #include <ATen/ops/avg_pool3d_native.h>
 #include <ATen/ops/avg_pool3d_backward_native.h>
-#endif
 
 
 namespace at::native {
