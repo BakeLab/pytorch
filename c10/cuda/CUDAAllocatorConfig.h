@@ -71,6 +71,9 @@ class C10_CUDA_API CUDAAllocatorConfig {
         garbage_collection_threshold();
   }
 
+  // Defined out of line. Whether expandable segments are usable depends on a
+  // macro that is private to c10_cuda, so an inlined check would let a consumer
+  // compile a different answer than the library itself uses.
   static bool expandable_segments();
 
   static bool release_lock_on_cudamalloc() {
