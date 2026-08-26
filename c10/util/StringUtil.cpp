@@ -1,6 +1,7 @@
 #include <c10/util/Exception.h>
 #include <c10/util/StringUtil.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <string>
 
@@ -50,7 +51,7 @@ size_t ReplaceAll(std::string& s, std::string_view from, std::string_view to) {
       }
       write_pos += cur_pos - last_pos;
       // Append the replacement sub-string
-      std::copy(to.begin(), to.end(), s_data + write_pos);
+      std::ranges::copy(to, s_data + write_pos);
       write_pos += to.size();
       // Start search from next character after `from`
       last_pos = cur_pos + from.size();

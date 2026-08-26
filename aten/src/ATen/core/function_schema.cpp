@@ -1,5 +1,6 @@
 #include <ATen/core/function_schema.h>
 
+#include <algorithm>
 #include <c10/util/irange.h>
 #include <iostream>
 #include <stack>
@@ -544,7 +545,7 @@ std::string FunctionSchema::findErrorInKwargs(const std::vector<std::string>& kw
   // If there are unconsumed kwargs but none of them were unknown, the first
   // positional argument present in the kwargs is duplicated.
   for (const auto& argument : arguments()) {
-    if (std::find(kwargs.begin(), kwargs.end(), argument.name()) != kwargs.end()) {
+    if (std::ranges::find(kwargs, argument.name()) != kwargs.end()) {
       AT_ASSERT(!argument.default_value());
       return c10::str(
           "Argument '",

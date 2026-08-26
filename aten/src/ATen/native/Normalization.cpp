@@ -54,6 +54,7 @@
 #include <ATen/ops/sqrt.h>
 
 #include <c10/core/SymIntArrayRef.h>
+#include <numeric>
 #include <utility>
 #include <vector>
 
@@ -1005,7 +1006,7 @@ TORCH_IMPL_FUNC(renorm_out)(const Tensor& self, const Scalar& p, int64_t dim,
   dim = c10::maybe_wrap_dim(dim, self_sizes.size());
 
   DimVector reduce_dims(self_sizes.size());
-  std::iota(reduce_dims.begin(), reduce_dims.end(), 0);
+  std::ranges::iota(reduce_dims, 0);
   reduce_dims.erase(reduce_dims.begin() + dim);
 
   // For cuda half, calculate norm in float precision then cast
