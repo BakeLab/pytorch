@@ -6,13 +6,9 @@
 #include <ATen/native/im2col_shape_check.h>
 #include <c10/util/irange.h>
 
-#ifndef AT_PER_OPERATOR_HEADERS
-#include <ATen/Functions.h>
-#include <ATen/NativeFunctions.h>
-#else
 #include <ATen/ops/col2im_native.h>
 #include <ATen/ops/empty.h>
-#endif
+#include <ATen/ops/empty_like.h>
 
 // Note [im2col/col2im output padding]
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -17,10 +17,6 @@
 #include <c10/util/irange.h>
 #include <c10/core/ScalarType.h>
 
-#ifndef AT_PER_OPERATOR_HEADERS
-#include <ATen/Functions.h>
-#include <ATen/NativeFunctions.h>
-#else
 #include <ATen/ops/celu_native.h>
 #include <ATen/ops/clamp.h>
 #include <ATen/ops/clamp_min.h>
@@ -76,7 +72,6 @@
 #include <ATen/ops/threshold_native.h>
 
 #include <utility>
-#endif
 
 namespace at::meta {
 // computes `result = self <= threshold ? value : other`

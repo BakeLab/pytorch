@@ -12,13 +12,8 @@
 #include <ATen/native/transformers/sdp_utils_cpp.h>
 #include <c10/util/safe_conv.h>
 
-#ifndef AT_PER_OPERATOR_HEADERS
-#include <ATen/Functions.h>
-#include <ATen/NativeFunctions.h>
-#else
 #include <ATen/ops/_scaled_dot_product_attention_math_for_mps_native.h>
 #include <ATen/ops/empty.h>
-#endif
 
 namespace at {
 namespace native {

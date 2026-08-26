@@ -13,12 +13,8 @@
 #include <c10/macros/Macros.h>
 #include <c10/util/Exception.h>
 #include <ATen/native/cuda/KernelUtils.cuh>
-#ifndef AT_PER_OPERATOR_HEADERS
-#include <ATen/NativeFunctions.h>
-#else
 #include <ATen/ops/fractional_max_pool2d_backward_native.h>
 #include <ATen/ops/fractional_max_pool2d_native.h>
-#endif
 
 #include <algorithm>
 #include <cfloat>

@@ -19,10 +19,6 @@
 #include <c10/util/accumulate.h>
 #include <c10/util/irange.h>
 
-#ifndef AT_PER_OPERATOR_HEADERS
-#include <ATen/Functions.h>
-#include <ATen/NativeFunctions.h>
-#else
 #include <ATen/ops/arange.h>
 #include <ATen/ops/argsort_native.h>
 #include <ATen/ops/broadcast_tensors.h>
@@ -44,7 +40,6 @@
 #include <ATen/ops/sort.h>
 #include <ATen/ops/sort_native.h>
 #include <ATen/ops/topk_native.h>
-#endif
 
 #include <algorithm>
 #include <numeric>
