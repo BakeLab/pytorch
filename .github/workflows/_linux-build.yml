@@ -209,7 +209,21 @@ jobs:
           selected-test-configs: ${{ inputs.selected-test-configs }}
           ignore-test-config-labels: ${{ inputs.ignore-test-config-labels }}
           job-name: ${{ steps.setup-linux.outputs.job-name }}
-          lf-runners: ${{ inputs.lf_runners }}
+
+      - name: Map EC2 runners to ARC runners
+        id: map-runners
+        env:
+          FILTERED_TEST_MATRIX: ${{ steps.filter.outputs.test-matrix }}
+          RUNNER_PREFIX: ${{ inputs.runner_prefix }}
+        shell: bash
+        run: |
+          # Run via uv so pyyaml is provisioned regardless of the build image's
+          # Python setup. Some build containers use the system apt python3,
+          # which doesn't include pyyaml. Matches the
+          # pattern used by parse_ref.py / filter_test_configs.py in
+          # .github/actions/filter-test-configs/action.yml.
+          uv run --no-project --with pyyaml==6.0.2 \
+            python .github/scripts/map_ec2_to_arc.py --prefix "${RUNNER_PREFIX}" "${FILTERED_TEST_MATRIX}"
 
       - name: Configure AWS credentials
         id: aws-creds

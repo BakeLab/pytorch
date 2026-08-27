@@ -73,7 +73,7 @@ fi
 # (a conda env or a venv), not provided by conda. Detect MKL directly rather
 # than guessing from the presence of conda.
 if ! python -m pip show mkl-static >/dev/null 2>&1; then
-  # No MKL (e.g. aarch64/s390x, or ROCm cross compilation on intel build
+  # No MKL (e.g. aarch64, or ROCm cross compilation on intel build
   # machines that later run on amd). Enable MKLDNN, except for ROCm where we
   # deliberately keep some non-mkldnn builds working.
   if [[ "$BUILD_ENVIRONMENT" != *rocm* ]]; then
@@ -95,84 +95,6 @@ if [[ "$BUILD_ENVIRONMENT" == *aarch64* ]]; then
   export USE_MKLDNN=1
   export USE_MKLDNN_ACL=1
   export ACL_ROOT_DIR=/acl
-fi
-
-if [[ "$BUILD_ENVIRONMENT" == *riscv64*cross* ]]; then
-  if [[ -f /opt/riscv-cross-env/bin/activate ]]; then
-    # shellcheck disable=SC1091
-    source /opt/riscv-cross-env/bin/activate
-  else
-    echo "Activation file not found"
-    exit 1
-  fi
-
-  export CMAKE_CROSSCOMPILING=TRUE
-  export CMAKE_SYSTEM_NAME=Linux
-  export CMAKE_SYSTEM_PROCESSOR=riscv64
-
-  export USE_CUDA=0
-  export USE_MKLDNN=0
-
-  # common.sh exports CC=gcc/CXX=g++ for every *gcc* BUILD_ENVIRONMENT, which
-  # matches this one and clobbers the cross toolchain the image sets. Put it
-  # back, or CMake configures for riscv64 while compiling with the host gcc.
-  export CC="riscv64-linux-gnu-gcc-${GCC_VERSION}"
-  export CXX="riscv64-linux-gnu-g++-${GCC_VERSION}"
-
-  # Restrict chown to the workspace and the cross-compile sysroot/venv we
-  # actually write into. The workspace path differs by runner: EC2 docker
-  # mounts it at /var/lib/jenkins/workspace and GITHUB_WORKSPACE points at
-  # the host path that doesn't exist inside the container; OSDC k8s has it
-  # at ${GITHUB_WORKSPACE} (/__w/pytorch/pytorch) and no /var/lib/jenkins.
-  # Recursing into all of /opt would also fail on OSDC because /opt/git-cache
-  # is a read-only hostPath mount.
-  for dir in "${GITHUB_WORKSPACE:-}" /var/lib/jenkins/workspace /opt/sysroot /opt/riscv-cross-env; do
-    if [ -n "$dir" ] && [ -d "$dir" ]; then
-      sudo chown -R jenkins "$dir"
-    fi
-  done
-
-  # third_party/protobuf (v21.12) would build a protoc for the target, which this
-  # x86_64 host cannot execute, and the workflow no longer registers qemu-riscv64
-  # with binfmt_misc -- that went away with the EC2 build path in #189113. Use the
-  # host protoc from the image instead, which is the cross-compilation path
-  # cmake/ProtoBuf.cmake documents and what conda-forge does for the same reason.
-  # Ubuntu noble ships protobuf-compiler at 3.21.12, matching the vendored copy, so
-  # generated sources stay compatible with the libprotobuf built for the target.
-  export CAFFE2_CUSTOM_PROTOC_EXECUTABLE=/usr/bin/protoc
-
-  # SLEEF generates headers with small host tools (mkrename and friends). Its
-  # cross-compilation path imports them from NATIVE_BUILD_DIR; the branch keyed on
-  # SLEEF_TARGET_EXEC_USE_QEMU instead builds them for the target and runs them
-  # under emulation, which is why that variable used to be set here and why it is
-  # not any more (see the protoc note above -- same missing binfmt_misc).
-  #
-  # The option set mirrors aten/src/ATen/CMakeLists.txt so the native build
-  # produces exactly the tools the cross build then imports; SLEEF_BUILD_TESTS and
-  # friends change which host executables exist, so a mismatch here surfaces later
-  # as a missing IMPORTED_LOCATION.
-  SLEEF_NATIVE_BUILD_DIR="${HOME}/sleef-native"
-  cmake -S third_party/sleef -B "${SLEEF_NATIVE_BUILD_DIR}" -G Ninja \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_C_COMPILER=gcc \
-      -DSLEEF_BUILD_SHARED_LIBS=OFF \
-      -DSLEEF_BUILD_DFT=OFF \
-      -DSLEEF_BUILD_GNUABI_LIBS=OFF \
-      -DSLEEF_BUILD_TESTS=OFF \
-      -DSLEEF_BUILD_SCALAR_LIB=OFF \
-      -DSLEEF_DISABLE_OPENMP=ON
-  cmake --build "${SLEEF_NATIVE_BUILD_DIR}"
-
-  # NATIVE_BUILD_DIR is a sleef-internal name, so it is passed as a CMake define
-  # rather than added to the environment forwarding in cmake/EnvVarForwarding.cmake.
-  # Append rather than assign: scikit-build-core reads SKBUILD_CMAKE_DEFINE as a
-  # ';'-separated list, so overwriting it would silently drop anything an outer
-  # caller had set.
-  export SKBUILD_CMAKE_DEFINE="${SKBUILD_CMAKE_DEFINE:+${SKBUILD_CMAKE_DEFINE};}NATIVE_BUILD_DIR=${SLEEF_NATIVE_BUILD_DIR}"
-
-elif [[ "$BUILD_ENVIRONMENT" == *riscv64* ]]; then
-  export USE_CUDA=0
-  export USE_MKLDNN=0
 fi
 
 # Use special scripts for Android builds
@@ -277,9 +199,9 @@ elif [[ "$BUILD_ENVIRONMENT" == *-debug* ]]; then
   export CMAKE_BUILD_TYPE=RelWithAssert
 fi
 
-# Do not change workspace permissions for ROCm and s390x CI jobs
+# Do not change workspace permissions for ROCm CI jobs
 # as it can leave workspace with bad permissions for cancelled jobs
-if [[ "$BUILD_ENVIRONMENT" != *rocm* && "$BUILD_ENVIRONMENT" != *s390x* && "$BUILD_ENVIRONMENT" != *riscv64*cross* && -d /var/lib/jenkins/workspace ]]; then
+if [[ "$BUILD_ENVIRONMENT" != *rocm* && -d /var/lib/jenkins/workspace ]]; then
   # Workaround for dind-rootless userid mapping (https://github.com/pytorch/ci-infra/issues/96)
   WORKSPACE_ORIGINAL_OWNER_ID=$(stat -c '%u' "/var/lib/jenkins/workspace")
   cleanup_workspace() {
@@ -476,7 +398,4 @@ if [[ "$BUILD_ENVIRONMENT" != *libtorch* ]]; then
   # don't do this for libtorch as libtorch is C++ only and thus won't have python tests run on its build
   PYTHONPATH=. python tools/stats/export_test_times.py
 fi
-# don't do this for s390x or riscv64 as they don't use sccache
-if [[ "$BUILD_ENVIRONMENT" != *s390x* && "$BUILD_ENVIRONMENT" != *riscv64*cross* ]]; then
-  print_sccache_stats
-fi
+print_sccache_stats

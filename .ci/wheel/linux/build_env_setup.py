@@ -223,7 +223,6 @@ def discover_rocm_home() -> str:
 PLATFORM_TAGS: dict[str, str] = {
     "x86_64": "manylinux_2_28_x86_64",
     "aarch64": "manylinux_2_28_aarch64",
-    "riscv64": "manylinux_2_39_riscv64",
 }
 
 
