@@ -12,9 +12,7 @@
 #include <ATen/ops/logspace.h>
 #include <ATen/ops/arange_native.h>
 #include <ATen/ops/empty.h>
-#include <ATen/ops/linspace.h>
 #include <ATen/ops/linspace_native.h>
-#include <ATen/ops/logspace.h>
 #include <ATen/ops/logspace_native.h>
 #include <ATen/ops/range_native.h>
 
