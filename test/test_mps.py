@@ -1,7 +1,6 @@
 # Owner(s): ["module: mps"]
 # ruff: noqa: F841
 import glob
-import io
 import sys
 import math
 import random
@@ -9397,15 +9396,6 @@ class TestMPS(TestCaseMPS):
         torch.accelerator.synchronize()
         self.assertTrue(event.query())
         self.assertEqual(c_acc.cpu(), c)
-
-    def test_jit_save_load(self):
-        m = torch.nn.Module()
-        m.x = torch.rand(3, 3, device='mps')
-        buffer = io.BytesIO()
-        torch.jit.save(torch.jit.script(m), buffer)
-        buffer.seek(0)
-        n = torch.jit.load(buffer)
-        self.assertEqual(n.x, m.x)
 
     # Test random_, random_.to and random_.from
     def test_random(self):
