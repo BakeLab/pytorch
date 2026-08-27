@@ -158,13 +158,11 @@ from torch.testing._internal.inductor_utils import (  # noqa: F401
     HAS_GPU,
     HAS_MPS,
     HAS_MULTIGPU,
-    HAS_TPU,
     IS_BIG_GPU,
     requires_block_ptr,
     requires_gpu,
     RUN_CPU,
     RUN_GPU,
-    RUN_TPU,
     skipCPUIf,
     skipCUDAIf,
 )
@@ -1243,26 +1241,6 @@ def skip_if_cpu(fn):
     return wrapper
 
 
-def skip_if_halide(fn):
-    @functools.wraps(fn)
-    def wrapper(self, *args, **kwargs):
-        if is_halide_backend(self.device):
-            raise unittest.SkipTest("halide not supported")
-        return fn(self, *args, **kwargs)
-
-    return wrapper
-
-
-def skip_if_pallas(fn):
-    @functools.wraps(fn)
-    def wrapper(self, *args, **kwargs):
-        if is_pallas_backend(self.device):
-            raise unittest.SkipTest("pallas not supported")
-        return fn(self, *args, **kwargs)
-
-    return wrapper
-
-
 def skip_if_mps(fn):
     @functools.wraps(fn)
     def wrapper(self, *args, **kwargs):
@@ -1318,12 +1296,6 @@ def skip_if_dynamic(fn):
     return wrapper
 
 
-def is_halide_backend(device):
-    if getattr(device, "type", device) == "cpu":
-        return config.cpu_backend == "halide"
-    return config.cuda_backend == "halide"
-
-
 def is_mps_backend(device):
     return getattr(device, "type", device) == "mps"
 
@@ -1339,12 +1311,6 @@ def is_triton_backend(device):
 
 def is_triton_cpu_backend(device):
     return getattr(device, "type", device) == "cpu" and config.cpu_backend == "triton"
-
-
-def is_pallas_backend(device):
-    if getattr(device, "type", device) == "cpu":
-        return config.cpu_backend == "pallas"
-    return config.cuda_backend == "pallas"
 
 
 def skip_if_triton_cpu(fn):
@@ -1379,24 +1345,6 @@ def xfail_if_triton_cpu_no_avx512_bf16(fn):
     if not torch.cpu._is_avx512_bf16_supported():
         fn._expected_failure_triton_cpu = True
     return fn
-
-
-def xfail_if_pallas(fn):
-    fn._expected_failure_pallas = True
-    return fn
-
-
-def skip_if_gpu_halide(fn):
-    @functools.wraps(fn)
-    def wrapper(self, *args, **kwargs):
-        if (
-            is_halide_backend(self.device)
-            and getattr(self.device, "type", self.device) == "cuda"
-        ):
-            raise unittest.SkipTest("halide not supported")
-        return fn(self, *args, **kwargs)
-
-    return wrapper
 
 
 class skip_if_cpp_wrapper:
@@ -1506,7 +1454,6 @@ class CommonTemplate:
                 a ^ b,
                 torch.logical_and(a, b),
                 torch.logical_or(a, b),
-                torch.logical_xor(a, b),
                 torch.logical_not(a),
                 torch.sign(b),
             )
@@ -1520,8 +1467,6 @@ class CommonTemplate:
         )
 
     @skipCUDAIf(not SM80OrLater, "Requires sm80")
-    @skip_if_halide  # aoti
-    @skip_if_pallas  # aoti
     @skip_if_triton_cpu  # aoti
     @skipIfWindows(msg="aoti not support on Windows")
     def test_aoti_eager_dtype_device_layout(self):
@@ -1564,8 +1509,6 @@ class CommonTemplate:
             self.assertEqual(ref, res)
 
     @skipCUDAIf(not SM80OrLater, "Requires sm80")
-    @skip_if_halide  # aoti
-    @skip_if_pallas  # aoti
     @skip_if_triton_cpu  # aoti
     @skipIfWindows(msg="aoti not support on Windows")
     def test_aoti_eager_support_out(self):
@@ -1620,8 +1563,6 @@ class CommonTemplate:
             self.assertEqual(ref_out_tensor1, res_out_tensor1)
 
     @skipCUDAIf(not SM80OrLater, "Requires sm80")
-    @skip_if_halide  # aoti
-    @skip_if_pallas  # aoti
     @skip_if_triton_cpu  # aoti
     @skipIfWindows(msg="aoti not support on Windows")
     def test_aoti_eager_support_str(self):
@@ -1661,8 +1602,6 @@ class CommonTemplate:
                 self.assertEqual(ref_value, res_value)
 
     @skipCUDAIf(not SM80OrLater, "Requires sm80")
-    @skip_if_halide  # aoti
-    @skip_if_pallas  # aoti
     @skip_if_triton_cpu  # aoti
     @skipIfWindows(msg="aoti not support on Windows")
     def test_aoti_eager_cache_hit(self):
@@ -1706,8 +1645,6 @@ class CommonTemplate:
                 self.assertEqual(ref_value, res_value)
 
     @skipCUDAIf(not SM80OrLater, "Requires sm80")
-    @skip_if_halide  # aoti
-    @skip_if_pallas  # aoti
     @skip_if_triton_cpu  # aoti
     @skipIfWindows(msg="aoti not support on Windows")
     def test_aoti_eager_with_persistent_cache(self):
@@ -1754,8 +1691,6 @@ class CommonTemplate:
         self.assertTrue(kernel_lib_path in kernel_libs_abs_path)
 
     @skipCUDAIf(not SM80OrLater, "Requires sm80")
-    @skip_if_halide  # aoti
-    @skip_if_pallas  # aoti
     @skip_if_triton_cpu  # aoti
     @skipIfWindows(msg="aoti not support on Windows")
     def test_aoti_eager_with_scalar(self):
@@ -1828,8 +1763,6 @@ class CommonTemplate:
             self.assertEqual(ref_values, res_values)
 
     @skipCUDAIf(not SM80OrLater, "Requires sm80")
-    @skip_if_halide  # aoti
-    @skip_if_pallas  # aoti
     @skip_if_triton_cpu  # aoti
     @skipIfWindows(msg="aoti not support on Windows")
     def test_aoti_eager_override_registration(self):
@@ -2242,9 +2175,6 @@ class CommonTemplate:
         self.assertEqual(expect, actual)
 
     @dynamo_config.patch("capture_dynamic_output_shape_ops", True)
-    # https://github.com/halide/Halide/issues/8308
-    @config.patch("halide.scheduler_cpu", "Mullapudi2016")
-    @config.patch("halide.scheduler_cuda", "Li2018")
     @config.patch(implicit_fallbacks=True)
     def test_index_propagation_nested_indirect_indexing(self):
         def nested(x, repeats):
@@ -2362,9 +2292,7 @@ class CommonTemplate:
             fn, inps, has_assert: bool, has_wrapping: bool, vectorize: bool = True
         ):
             fn_opt = torch.compile(fn)
-            if is_halide_backend(self.device):
-                pass  # no device asserts in halide
-            elif is_mps_backend(self.device):
+            if is_mps_backend(self.device):
                 _, codes = run_and_get_code(fn_opt, *inps)
                 # MPS generates Metal shader code
                 code = "\n".join(codes)
@@ -2372,8 +2300,6 @@ class CommonTemplate:
                 self.assertTrue(("TORCH_REPORT_ERROR" in code) is has_assert)
                 # Check for wrapping (ternary operator for negative index handling)
                 self.assertTrue((" ? " in code) is has_wrapping)
-            elif is_pallas_backend(self.device):
-                pass  # Pallas generates Python/JAX code, not C++/Triton
             elif self.device == "cpu" and not is_triton_cpu_backend(self.device):
                 _, code = run_and_get_cpp_code(fn_opt, *inps)
                 self.assertTrue(("TORCH_CHECK" in code) is has_assert)
@@ -2589,7 +2515,7 @@ class CommonTemplate:
 
         inputs = (torch.ones(128), torch.ones(4, 4, 1))
         for i in inputs:
-            self.common(fn, (i,), check_lowp=not is_halide_backend(self.device))
+            self.common(fn, (i,), check_lowp=True)
 
     @config.patch(unroll_reductions_threshold=1)
     def test_reduction5(self):
@@ -2671,7 +2597,6 @@ class CommonTemplate:
         sample[-1] = 1
         self.common(fn, (sample,))
 
-    @skip_if_gpu_halide
     @skipCPUIf(IS_MACOS, "fails on macos")
     def test_multilayer_var(self):
         def fn(a):
@@ -2691,7 +2616,6 @@ class CommonTemplate:
         )
 
     @skipCPUIf(IS_MACOS, "fails on macos")
-    @skip_if_halide  # accuracy 4.7% off
     def test_multilayer_var_lowp(self):
         def fn(a):
             return torch.var(a)
@@ -2739,7 +2663,6 @@ class CommonTemplate:
         self.common(fn, (x, b))
 
     @skipCUDAIf(not SM80OrLater, "Requires sm80")
-    @skip_if_gpu_halide  # accuracy issue
     def test_split_cumsum_low_prec(self):
         if is_cpp_backend(self.device):
             raise unittest.SkipTest("ir.Scan nyi on CPU")
@@ -2812,7 +2735,6 @@ class CommonTemplate:
             self.common(fn, (inp,), atol=1e-5, rtol=1e-4, check_lowp=False)
 
     @skipCUDAIf(not SM80OrLater, "Requires sm80")
-    @skip_if_gpu_halide  # accuracy issue
     def test_split_cumprod_low_prec(self):
         if is_cpp_backend(self.device):
             raise unittest.SkipTest("ir.Scan nyi on CPU")
@@ -2855,7 +2777,6 @@ class CommonTemplate:
 
             self.common(fn, (a, b), atol=1e-5, rtol=1e-5, check_lowp=False)
 
-    @skip_if_halide  # scan ops
     # TODO: support lifted symints when dynamic
     @torch._dynamo.config.patch(
         {"dynamic_shapes": False, "assume_static_by_default": True}
@@ -2884,7 +2805,6 @@ class CommonTemplate:
         actual = associative_scan(logcumsum_combine, a, 0)
         self.assertEqual(expect, actual)
 
-    @skip_if_halide  # scan ops
     # TODO: support lifted symints when dynamic
     @torch._dynamo.config.patch(
         {"dynamic_shapes": False, "assume_static_by_default": True}
@@ -2919,7 +2839,6 @@ class CommonTemplate:
                 r"triton_.*\.run\(arg[01]_1, arg[12]_1, buf1,"
             ).check_not("run(").run(code[0])
 
-    @skip_if_halide  # scan ops
     # TODO: support lifted symints when dynamic
     @torch._dynamo.config.patch(
         {"dynamic_shapes": False, "assume_static_by_default": True}
@@ -2946,7 +2865,6 @@ class CommonTemplate:
         actual = associative_scan(argmax_combine, (a, idx), 0)
         self.assertEqual(expect, actual)
 
-    @skip_if_halide  # scan ops
     # TODO: support lifted symints when dynamic
     @torch._dynamo.config.patch(
         {"dynamic_shapes": False, "assume_static_by_default": True}
@@ -3028,8 +2946,6 @@ class CommonTemplate:
     @xfail_if_triton_cpu_no_avx512_bf16
     @skipCUDAIf(True, "No _dyn_quant_pack_4bit_weight implementation on CUDA")
     @skipIfXpu(msg="No _dyn_quant_pack_4bit_weight implementation on XPU")
-    # Pallas codegen doesn't handle reduction axis after FloorDiv(ModularIndexing) simplification
-    @xfail_if_pallas
     def test__dyn_quant_pack_4bit_weight_fp32(self):
         q_group = 32
         k = 128
@@ -3065,9 +2981,6 @@ class CommonTemplate:
     @xfail_if_triton_cpu_no_avx512_bf16
     @skipCUDAIf(True, "No _dyn_quant_pack_4bit_weight implementation on CUDA")
     @skipIfXpu(msg="No _dyn_quant_pack_4bit_weight implementation on XPU")
-    @skip_if_halide  # bf16
-    # Pallas codegen doesn't handle reduction axis after FloorDiv(ModularIndexing) simplification
-    @xfail_if_pallas
     def test__dyn_quant_pack_4bit_weight_bf16(self):
         k = 128
         n = 128
@@ -3106,8 +3019,6 @@ class CommonTemplate:
 
     @xfail_if_mps_unimplemented
     @xfail_if_triton_cpu_no_avx512_bf16
-    # Pallas codegen doesn't handle reduction axis after FloorDiv(ModularIndexing) simplification
-    @xfail_if_pallas
     @skipCUDAIf(True, "No _dyn_quant_matmul_4bit implementation on CUDA")
     @skipIfXpu(msg="No _dyn_quant_matmul_4bit implementation on XPU")
     def test__dyn_quant_matmul_4bit_fp32_input(self):
@@ -3157,7 +3068,6 @@ class CommonTemplate:
     )  # see https://github.com/pytorch/pytorch/issues/170787
     @skipCUDAIf(True, "No _dyn_quant_matmul_4bit implementation on CUDA")
     @skipIfXpu(msg="No _dyn_quant_matmul_4bit implementation on XPU")
-    @skip_if_halide  # bf16
     def test__dyn_quant_matmul_4bit_bf16_input(self):
         m = 32
         k = 128
@@ -3224,7 +3134,6 @@ class CommonTemplate:
             fn, (torch.randn(2, 197, 256), torch.randn(2, 1, 256)), atol=atol, rtol=rtol
         )
 
-    @skip_if_gpu_halide
     def test_min_max_reduction(self):
         def fn(a, b):
             return (
@@ -3240,7 +3149,6 @@ class CommonTemplate:
         for dtype in dtypes:
             self.common(fn, (torch.randn(8, 8).to(dtype), torch.randn(8, 8).to(dtype)))
 
-    @skip_if_halide  # bug in nan handling
     def test_min_max_reduction_nan(self):
         def fn(a):
             return (torch.max(a), torch.min(a))
@@ -3249,7 +3157,6 @@ class CommonTemplate:
         t1[16] = float("nan")
         self.common(fn, (t1,))
 
-    @skip_if_halide  # bug in nan handling
     def test_fmin_fmax(self):
         def fn(a, b):
             return (
@@ -3288,16 +3195,15 @@ class CommonTemplate:
 
         self.common(fn, (torch.ones(32, 32) * 70,))
 
-    @skip_if_halide
     def test_cummin(self):
         def fn(x):
             return x.cummin(0)
 
         self.common(
-            fn, (torch.rand(16, 32),), check_lowp=not is_halide_backend(self.device)
+            fn, (torch.rand(16, 32),), check_lowp=True
         )
-        self.common(fn, (torch.rand(1),), check_lowp=not is_halide_backend(self.device))
-        self.common(fn, (torch.rand(0),), check_lowp=not is_halide_backend(self.device))
+        self.common(fn, (torch.rand(1),), check_lowp=True)
+        self.common(fn, (torch.rand(0),), check_lowp=True)
 
     def test_cumsum(self):
         def fn(x):
@@ -3305,17 +3211,17 @@ class CommonTemplate:
 
         # Persistent reductions
         self.common(
-            fn, (torch.rand(16, 32),), check_lowp=not is_halide_backend(self.device)
+            fn, (torch.rand(16, 32),), check_lowp=True
         )
         self.common(
-            fn, (torch.rand(20, 30),), check_lowp=not is_halide_backend(self.device)
+            fn, (torch.rand(20, 30),), check_lowp=True
         )
 
         # Non-persistent reduction
         self.common(
             fn,
             (torch.rand(100, 4000),),
-            check_lowp=not is_halide_backend(self.device),
+            check_lowp=True,
             atol=1e-5,
             rtol=1e-5,
         )
@@ -3334,7 +3240,7 @@ class CommonTemplate:
         # Persistent reduction
         a = torch.rand((1, 1024))
         self.common(
-            fn, (a,), check_lowp=not (TEST_WITH_ROCM or is_halide_backend(self.device))
+            fn, (a,), check_lowp=not TEST_WITH_ROCM
         )
 
         # Non-persistent reduction
@@ -3342,7 +3248,7 @@ class CommonTemplate:
         self.common(
             fn,
             (b,),
-            check_lowp=not (TEST_WITH_ROCM or is_halide_backend(self.device)),
+            check_lowp=not TEST_WITH_ROCM,
             atol=1e-5,
             rtol=1e-5,
         )
@@ -3429,7 +3335,6 @@ class CommonTemplate:
             self.assertEqual(y, y_ref, atol=1e-4, rtol=1e-4)
             self.assertEqual(x.grad, x_ref.grad, atol=1e-4, rtol=1e-4)
 
-    @skip_if_gpu_halide
     def test_cumprod_backward_split_scan_reduction_fusion(self):
         if self.device not in ("cuda", "xpu"):
             raise unittest.SkipTest("split scan only supported on GPU")
@@ -3521,19 +3426,19 @@ class CommonTemplate:
         self.common(
             fn,
             (torch.rand(16, 32),),
-            check_lowp=not (TEST_WITH_ROCM or is_halide_backend(self.device)),
+            check_lowp=not TEST_WITH_ROCM,
         )
         self.common(
             fn,
             (torch.rand(20, 30),),
-            check_lowp=not (TEST_WITH_ROCM or is_halide_backend(self.device)),
+            check_lowp=not TEST_WITH_ROCM,
         )
 
         # Non-persistent reduction
         self.common(
             fn,
             (torch.rand(100, 4000),),
-            check_lowp=not (TEST_WITH_ROCM or is_halide_backend(self.device)),
+            check_lowp=not TEST_WITH_ROCM,
             atol=1e-5,
             rtol=1e-5,
         )
@@ -3544,41 +3449,6 @@ class CommonTemplate:
 
         a = torch.rand(())
         self.common(fn, (a,))
-
-    @parametrize("dtype", (torch.uint8, torch.int32, torch.int64, torch.bool))
-    @parametrize("shape", ((), (4,)))
-    @parametrize("dynamic", (False, True))
-    def test_logcumsumexp_unsupported_dtype(self, dtype, shape, dynamic):
-        # https://github.com/pytorch/pytorch/issues/197807
-        # logcumsumexp only supports floating point and complex dtypes. Eager
-        # raises NotImplementedError; under torch.compile the meta kernel must
-        # reject the input while tracing (TorchRuntimeError) rather than letting
-        # inductor compile it or graph breaking to eager.
-        msg = "input dtype should be either floating point or complex"
-
-        def fn(x):
-            return x.logcumsumexp(0)
-
-        def fn_out(x, out):
-            return torch.logcumsumexp(x, 0, out=out)
-
-        x = torch.zeros(shape, dtype=dtype, device=self.device)
-
-        with self.assertRaisesRegex(NotImplementedError, msg):
-            fn(x)
-        torch._dynamo.reset()
-        with self.assertRaisesRegex(torch._dynamo.exc.TorchRuntimeError, msg):
-            torch.compile(fn, dynamic=dynamic, fullgraph=True)(x)
-
-        # out= is validated against the input dtype, so a floating point out
-        # must not make an integer input acceptable.
-        for out_dtype in (dtype, torch.float32):
-            out = torch.empty(shape, dtype=out_dtype, device=self.device)
-            with self.assertRaisesRegex(NotImplementedError, msg):
-                fn_out(x, out)
-            torch._dynamo.reset()
-            with self.assertRaisesRegex(torch._dynamo.exc.TorchRuntimeError, msg):
-                torch.compile(fn_out, dynamic=dynamic, fullgraph=True)(x, out)
 
     def test_clamp(self):
         def fn(a, b):
@@ -3654,7 +3524,6 @@ class CommonTemplate:
         actual = grads(torch.compile(loss_fn))
         self.assertEqual(actual, expected)
 
-    @skip_if_gpu_halide
     @xfail_if_triton_cpu
     def test_dist(self):
         def fn(a, b):
@@ -3665,7 +3534,6 @@ class CommonTemplate:
 
         self.common(fn, (torch.randn(4, 4), torch.randn(4, 4)))
 
-    @skip_if_halide  # different pow accuracies
     def test_norm_constant_overflow(self):
         def fn(a):
             return (
@@ -3676,7 +3544,6 @@ class CommonTemplate:
         self.common(fn, (torch.randn(4, 1, 4),))
 
     @skipCUDAIf(not SM80OrLater, "Requires sm80")
-    @skip_if_gpu_halide  # https://github.com/halide/Halide/issues/8311
     def test_dist_bf16(self):
         def fn(a, b):
             return torch.dist(a.to(torch.bfloat16), b.to(torch.bfloat16))
@@ -4108,7 +3975,6 @@ class CommonTemplate:
 
         self.common(fn, (torch.randn(8, 8),))
 
-    @skip_if_halide  # halide has different precision characteristics
     def test_silu_exact_eager(self):
         """Test that compiled SiLU matches eager exactly."""
 
@@ -4130,7 +3996,6 @@ class CommonTemplate:
         compiled_result_bf16 = compiled_fn(x_bf16)
         self.assertEqual(eager_result_bf16, compiled_result_bf16, equal_nan=True)
 
-    @skip_if_halide  # halide has buggy nan handling
     def test_nan_to_num(self):
         def fn(a):
             return (
@@ -4158,7 +4023,6 @@ class CommonTemplate:
             check_lowp=False,
         )
 
-    test_one_hot._expected_failure_halide = True
 
     def test_div1(self):
         def fn(a, b):
@@ -4697,7 +4561,6 @@ for dtype in (torch.int32, torch.int64):
         self.common(fn, (torch.randn(8, 8), torch.randn(8, 8)))
 
     @skip_if_cpu
-    @skip_if_halide  # only 32-bit indexing
     @largeTensorTest("4GB", inductor=True)
     def test_large_tensor_reduction(self):
         # Test 64-bit indexing works correctly
@@ -4714,7 +4577,6 @@ for dtype in (torch.int32, torch.int64):
         self.assertEqual(actual, expect)
 
     @skip_if_cpu
-    @skip_if_gpu_halide  # only 32-bit indexing
     def test_large_broadcast_reduction(self):
         # Test 64-bit indexing works correctly when inputs are less than 32-bit
         # but intermediate tensors require 64-bit indexing
@@ -4733,8 +4595,6 @@ for dtype in (torch.int32, torch.int64):
         expect = torch.tensor(4, dtype=torch.int8, device=self.device)
         self.assertEqual(actual, expect)
 
-    @skip_if_halide  # only 32-bit indexing
-    @skip_if_pallas  # only 32-bit indexing
     @largeTensorTest("4GB", inductor=True)
     def test_large_pointwise(self):
         def fn(a):
@@ -4756,8 +4616,6 @@ for dtype in (torch.int32, torch.int64):
             actual = actual.cpu()
         self.assertTrue((actual == 2).all())
 
-    @skip_if_halide  # only 32-bit indexing
-    @skip_if_pallas  # only 32-bit indexing
     @largeTensorTest("3GB", inductor=True)
     def test_large_offset_pointwise(self):
         # Test 64-bit indexing is used when input views a tensor that can be
@@ -4772,7 +4630,7 @@ for dtype in (torch.int32, torch.int64):
         actual = compiled_fn(t[2**30 :])
         self.assertTrue((actual == 4).all())
 
-    @skip_if_halide  # only 32-bit indexing
+    @skipIfRocmArch(NAVI3_ARCH)  # gfx1100 Triton hsaco LLD target emulation unknown
     @largeTensorTest("2GB", inductor=True)
     def test_large_strided_reduction(self):
         # Test 64-bit indexing is used when input numel is less than INT_MAX
@@ -5662,11 +5520,7 @@ for dtype in (torch.int32, torch.int64):
         with torch.no_grad():
             _, code = run_and_get_code(foo, conv_layer, input_tensor)
             # should be channels last permuting before kernel
-            if is_halide_backend(self.device):
-                FileCheck().check("halide_kernel_0(").check(".convolution(").run(
-                    code[0]
-                )
-            else:
+            if True:
                 if config.cpp_wrapper:
                     FileCheck().check("call_triton").check("convolution(").run(code[0])
                 else:
@@ -6419,7 +6273,6 @@ for dtype in (torch.int32, torch.int64):
             reference_in_float=not torch.version.hip,
         )
 
-    @skip_if_gpu_halide
     def test_convolution4(self):
         def fn(x, w):
             x = F.conv2d(x, w, groups=w.shape[0])
@@ -6901,7 +6754,6 @@ for dtype in (torch.int32, torch.int64):
                 ),
             )
 
-    @skip_if_gpu_halide  # slow
     @parametrize("combo_kernels", (False, True))
     def test_adaptive_avg_pool2d1(self, combo_kernels):
         with config.patch(combo_kernels=combo_kernels):
@@ -6944,7 +6796,6 @@ for dtype in (torch.int32, torch.int64):
 
     @xfail_if_mps  # float64 is not supported on MPS
     @requires_gpu()
-    @skip_if_gpu_halide  # slow
     @parametrize("comprehensive_padding", (False, True))
     def test_adaptive_avg_pool2d_flatten_sum(self, comprehensive_padding):
         def fn(x):
@@ -6958,7 +6809,6 @@ for dtype in (torch.int32, torch.int64):
                 check_lowp=False,
             )
 
-    @skip_if_gpu_halide  # slow
     def test_adaptive_max_pool2d1(self):
         def fn(x):
             return aten.adaptive_max_pool2d(x, (6, 6))
@@ -6980,7 +6830,6 @@ for dtype in (torch.int32, torch.int64):
             (torch.randn(2, 4, 6, 6),),
         )
 
-    @skip_if_gpu_halide  # slow
     def test_adaptive_max_pool2d2(self):
         # Big kernel size, use fallback
         def fn(x):
@@ -6994,7 +6843,6 @@ for dtype in (torch.int32, torch.int64):
         )
         assertGeneratedKernelCountEqual(self, 0)
 
-    @skip_if_gpu_halide  # slow
     def test_adaptive_max_pool2d3(self):
         # test when adaptive_max_pool2d fallbacks to max_pool2d
         def fn(x):
@@ -7122,7 +6970,6 @@ for dtype in (torch.int32, torch.int64):
 
     @xfail_if_mps_unimplemented
     @config.patch(fallback_random=True)
-    @skip_if_halide  # Can only unroll for loops over a constant extent
     def test_fractional_max_pool2d4(self):
         random.seed(1234)
         torch.manual_seed(1234)
@@ -7182,7 +7029,6 @@ for dtype in (torch.int32, torch.int64):
             thread.join()
 
     @skip_if_triton_cpu("Flaky on Triton CPU")
-    @skip_if_gpu_halide  # https://github.com/halide/Halide/issues/8311
     def test_adaptive_avg_pool2d_low_prec(self):
         class Model(torch.nn.Module):
             def __init__(self) -> None:
@@ -7250,7 +7096,6 @@ for dtype in (torch.int32, torch.int64):
 
         self.assertEqual(eager_delta, compile_delta)
 
-    @skip_if_gpu_halide
     def test_buffer_copied_in_graph_with_different_shapes(self):
         class MyModel(torch.nn.Module):
             def __init__(self) -> None:
@@ -7364,7 +7209,6 @@ for dtype in (torch.int32, torch.int64):
             (torch.randn(2, 4, 16, 16),),
         )
 
-    @skip_if_gpu_halide  # slow
     def test_max_pool2d2(self):
         def fn(x):
             return aten.max_pool2d_with_indices(x, [3, 3], [2, 2])
@@ -7374,7 +7218,6 @@ for dtype in (torch.int32, torch.int64):
             (torch.randn([16, 64, 55, 55]),),
         )
 
-    @skip_if_gpu_halide  # slow
     def test_max_pool2d3(self):
         def fn(x):
             # with padding
@@ -7399,7 +7242,6 @@ for dtype in (torch.int32, torch.int64):
             (-torch.arange(1 * 8 * 8, dtype=torch.float32).view(1, 1, 8, 8),),
         )
 
-    @skip_if_halide  # Can only unroll for loops over a constant extent
     def test_max_pool2d4(self):
         def fn(x):
             # with padding
@@ -7410,7 +7252,6 @@ for dtype in (torch.int32, torch.int64):
             (torch.randn([2, 8, 111, 111]),),
         )
 
-    @skip_if_gpu_halide  # slow
     def test_max_pool2d5(self):
         def fn(x):
             return aten.max_pool2d_with_indices(x, [3, 3], [])
@@ -7420,7 +7261,6 @@ for dtype in (torch.int32, torch.int64):
             (torch.randn([16, 64, 55, 55]),),
         )
 
-    @skip_if_gpu_halide  # slow
     @parametrize("dilation", (1, 2))
     def test_max_pool2d6(self, dilation: int):
         # Big kernel size
@@ -7512,7 +7352,7 @@ for dtype in (torch.int32, torch.int64):
         self.common(
             fn,
             (-torch.arange(1 * 8 * 8, dtype=torch.float32).view(1, 1, 8, 8),),
-            check_lowp=not is_halide_backend(self.device),  # misaligned addr fp16
+            check_lowp=True,
         )
 
     def test_avg_pool2d4(self):
@@ -7531,7 +7371,7 @@ for dtype in (torch.int32, torch.int64):
         self.common(
             fn,
             (-torch.arange(1 * 8 * 8, dtype=torch.float32).view(1, 1, 8, 8),),
-            check_lowp=not is_halide_backend(self.device),  # misaligned addr fp16
+            check_lowp=True,
         )
 
     def test_avg_pool2d6(self):
@@ -7541,7 +7381,7 @@ for dtype in (torch.int32, torch.int64):
         self.common(
             fn,
             (-torch.arange(1 * 8 * 8, dtype=torch.float32).view(1, 1, 8, 8),),
-            check_lowp=not is_halide_backend(self.device),  # misaligned addr fp16
+            check_lowp=True,
         )
 
     def test_avg_pool2d7(self):
@@ -7566,11 +7406,10 @@ for dtype in (torch.int32, torch.int64):
         self.common(
             fn,
             (torch.randn(1, 3, 6, 6),),
-            check_lowp=not is_halide_backend(self.device),  # misaligned addr fp16
+            check_lowp=True,
         )
 
     @tf32_on_and_off(0.006)
-    @skip_if_gpu_halide  # slow
     def test_alexnet_prefix(self):
         def forward(arg6, arg7, arg16):
             convolution = torch.ops.aten.convolution(
@@ -7645,7 +7484,6 @@ for dtype in (torch.int32, torch.int64):
             (torch.randn([16, 16]),),
         )
 
-    @skip_if_halide  # lgamma not implemented
     @xfail_if_triton_cpu
     def test_lgamma(self):
         def fn(x):
@@ -7673,30 +7511,6 @@ for dtype in (torch.int32, torch.int64):
             fn,
             (torch.randn([16, 16]),),
         )
-
-    @parametrize("op", ["sinh", "cosh", "asinh", "acosh"])
-    def test_hyperbolic(self, op):
-        if is_pallas_backend(self.device) and op in ("asinh", "acosh"):
-            raise unittest.SkipTest(f"Pallas does not support {op}")
-
-        # acosh is only defined for x >= 1
-        self.common(getattr(torch, op), (torch.rand(16, 16) * 4 + 1,))
-
-    def test_hypot(self):
-        self.common(torch.hypot, (torch.randn(16, 16), torch.randn(16, 16)))
-
-    @skip_if_halide  # copysign not implemented
-    def test_copysign(self):
-        self.common(torch.copysign, (torch.randn(16, 16), torch.randn(16, 16)))
-
-    @skip_if_halide  # frexp not implemented
-    def test_frexp(self):
-        self.common(torch.frexp, (torch.randn(16, 16) * 100,))
-
-    @skip_if_halide  # ldexp not implemented
-    def test_ldexp(self):
-        exponent = torch.randint(-8, 8, (16, 16), dtype=torch.int32)
-        self.common(torch.ldexp, (torch.randn(16, 16), exponent))
 
     def test_repeat(self):
         def fn(x):
@@ -7904,8 +7718,6 @@ for dtype in (torch.int32, torch.int64):
             (torch.randint(10, [2, 8]),),
         )
 
-    @skip_if_halide  # cpp-only RuntimeError contract
-    @skip_if_pallas  # cpp-only RuntimeError contract
     @skip_if_triton_cpu  # cpp-only RuntimeError contract
     @config.patch({"cpp.threads": 1})
     def test_embedding_out_of_bounds_indices(self):
@@ -8005,7 +7817,7 @@ for dtype in (torch.int32, torch.int64):
         )
 
     @unittest.skipIf(
-        TEST_WITH_TORCHINDUCTOR,
+        TEST_WITH_TORCHINDUCTOR or TEST_WITH_ROCM,
         "https://github.com/pytorch/pytorch/issues/165879",
     )
     @parametrize("tile_reduction", (False, True))
@@ -8060,7 +7872,6 @@ for dtype in (torch.int32, torch.int64):
         self.assertEqual(a.stride(), c.stride())
         self.assertEqual(c.stride()[2], 1)
 
-    @skip_if_gpu_halide
     def test_std(self):
         def fn(x):
             return (
@@ -8673,7 +8484,6 @@ for dtype in (torch.int32, torch.int64):
         )
         self.common(fn, (*inp,), reference_in_float=self.device != "mps")
 
-    @skip_if_gpu_halide  # incorrect result on CUDA
     def test_cauchy(self):
         def fn(x, y):
             return torch.sum(1 / (torch.unsqueeze(x, -1) - y))
@@ -8693,7 +8503,6 @@ for dtype in (torch.int32, torch.int64):
         if self.device != "cpu":
             assertGeneratedKernelCountEqual(self, 1)
 
-    @skip_if_gpu_halide  # misaligned address error
     def test_fusing_write_into_disjoint_read(self):
         def test_flip(a):
             return a.copy_(torch.flip(a, (0,)))
@@ -9002,8 +8811,6 @@ for dtype in (torch.int32, torch.int64):
             rtol=3e-05,
         )
 
-    @skip_if_gpu_halide  # https://github.com/halide/Halide/issues/8318
-    @config.patch("halide.scheduler_cuda", "Li2018")
     def test_pow3(self):
         # power of 0.5 is special-cased, arbitrary power would still produce triton codegen error
         def fn(x):
@@ -9392,7 +9199,6 @@ for dtype in (torch.int32, torch.int64):
             check_lowp=False,  # accuracy issues with relatively large matmuls
         )
 
-    @skip_if_gpu_halide
     # Constant folding was explicitly turned off due to issue #108388
     # Turn it back on for test
     @torch._inductor.config.patch(
@@ -10070,7 +9876,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             ),
         )
 
-    @skip_if_halide  # log2 not implemented for halide
     def test_log2(self):
         def fn(x):
             return torch.log2(x), torch.log2(x + 1) - 2
@@ -10089,7 +9894,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             (torch.randn([8, 8]) + 10,),
         )
 
-    @skip_if_halide  # log2 not implemented for halide
     def test_log_fp64(self):
         def fn(x):
             return torch.log(x), torch.log2(x)
@@ -10184,8 +9988,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
 
         self.common(fn, (x, y))
 
-    @skip_if_halide  # cpp-only RuntimeError contract
-    @skip_if_pallas  # cpp-only RuntimeError contract
     @skip_if_triton_cpu  # cpp-only RuntimeError contract
     def test_fmod_uint8_zero_divisor_cpu_inductor_raises_error(self):
         if self.device != "cpu":
@@ -10203,8 +10005,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         with self.assertRaisesRegex(RuntimeError, "ZeroDivisionError"):
             opt(inp, divisor)
 
-    @skip_if_halide  # cpp-only RuntimeError contract
-    @skip_if_pallas  # cpp-only RuntimeError contract
     @skip_if_triton_cpu  # cpp-only RuntimeError contract
     def test_remainder_uint8_zero_divisor_cpu_inductor_raises_error(self):
         if self.device != "cpu":
@@ -10595,7 +10395,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             rtol=1.3e-6,
         )
 
-    @skip_if_gpu_halide  # accuracy issue
     def test_reflection_pad2d(self):
         def fn(a, pad):
             return (
@@ -10632,7 +10431,7 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             grad_output = torch.randn_like(result)
 
             self.common(
-                fn, (grad_output, x), check_lowp=not is_halide_backend(self.device)
+                fn, (grad_output, x), check_lowp=True
             )
 
         template([1, 1, 8, 8], [0, 0, 0, 0])
@@ -10962,7 +10761,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
 
         self.common(fn, (torch.randint(0, 999, size=[8, 8]),))
 
-    @skip_if_gpu_halide  # correctness issue
     def test_constant_pad_1d(self):
         def fn(a):
             return (
@@ -10984,7 +10782,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             (torch.randint(2, (4,), dtype=torch.bool), torch.ones(6, dtype=torch.bool)),
         )
 
-    @skip_if_gpu_halide  # misaligned address
     def test_constant_pad_2d(self):
         def fn(a):
             return (
@@ -11084,7 +10881,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             op.python_key_table.update(original_python_key_table)
             op._dispatch_cache.clear()
 
-    @skip_if_gpu_halide  # misaligned address
     def test_constant_pad_3d(self):
         def fn(a):
             return (
@@ -11426,7 +11222,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
 
         self.common(fn, (torch.randn([8, 8]),))
 
-    @skip_if_gpu_halide  # accuracy issue
     def test_slice_mutation2(self):
         def fn(a):
             a[:, 20:40] = a[:, 20:40] + 1
@@ -11543,8 +11338,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
 
         self.common(fn, (torch.zeros([4, 256, 296, 304]), torch.zeros([2292, 5])))
 
-    # https://github.com/halide/Halide/issues/8256
-    @config.patch("halide.scheduler_cuda", "Li2018")
     def test_nll_loss_forward(self):
         def fn(a, b):
             return aten.nll_loss_forward(a, b, None, 1, -100)
@@ -11612,7 +11405,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             with ctx:
                 self.common(fn, [torch.tensor(values, dtype=dtype)], check_lowp=False)
 
-    @skip_if_halide  # different nan behavior in ==
     def test_isinf2(self):
         def fn(x):
             y = torch.tensor(
@@ -11638,19 +11430,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         tmp[1, 1] = float("inf")
         self.common(fn, [tmp])
 
-    @parametrize("reduction", ["any", "amax"])
-    def test_bool_reduction_bitwise_op(self, reduction):
-        # Regression test for https://github.com/pytorch/pytorch/issues/199745
-        def fn(x, y):
-            r = getattr(x, reduction)(dim=1)
-            return r & y, r | y, r ^ y
-
-        x = torch.zeros(4, 64, dtype=torch.bool)
-        x[1, 7] = x[3, 63] = True
-        y = torch.tensor([True, True, False, False])
-        self.common(fn, (x, y))
-
-    @skip_if_gpu_halide
     def test_multilayer_any(self):
         def fn(x):
             return (x.isinf().any(), x.isfinite().all())
@@ -12136,7 +11915,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
                 check_lowp=False,
             )
 
-    @skip_if_gpu_halide  # https://github.com/halide/Halide/issues/8312
     def test_index_put_index(self):
         def fn(ind, x, src):
             y = torch.ops.aten.index_put.default(x, [ind], src)
@@ -12169,8 +11947,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         self.common(fn, (a, idx))
         assertGeneratedKernelCountEqual(self, 2)
 
-    @skip_if_halide
-    @skip_if_pallas
     def test_index_put_duplicate_indices_no_accumulate(self):
         # https://github.com/pytorch/pytorch/issues/174074
         def fn(x):
@@ -12182,7 +11958,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         x = torch.randn(1, 2048, dtype=torch.float32)
         self.common(fn, (x,))
 
-    @skip_if_pallas
     def test_index_put_duplicate_indices_accumulate(self):
         # accumulate=True is well-defined with duplicate indices.
         def fn(x):
@@ -12208,7 +11983,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             self.common(bf16_fn, (torch.zeros(1, dtype=torch.bfloat16),))
 
     @skipCPUIf(True, "requires Triton atomic_or on tl.int1")
-    @skip_if_pallas
     def test_index_put_bool_accumulate(self):
         def fn(x, idx, values):
             return x.index_put((idx,), values, accumulate=True)
@@ -12280,7 +12054,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         self.assertEqual(fn(arg0, arg1, arg2), cfn(arg0, arg1, arg2))
 
     # from GPT2ForSequenceClassification
-    @skip_if_gpu_halide
     def test_index_tensor(self):
         def fn(x, y):
             ne = torch.ops.aten.ne.Scalar(x, 0)
@@ -12516,7 +12289,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         self.assertEqual(x_eager.grad, x_compiled.grad)
         self.assertEqual(src_eager.grad, src_compiled.grad)
 
-    @skip_if_gpu_halide  # accuracy issue
     def test_slice_scatter(self):
         def fn(x, a):
             return (
@@ -12532,7 +12304,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             ],
         )
 
-    @skip_if_gpu_halide  # accuracy issue
     def test_slice_scatter_backward_with_overlapping_base(self):
         def fn(x, y):
             return torch.slice_scatter(x, y, dim=1, start=0, end=6).sum(dim=1)
@@ -12667,7 +12438,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
                 ],
             )
 
-    @skip_if_gpu_halide  # compile error on gpu
     def test_scatter1(self):
         def fn(a, dim, index, b):
             return aten.scatter(a, dim, index, b)
@@ -12967,7 +12737,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
                 rtol=0.01,
             )
 
-    @skip_if_gpu_halide
     def test_dense_mask_index(self):
         r"""
         There will be a little difference for reduce order between aten and inductor
@@ -13454,7 +13223,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
 
     @patch.object(torch._functorch.config, "functionalize_rng_ops", True)
     @expectedFailureXPU
-    @skip_if_gpu_halide  # rand
     @xfail_if_mps
     def test_philox_rand(self):
         if self.device == "cpu":
@@ -13777,7 +13545,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         )
 
     @xfail_if_mps  # Small tolerances bug
-    @skip_if_gpu_halide  # slow
     def test_max_pool2d_with_indices_backward2(self):
         def fn(a, b, c):
             return aten.max_pool2d_with_indices_backward(
@@ -13830,7 +13597,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
 
     # From https://github.com/pytorch/torchdynamo/issues/1352
     @xfail_if_mps  # Small tolerances bug
-    @skip_if_halide  # hangs forever
     def test_max_pool2d_with_indices_backward4(self):
         def fn(a, b, c):
             return aten.max_pool2d_with_indices_backward(
@@ -13980,7 +13746,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             ],
         )
 
-    @skip_if_gpu_halide  # slow
     def test_avg_pool2d_backward2(self):
         def fn(a, b):
             return aten.avg_pool2d_backward(
@@ -14070,8 +13835,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             ],
         )
 
-    @skip_if_halide  # compiles for 5+ minutes
-    @skipIfRocmArch(MI200_ARCH)  # exceeds the inductor compile-worker timeout
     def test_avg_pool3d_backward2(self):
         def fn(a, b):
             return aten.avg_pool3d_backward(
@@ -14212,16 +13975,11 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         torch.manual_seed(1234)
         weight.grad.zero_()
         r2, (fw_code, bw_code) = run_fw_bw_and_get_code(lambda: run(ones))
-        if (
-            is_halide_backend(self.device)
-            and not torch._inductor.config.align_random_eager
-        ):
-            self.assertEqual(fw_code.count("halide_helpers.rand"), 1)
-            self.assertEqual(bw_code.count("halide_helpers.rand"), 0)
-        elif self.device == "cuda" and not torch._inductor.config.align_random_eager:
-            rand = "triton_helpers.rand4x" if config.use_rand4x else "tl.rand("
-            self.assertEqual(fw_code.count(rand), 1)
-            self.assertEqual(bw_code.count(rand), 0)
+        if self.device == "cuda" and not torch._inductor.config.align_random_eager:
+            self.assertEqual(fw_code.count("triton_helpers.rand4x"), 1)
+            self.assertEqual(fw_code.count("tl.rand"), 0)
+            self.assertEqual(bw_code.count("triton_helpers.rand4x"), 0)
+            self.assertEqual(bw_code.count("tl.rand"), 0)
         elif (
             is_triton_cpu_backend(self.device)
             and not torch._inductor.config.align_random_eager
@@ -14266,13 +14024,7 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             lambda: run(torch.randn([8, 32], device=self.device))
         )
 
-        if (
-            is_halide_backend(self.device)
-            and not torch._inductor.config.align_random_eager
-        ):
-            self.assertEqual(fw_code.count("halide_helpers.rand"), 2)
-            self.assertEqual(bw_code.count("halide_helpers.rand"), 0)
-        elif self.device == "cuda" and not torch._inductor.config.align_random_eager:
+        if self.device == "cuda" and not torch._inductor.config.align_random_eager:
             # the load_seed_offset arg can be 1 or non-1; depending on whether
             # the triton signature specializes on 1 vs non-1, you might get 1
             # or 2 kernels. In newer versions of triton, there's no specialization
@@ -14458,7 +14210,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         t1 = torch.randint(8, size=(1028, 1028))
         self.common(fn, (t1,))
 
-    @skip_if_halide  # nan behavior
     def test_argmax_argmin_with_nan(self):
         def fn(x):
             return (
@@ -14486,6 +14237,7 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         t1[:, 100] = float("nan")
         self.common(fn, (t1,))
 
+    @skipIfRocmArch(NAVI3_ARCH)  # gfx1100 Triton hsaco LLD target emulation unknown
     @requires_cuda
     def test_max_min_bool(self):
         # Regression test for https://github.com/pytorch/pytorch/issues/174069
@@ -14669,7 +14421,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         os.environ.get("BUILD_ENVIRONMENT", "").startswith("parallelnative"),
         "TODO: debug this with asan",
     )
-    @skip_if_gpu_halide
     def test_tmp_not_defined_issue2(self):
         def forward(arg38_1, arg81_1, getitem_17, new_zeros_default_4):
             div_tensor_7 = torch.ops.aten.div.Tensor(getitem_17, arg81_1)
@@ -14691,7 +14442,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         self.common(forward, args, atol=1e-5, rtol=1e-5)
 
     @requires_gpu()
-    @skip_if_halide  # cascading accuracy issues due rsqrt fallback
     def test_tmp_not_defined_issue3(self):
         test_device = torch.device(type=self.device)
         test_device_0 = (
@@ -14811,8 +14561,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         kwargs = aot_graph_input_parser(forward, device=self.device)
         self.common(forward, [], kwargs=kwargs)
 
-    @skip_if_gpu_halide
-    @config.patch("halide.scheduler_cpu", "Mullapudi2016")
     def test_misaligned_address_issue1(self):
         def forward(sub_tensor_1, unsqueeze_default):
             gather_default = torch.ops.aten.gather.default(
@@ -14979,13 +14727,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
     def test_unspec_inputs(self, dtype):
         if self.device == "cpu":
             raise unittest.SkipTest("Testing mixed devices")
-
-        if (
-            is_halide_backend(self.device)
-            and getattr(self.device, "type", self.device) == "cuda"
-        ):
-            # https://github.com/halide/Halide/issues/8318
-            raise unittest.SkipTest("halide not supported")
 
         if not self.is_dtype_supported(dtype):
             raise unittest.SkipTest(
@@ -15559,7 +15300,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             [x],
         )
 
-    @skip_if_halide  # log2 not yet implemented
     @skip_if_triton_cpu  # log2 implemented only in Dec 2024
     def test_pow_by_natural_log2_dynamic_shapes(self):
         @torch.compile(dynamic=True)
@@ -15794,8 +15534,7 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             foo_opt = torch.compile(foo, backend="inductor")
             code = run_and_get_triton_code(foo_opt, *inps)
             have_block_ptr = code.count("tl.make_block_ptr") > 0
-            if not is_halide_backend(self.device):
-                self.assertEqual(have_block_ptr, use_block_ptr)
+            self.assertEqual(have_block_ptr, use_block_ptr)
 
     @requires_gpu()
     @unittest.skipIf(
@@ -15912,13 +15651,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             (torch.randn(32), torch.randn(32)),
         )
 
-    def test_where_int64_scalar(self):
-        # The scalar must not narrow the int64 result to 32 bits
-        def fn(x):
-            return torch.where(x < 0, 0, x)
-
-        self.common(fn, (torch.tensor([2**40 + 7, -5, 3_000_000_000]),))
-
     def test_conv_with_as_strided(self):
         class Model(nn.Module):
             def __init__(self) -> None:
@@ -15951,7 +15683,7 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             self.common(
                 Model(),
                 (torch.randn(8, 256, 16, 16),),
-                check_lowp=not is_halide_backend(self.device),
+                check_lowp=True,
                 atol=2e-3,
                 rtol=2e-3,
             )
@@ -16045,7 +15777,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
 
     @unittest.skipIf(not HAS_CPU, "requires C++ compiler")
     @skip_if_triton  # No inductor data type propagation pass on scheduler nodes
-    @skip_if_halide  # bf16
     def test_data_type_propogation(self):
         from torch._dynamo.utils import detect_fake_mode
         from torch._inductor.codegen.common import boolean_ops
@@ -16163,7 +15894,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
     # To support this behavior, we need to allow const-propping tensors that store symint data.
     # For now, dynamo will explicitly graph break when it encounters user code with this behavior.
     @expectedFailureCodegenDynamic
-    @skip_if_gpu_halide  # accuracy error
     def test_AllenaiLongformerBase_repro(self):
         def fn(query, scores, window_overlap):
             batch_size, seq_len, num_heads, _ = query.size()
@@ -16369,7 +16099,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
 
         self.common(fn, (torch.randn(8, 8),))
 
-    @skip_if_halide  # erfinv not implemented
     @xfail_if_triton_cpu
     def test_erfinv(self):
         def fn(x):
@@ -16410,8 +16139,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             rtol=1e-2,  # to pass lowp check on GPU
         )
 
-    @skip_if_halide
-    @skip_if_pallas  # cpp-only fusion path
     @skip_if_triton_cpu
     def test_group_norm_sdpa_bmm_cpu_cpp_fusion(self):
         if self.device != "cpu":
@@ -16433,8 +16160,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         actual = torch.compile(fn, backend="inductor", fullgraph=True)(x)
         self.assertEqual(actual, expected)
 
-    @skip_if_halide
-    @skip_if_pallas  # cpp-only fusion path
     @skip_if_triton_cpu
     def test_group_norm_flatten_batch_norm_cpu_cpp_fusion(self):
         if self.device != "cpu":
@@ -16560,7 +16285,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             )
 
     @requires_gpu()
-    @skip_if_gpu_halide
     @skip_if_not_triton
     def test_searchsorted_broadcast(self):
         def fn(sorted_sequence, values):
@@ -16817,7 +16541,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
                 self.common(fn, (boundaries, out_int32, right), check_lowp=False)
 
     @requires_gpu()
-    @skip_if_gpu_halide
     @skip_if_not_triton
     def test_bucketize_broadcast(self):
         def fn(input, boundaries):
@@ -16840,7 +16563,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         FileCheck().check("def triton").check("def triton").run(code[0])
 
     @requires_gpu()
-    @skip_if_gpu_halide
     @skip_if_not_triton
     def test_bucketize_nan_consistency(self):
         # Regression test for https://github.com/pytorch/pytorch/issues/173133.
@@ -17624,7 +17346,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
 
         self.assertTrue(torch.allclose(compiled_inductor_out, eager_out))
 
-    @skip_if_gpu_halide  # cuda error
     def test_buffer_use_after_remove(self):
         # https://github.com/pytorch/pytorch/issues/102857
 
@@ -17751,7 +17472,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         with self.assertRaises(RuntimeError):
             torch.compile(fn)(x, source)
 
-    @skip_if_gpu_halide  # cuda error
     def test_mutations_loop_fusion(self):
         def fn(tensor, index, source):
             out = tensor.index_add(0, index, source, alpha=2.0) / 2
@@ -17818,7 +17538,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         pt2_optimizer_step(o)
 
     @xfail_if_mps  # float64 is not supported on MPS
-    @skip_if_halide
     def test_adaptive_avg_pool1d_argmax(self):
         # https://github.com/pytorch/pytorch/issues/113013
         # https://github.com/pytorch/pytorch/issues/193492
@@ -17958,7 +17677,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         self.assertEqual(ref, actual)
 
     @skipCUDAIf(not SM80OrLater, "uses bfloat16 which requires SM >= 80")
-    @skip_if_gpu_halide  # https://github.com/halide/Halide/issues/8311
     def test_bfloat16_to_int16(self):
         def fn(a, b):
             x = a + b
@@ -18017,8 +17735,7 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             check_lowp = False
 
         if (
-            is_halide_backend(self.device)
-            or is_triton_cpu_backend(self.device)
+            is_triton_cpu_backend(self.device)
             and name
             in (
                 "erfinv",
@@ -18061,7 +17778,7 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
                 "zeta",
             )
         ):
-            raise unittest.SkipTest(f"Halide & Triton CPU do not support {name}")
+            raise unittest.SkipTest(f"Triton CPU does not support {name}")
 
         if is_triton_cpu_backend(self.device) and name in [
             "erfc",
@@ -18070,18 +17787,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             "log_ndtr",
         ]:
             raise unittest.SkipTest(f"Triton CPU does not support {name}")
-
-        if is_pallas_backend(self.device) and name in {
-            "airy_ai",
-            "bessel_y0",
-            "bessel_y1",
-            "modified_bessel_k0",
-            "modified_bessel_k1",
-            "ndtri",
-            "scaled_modified_bessel_k0",
-            "scaled_modified_bessel_k1",
-        }:
-            raise unittest.SkipTest(f"Pallas does not support {name}")
 
         if name in {"gammainc", "gammaincc"}:
             args = (
@@ -18173,8 +17878,7 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             f"log_ndtr(100.0) signbit lost for {dtype} on {self.device}",
         )
 
-    # Halide backend does not support copysign; Triton-CPU libdevice lacks erfcx
-    test_log_ndtr_signbit._expected_failure_halide = True
+    # Triton-CPU libdevice lacks erfcx
     test_log_ndtr_signbit._expected_failure_triton_cpu = True
 
     # codegen test fails with no dynamic for loop in dynamic shape tests
@@ -18277,7 +17981,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             actual = compiled_fn(torch.ones(s0, s1, device=self.device))
             self.assertTrue((actual == 1).all())
 
-    @skip_if_gpu_halide
     def test_pattern_matcher_multi_user(self):
         # Reproducer for https://github.com/pytorch/pytorch/issues/129685
 
@@ -19421,7 +19124,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         ref = pad_same(x, (5, 5), (2, 2))
         self.assertEqual(res, ref, atol=0, rtol=0)
 
-    @skip_if_halide  # only 32-bit indexing
     @largeTensorTest("16GB", inductor=True)
     def test_split_reduction_with_int64_size(self):
         if torch._inductor.config.cpu_backend == "triton":
@@ -19554,7 +19256,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             ms = do_bench(lambda: opt_f(x_large))
             print(f"{ms=:.3f}")
 
-    @skip_if_halide
     @expectedFailureCodegenDynamic
     def test_special_polygamma(self):
         fn = torch.special.polygamma
@@ -19564,7 +19265,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         self.common(fn, (2, x))
 
     @skip_if_triton
-    @skip_if_halide
     @config.patch({"freezing": True})
     def test_dont_constant_fold(self):
         from torch._inductor.constant_folding import (
@@ -19696,7 +19396,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         config.cpp_wrapper,
         "event sync only emitted for Python wrapper",
     )
-    @skip_if_halide
     @requires_gpu_and_triton
     @torch._dynamo.config.patch(capture_scalar_outputs=True)
     def test_non_blocking_d2h_event_sync(self):
@@ -19820,6 +19519,7 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         self.assertEqual(eager, compiled)
         self.assertEqual(torch._inductor.metrics.generated_kernel_count, 1)
 
+    @skipIfRocm(msg="https://github.com/pytorch/pytorch/issues/179970")
     @requires_gpu_and_triton
     @torch._inductor.config.patch(cpp_wrapper=True)
     def test_cpu_scalar_with_gpu_tensor_cpp(self):
@@ -20036,7 +19736,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             torch.compile(foo, fullgraph=True)(torch.ones(3, 3))
             self.assertTrue(len(log2), 1)
 
-    @tf32_on_and_off(0.05)
     def test_weight_norm_conv2d(self):
         """
         Verify fix for https://github.com/pytorch/pytorch/issues/165749
@@ -20054,9 +19753,7 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         act = compiled_conv(x)
         act_grad = torch.autograd.grad(act, list(compiled_conv.parameters()), grad_out)
 
-        self.assertEqual(
-            (act, act_grad), (ref, ref_grad), atol=1e-3, rtol=1e-3, equal_nan=False
-        )
+        self.assertTrue(same((ref, ref_grad), (act, act_grad), tol=1e-3))
 
     @xfail_if_mps  # MPS codegen does not emit ReductionHint.OUTER
     def test_inner_reduction_detection(self):
@@ -20090,8 +19787,7 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         self.assertFalse("ReductionHint.INNER" in code)
 
     @parametrize("slice_pointwise", (False, True))
-    @skip_if_halide
-    @skip_if_pallas
+    @skip_if_mps
     def test_argmin_argmax_fused_reduction_logical_index(self, slice_pointwise):
         # https://github.com/pytorch/pytorch/issues/193661
         def fn(x):
@@ -20117,8 +19813,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         self.assertEqual(fn(x), expected)
         self.common(fn, (x,))
 
-    @skip_if_halide
-    @skip_if_pallas
     @skip_if_mps
     def test_argreduce_native_index_cse(self):
         def fn(x):
@@ -20139,7 +19833,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             self.assertEqual(code.count("@triton_heuristics."), 1)
             self.assertEqual(code.count("triton_helpers.max_with_"), 1)
 
-    @skip_if_halide
     @requires_gpu_and_triton
     def test_triton_argmin_argmax_transpose_logical_index(self):
         def fn(x):
@@ -20191,7 +19884,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         # Equivalent value/index pairs merge; the distinct mapping does not.
         self.assertEqual(code.count("triton_helpers.max_with_"), 2)
 
-    @skip_if_halide
     @requires_gpu_and_triton
     def test_unbacked_float_item(self):
         def fn(x, max_val):
@@ -21336,13 +21028,6 @@ if RUN_GPU or HAS_MPS:
                     )
 
     copy_tests(CommonTemplate, GPUTests, GPU_TYPE)
-
-if RUN_TPU:
-
-    class SweepInputsTpuTest(SweepInputs2, TestCase):
-        gen = InputGen(10, "tpu")
-
-    SweepInputsTpuTest.populate()
 
 if RUN_GPU:
 
@@ -23436,28 +23121,6 @@ if RUN_GPU:
             expected = fn(x)
             for a, e in zip(actual, expected):
                 torch.testing.assert_close(a, e)
-
-        @unittest.skipIf(not SM90OrLater, "TMA requires SM90+")
-        @config.patch(
-            {
-                "triton.use_tensor_descriptor": True,
-                "assume_aligned_inputs": True,
-            }
-        )
-        def test_tma_descriptor_aoti_eager_scratch_buffer(self):
-            # Regression test: when TMA generates a kernel with a scratch buffer,
-            # the AOTI cpp wrapper must emit CACHE_TORCH_DEVICE(cuda) so the
-            # cached_torch_device_type_cuda variable is declared before use.
-            # The out= overload triggers the scratch buffer allocation path.
-            a = torch.randn(128, device=GPU_TYPE)
-            out = torch.empty_like(a)
-            ref = torch.clamp(a, min=-0.5, max=0.5)
-
-            with _scoped_library("aten", "IMPL") as lib:
-                register_ops_with_aoti_compile("aten", ["clamp"], "CUDA", lib)
-                torch.clamp(a, min=-0.5, max=0.5, out=out)
-
-            self.assertEqual(ref, out)
 
     class RNNTest(TestCase):
         device_type = GPU_TYPE
