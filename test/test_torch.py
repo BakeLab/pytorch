@@ -59,7 +59,6 @@ from torch.testing._internal.common_device_type import (
     dtypes, dtypesIfCUDA, dtypesIfCPU, deviceCountAtLeast,
     skipMeta, PYTORCH_CUDA_MEMCHECK, largeTensorTest, onlyNativeDeviceTypes, skipCUDAIfNotRocm,
     get_all_device_types, skipXLA, onlyAccelerator, skipCUDAIf)
-import torch.backends.quantized
 import torch.testing._internal.data
 from torch.testing._internal.common_cuda import (
     tf32_on_and_off, TEST_CUDNN, TEST_MULTIGPU,
@@ -10295,18 +10294,6 @@ tensor([[[1.+1.j, 1.+1.j, 1.+1.j,  ..., 1.+1.j, 1.+1.j, 1.+1.j],
         self.assertEqual(x.int().type(torch.Tensor).dtype, torch.get_default_dtype())
         self.assertEqual(x.type(torch.int32).dtype, torch.int32)
 
-    # FIXME: port to a quantization test suite
-    @unittest.skipIf(IS_MACOS, "https://github.com/pytorch/pytorch/issues/157245")
-    def test_qengine(self):
-        qengines = torch.backends.quantized.supported_engines
-        original_qe = torch.backends.quantized.engine
-        for qe in qengines:
-            torch.backends.quantized.engine = qe
-            if torch.backends.quantized.engine != qe:
-                raise AssertionError(f"qengine not set successfully: expected {qe}, got {torch.backends.quantized.engine}")
-        torch.backends.quantized.engine = original_qe
-
-    @skipIfXpu(msg="https://github.com/intel/torch-xpu-ops/issues/5309")
     def test_terminate_handler_on_crash(self):
         cmd = [sys.executable, '-c', "import os; os.environ[\"TORCH_CUSTOM_TERMINATE\"] ='1'; \
                import torch; import torch._C; torch._C._abort()"]
