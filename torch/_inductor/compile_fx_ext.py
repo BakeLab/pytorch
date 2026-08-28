@@ -7,13 +7,12 @@ import importlib
 import logging
 import os
 import queue
-import sys
 import tempfile
 import warnings
 from abc import abstractmethod
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, TypeGuard
-from typing_extensions import final, override, Self
+from typing import Self, final, override
 
 import torch._inductor.async_compile
 import torch.fx
