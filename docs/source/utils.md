@@ -85,7 +85,6 @@ torch.utils.module_tracker <utils/module_tracker>
     :nosignatures:
 
     check_release_file
-    is_xnnpack_available
     main
     pretty_str
     run
