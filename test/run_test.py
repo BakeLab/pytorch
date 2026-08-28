@@ -7,11 +7,9 @@ import glob
 import importlib.util
 import json
 import os
-import platform
 import re
 import shutil
 import signal
-import subprocess
 import sys
 import sysconfig
 import tempfile
@@ -1146,11 +1144,9 @@ def run_doctests(test_module, test_directory, options):
         # 'lapack': 'auto',
         # 'cuda': 'auto',
         # 'cuda1': 'auto',
-        # 'qengine': 'auto',
         "lapack": 0,
         "cuda": 0,
         "cuda1": 0,
-        "qengine": 0,
         "autograd_profiler": 0,
         "cpp_ext": 0,
     }
@@ -1178,9 +1174,6 @@ def run_doctests(test_module, test_directory, options):
 
     if enabled["lapack"]:
         os.environ["TORCH_DOCTEST_LAPACK"] = "1"
-
-    if enabled["qengine"]:
-        os.environ["TORCH_DOCTEST_QENGINE"] = "1"
 
     if enabled["autograd_profiler"]:
         os.environ["TORCH_DOCTEST_AUTOGRAD_PROFILER"] = "1"
