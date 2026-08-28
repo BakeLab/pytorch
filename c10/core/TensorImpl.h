@@ -2675,7 +2675,7 @@ struct C10_API TensorImpl : public c10::intrusive_ptr_target {
   // should never get called
   int64_t compute_numel() const {
     TORCH_INTERNAL_ASSERT_DEBUG_ONLY(!has_symbolic_sizes_strides_);
-#if C10_HAS_BUILTIN_OVERFLOW() && !defined(C10_MOBILE)
+#if C10_HAS_BUILTIN_OVERFLOW()
     // Use overflow checks if supported by the compiler
     return safe_compute_numel();
 #else
@@ -3153,14 +3153,12 @@ struct C10_API TensorImpl : public c10::intrusive_ptr_target {
 
 namespace detail {
 
-#ifndef C10_MOBILE
 template <class T>
 struct TargetTraits<
     T,
     std::enable_if_t<std::is_base_of_v<c10::TensorImpl, std::remove_cv_t<T>>>> {
   static constexpr bool can_have_pyobject = true;
 };
-#endif
 
 } // namespace detail
 
