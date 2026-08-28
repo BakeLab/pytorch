@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import functools
-import sys
-import threading
 import warnings
 from collections.abc import Sequence
 from ctypes import byref, c_int
 from typing import Any
-from typing_extensions import deprecated
+from warnings import deprecated
 
 import torch
 from torch.cuda._utils import (

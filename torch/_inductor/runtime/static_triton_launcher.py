@@ -3,7 +3,7 @@ import inspect
 import os
 from functools import cached_property
 from typing import Any
-from typing_extensions import Unpack
+from typing import Unpack
 
 from torch.utils._triton import get_triton_version
 

@@ -91,8 +91,8 @@ from .module_tracker import ModuleTracker
 from typing import Any, TypeVar
 from collections.abc import Callable
 from collections.abc import Iterator
-from typing_extensions import ParamSpec
-from collections import defaultdict, Counter
+from typing import ParamSpec
+from collections import defaultdict
 from torch.utils._python_dispatch import TorchDispatchMode
 from math import prod
 from functools import wraps

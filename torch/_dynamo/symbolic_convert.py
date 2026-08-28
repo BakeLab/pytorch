@@ -47,7 +47,7 @@ import unittest
 import weakref
 from collections import defaultdict, deque
 from typing import Any, cast, NoReturn, TYPE_CHECKING, TypeAlias, TypeVar
-from typing_extensions import TypeIs
+from typing import TypeIs
 
 import torch
 import torch._logging

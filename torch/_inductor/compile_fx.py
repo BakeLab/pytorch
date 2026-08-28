@@ -21,7 +21,7 @@ from inspect import currentframe
 from itertools import count
 from operator import attrgetter
 from typing import Any, Generic, TYPE_CHECKING, TypeVar
-from typing_extensions import Never, override, ParamSpec, Protocol, TypedDict, Unpack
+from typing import Never, override, ParamSpec, Protocol, TypedDict, Unpack
 
 import torch._inductor.async_compile
 import torch.fx

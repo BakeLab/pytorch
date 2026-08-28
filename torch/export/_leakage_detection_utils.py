@@ -2,7 +2,7 @@ import gc
 import types
 import typing
 from collections.abc import Iterable
-from typing_extensions import TypeIs
+from typing import TypeIs
 
 import torch
 from torch.fx.experimental.symbolic_shapes import TrackedFake

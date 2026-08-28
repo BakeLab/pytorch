@@ -10,10 +10,9 @@ import re
 import sys
 import textwrap
 import time
-import typing_extensions
 from collections import defaultdict
 from contextlib import contextmanager
-from typing import Any, cast, Literal, NoReturn, TYPE_CHECKING
+from typing import Any, Literal, NoReturn, TYPE_CHECKING, cast, override
 
 import sympy
 from sympy import Expr
@@ -1314,7 +1313,7 @@ class GraphLowering(torch.fx.Interpreter):
 
             return non_dup_const_name
 
-    @typing_extensions.override
+    @override
     def placeholder(  # pyrefly: ignore [bad-override]
         self,
         target: str,  # type: ignore[override]
@@ -1420,7 +1419,7 @@ class GraphLowering(torch.fx.Interpreter):
                 self.unaligned_buffers.add(target)
         return tensor
 
-    @typing_extensions.override
+    @override
     def call_function(self, target: Callable, args: Any, kwargs: dict[str, Any]) -> Any:  # type: ignore[type-arg]
         if target is operator.getitem and isinstance(args[0], (list, tuple, dict)):
             return super().call_function(target, args, kwargs)
@@ -1663,7 +1662,7 @@ class GraphLowering(torch.fx.Interpreter):
 
         return self.add_tensor_constant(value, target)
 
-    @typing_extensions.override
+    @override
     def call_module(
         self,
         target: torch.fx.node.Target,
@@ -1672,7 +1671,7 @@ class GraphLowering(torch.fx.Interpreter):
     ) -> NoReturn:
         raise AssertionError
 
-    @typing_extensions.override
+    @override
     def call_method(
         self,
         target: torch.fx.node.Target,
@@ -1681,7 +1680,7 @@ class GraphLowering(torch.fx.Interpreter):
     ) -> NoReturn:
         raise AssertionError
 
-    @typing_extensions.override
+    @override
     def output(
         self,
         target: torch.fx.node.Target,

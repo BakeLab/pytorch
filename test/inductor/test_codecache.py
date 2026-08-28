@@ -20,7 +20,7 @@ import warnings
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager, ExitStack, nullcontext
 from typing import Any, cast
-from typing_extensions import override
+from typing import override
 from unittest import mock
 
 import torch
