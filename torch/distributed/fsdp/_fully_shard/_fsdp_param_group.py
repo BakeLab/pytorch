@@ -6,7 +6,7 @@ import functools
 import logging
 from dataclasses import dataclass
 from typing import Any, Literal, NamedTuple, TYPE_CHECKING
-from typing_extensions import TypeVarTuple, Unpack
+from typing import TypeVarTuple, Unpack
 
 import torch
 import torch.distributed as dist

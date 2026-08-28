@@ -25,7 +25,7 @@ from contextlib import nullcontext
 from itertools import chain
 from types import NoneType
 from typing import Any, NoReturn, Optional, TYPE_CHECKING
-from typing_extensions import NotRequired, TypedDict
+from typing import NotRequired, TypedDict
 
 import sympy
 
