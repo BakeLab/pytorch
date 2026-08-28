@@ -2198,7 +2198,7 @@ class TritonHOPifier:
         self,
         user_obj: Any,
         tx: Optional["InstructionTranslatorBase"],
-        variable: Union["TritonKernelVariable", "TraceableTritonKernelWrapper"] | None,
+        variable: "TritonKernelVariable" | "TraceableTritonKernelWrapper" | None,
         name: str,
     ) -> Any:
         raise NotImplementedError("abstract method")
@@ -2209,7 +2209,7 @@ class TritonHOPifier:
         args: list,
         kwargs: dict,
         tx: Optional["InstructionTranslatorBase"],
-        variable: Union["TritonKernelVariable", "TraceableTritonKernelWrapper"] | None,
+        variable: "TritonKernelVariable" | "TraceableTritonKernelWrapper" | None,
     ) -> Any:
         raise NotImplementedError("abstract method")
 
@@ -2284,7 +2284,7 @@ class TritonHOPifier:
 
     def init_variable(
         self,
-        variable: Union["TraceableTritonKernelWrapper", "TritonKernelVariable"],
+        variable: "TraceableTritonKernelWrapper" | "TritonKernelVariable",
         kernel: "TritonKernelType",
         kernel_idx: int | None,
         grid: Optional["TritonGridType"],
@@ -2387,9 +2387,9 @@ class TritonHOPifier:
 
     def call_getitem(
         self,
-        variable: Union["TritonKernelVariable", "TraceableTritonKernelWrapper"],
+        variable: "TritonKernelVariable" | "TraceableTritonKernelWrapper",
         args: Sequence[Any],
-    ) -> Union["TritonKernelVariable", "TraceableTritonKernelWrapper"]:
+    ) -> "TritonKernelVariable" | "TraceableTritonKernelWrapper":
         # __getitem__ should only be called if we don't already have a grid
         # Only grid needs to be passed
         if variable.grid is not None or len(args) != 1:
@@ -2406,7 +2406,7 @@ class TritonHOPifier:
 
     def call_run(
         self,
-        variable: Union["TritonKernelVariable", "TraceableTritonKernelWrapper"],
+        variable: "TritonKernelVariable" | "TraceableTritonKernelWrapper",
         args: Sequence[Any],
         kwargs: dict[str, Any],
         tx: Optional["InstructionTranslatorBase"],
@@ -2430,7 +2430,7 @@ class TritonHOPifier:
 
     def call_triton_kernel(
         self,
-        variable: Union["TritonKernelVariable", "TraceableTritonKernelWrapper"],
+        variable: "TritonKernelVariable" | "TraceableTritonKernelWrapper",
         args: Sequence[Any],
         kwargs: dict[str, Any],
         tx: Optional["InstructionTranslatorBase"],
@@ -2840,7 +2840,7 @@ class TracingTritonHOPifier(TritonHOPifier):
         self,
         user_obj: Any,
         tx: Optional["InstructionTranslatorBase"],
-        variable: Union["TritonKernelVariable", "TraceableTritonKernelWrapper"] | None,
+        variable: "TritonKernelVariable" | "TraceableTritonKernelWrapper" | None,
         name: str,
     ) -> Any:
         if tx is not None:
@@ -2853,7 +2853,7 @@ class TracingTritonHOPifier(TritonHOPifier):
         args: list,
         kwargs: dict,
         tx: Optional["InstructionTranslatorBase"],
-        variable: Union["TritonKernelVariable", "TraceableTritonKernelWrapper"] | None,
+        variable: "TritonKernelVariable" | "TraceableTritonKernelWrapper" | None,
     ) -> Any:
         if not isinstance(args, list):
             raise AssertionError(f"args must be a list, got {type(args)}")
