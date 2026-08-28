@@ -5,7 +5,7 @@ from collections import defaultdict
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from enum import Enum
-from typing import Any, Optional, ParamSpec, TypeVar, Union
+from typing import Any, Optional, ParamSpec, TypeVar
 
 from torch._utils_internal import signpost_event
 
@@ -109,7 +109,7 @@ class NodeSource:
         self,
         node: Node | None,
         pass_name: str = "",
-        action: Union["NodeSourceAction", list["NodeSourceAction"]] | None = None,
+        action: "NodeSourceAction" | list["NodeSourceAction"] | None = None,
     ) -> None:
         self.pass_name = pass_name
 
