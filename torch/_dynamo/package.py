@@ -17,7 +17,6 @@ import hashlib
 import importlib
 import inspect
 import io
-import itertools
 import json
 import logging
 import os
@@ -29,7 +28,7 @@ import types
 from collections.abc import Callable, Generator, Iterator
 from contextlib import nullcontext
 from typing import Any, IO, NewType, Optional, TYPE_CHECKING, Union
-from typing_extensions import Never
+from typing import Never
 
 import torch
 from torch._dynamo.exc import PackageError
