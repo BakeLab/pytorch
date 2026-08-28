@@ -36,7 +36,7 @@ import types
 import warnings
 import weakref
 from collections.abc import Callable, Iterable, Sequence
-from typing import Any, cast, NoReturn, TYPE_CHECKING, Union
+from typing import Any, cast, NoReturn, TYPE_CHECKING
 from typing import is_typeddict
 
 import torch._dynamo.config
@@ -5533,10 +5533,7 @@ class UserDefinedListVariable(UserDefinedObjectVariable, ListVariable):
     }
 
     def __init__(
-        self,
-        value: object,
-        items: list[VariableTracker] | None = None,
-        **kwargs: Any,
+        self, value: object, list_vt: "ListVariable" | None = None, **kwargs: Any
     ) -> None:
         super().__init__(value, items=items if items is not None else [], **kwargs)
         self._base_methods = list_methods
@@ -5581,8 +5578,7 @@ class UserDefinedDequeVariable(UserDefinedObjectVariable, DequeVariable):
     def __init__(
         self,
         value: object,
-        items: list[VariableTracker] | None = None,
-        maxlen: VariableTracker | None = None,
+        deque_vt: "variables.lists.DequeVariable" | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(

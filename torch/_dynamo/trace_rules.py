@@ -160,9 +160,7 @@ If you are removing an existing torch level API:
 """
 manual_torch_name_rule_map: dict[
     str,
-    type[TorchInGraphFunctionVariable]
-    | type[SkipFunctionVariable]
-    | type[UserFunctionVariable],
+    type[TorchInGraphFunctionVariable | SkipFunctionVariable | UserFunctionVariable],
 ] = {
     "torch.overrides.is_tensor_like": TorchInGraphFunctionVariable,
     "torch.overrides.handle_torch_function": TorchInGraphFunctionVariable,

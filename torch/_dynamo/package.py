@@ -27,7 +27,7 @@ import sys
 import types
 from collections.abc import Callable, Generator, Iterator
 from contextlib import nullcontext
-from typing import Any, IO, NewType, Optional, TYPE_CHECKING, Union
+from typing import Any, IO, NewType, Optional, TYPE_CHECKING
 from typing import Never
 
 import torch
@@ -55,8 +55,8 @@ _CODE_CACHE = WeakIdKeyDictionary()
 
 def _code_cache(fn: Callable[..., Any]) -> Callable[..., Any]:
     def _(
-        cls: type[Any], code: Union["SerializedCode", types.CodeType]
-    ) -> Union["SerializedCode", types.CodeType]:
+        cls: type[Any], code: "SerializedCode" | types.CodeType
+    ) -> "SerializedCode" | types.CodeType:
         if code in _CODE_CACHE:
             return _CODE_CACHE[code]
         res = fn(cls, code)

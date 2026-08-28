@@ -10,7 +10,6 @@
 import json
 from dataclasses import asdict, dataclass, field
 from enum import Enum
-from typing import Union
 
 
 __all__ = ["EventSource", "Event", "NodeState", "RdzvEvent"]
@@ -48,7 +47,7 @@ class Event:
         return self.serialize()
 
     @staticmethod
-    def deserialize(data: Union[str, "Event"]) -> "Event":
+    def deserialize(data: str | "Event") -> "Event":
         """Return a ``Event`` from a JSON string; ``Event`` inputs are returned as is."""
         if isinstance(data, Event):
             return data
@@ -105,7 +104,7 @@ class RdzvEvent:
         return self.serialize()
 
     @staticmethod
-    def deserialize(data: Union[str, "RdzvEvent"]) -> "RdzvEvent":
+    def deserialize(data: str | "RdzvEvent") -> "RdzvEvent":
         """Return a ``RdzvEvent`` from a JSON string; ``RdzvEvent`` inputs are returned as is."""
         if isinstance(data, RdzvEvent):
             return data

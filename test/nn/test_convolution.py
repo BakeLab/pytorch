@@ -51,7 +51,7 @@ from torch.testing._internal.common_utils import (
     gradgradcheck,
     HardwareClassification,
     instantiate_parametrized_tests,
-    MI200_ARCH,
+    MACOS_VERSION,
     parametrize as parametrize_test,
     run_tests,
     serialTest,
