@@ -144,8 +144,6 @@ set(_ENV_PASSTHROUGH
   SELECTED_OP_LIST
   TORCH_CUDA_ARCH_LIST
   TORCH_XPU_ARCH_LIST
-  TRACING_BASED
-  PYTHON_SIX_SOURCE_DIR
 )
 
 # Low-priority aliases: if the canonical var is not set, use the alias.
