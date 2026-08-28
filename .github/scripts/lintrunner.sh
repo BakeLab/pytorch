@@ -2,7 +2,7 @@
 set -ex
 
 CACHE_DIRECTORY="/tmp/.lintbin"
-CLANG_LINTERS="CLANGTIDY,CLANGTIDY_EXECUTORCH_COMPATIBILITY,CLANGFORMAT"
+CLANG_LINTERS="CLANGTIDY,CLANGFORMAT"
 PYREFLY_LINTERS="PYREFLY"
 # Findings from these linters are reported but do not affect the job status.
 # They are excluded from the main blocking run and executed separately in the

@@ -62,7 +62,7 @@ template <typename To, typename From>
       "safe_conv requires an integral, non-bool source type");
 #endif
   // Exact for integer->integer and device-safe (plain constexpr comparisons).
-  // TODO: Use std::in_range after ExecuTorch moves to C++20.
+  // Not std::in_range: it is not callable from CUDA/HIP device code.
   const bool representable =
       !c10::less_than_lowest<To>(f) && !c10::greater_than_max<To>(f);
   if (!representable) {
