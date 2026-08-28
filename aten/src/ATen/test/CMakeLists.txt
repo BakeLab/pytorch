@@ -95,7 +95,6 @@ foreach(test_src ${ATen_CUDA_TEST_SRCS})
 endforeach()
 
 list(APPEND ATen_MOBILE_TEST_SRCS
-  ${CMAKE_CURRENT_SOURCE_DIR}/cpu_caching_allocator_test.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/cpu_profiling_allocator_test.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/vec_test_all_types.cpp)
 
