@@ -379,8 +379,6 @@ function(torch_compile_options libname)
     -Wextra
     -Wdeprecated
     -Wunused
-    -Wno-unused-parameter
-    -Wno-missing-field-initializers
     -Wno-array-bounds
     -Wno-unknown-pragmas
     -Wno-strict-overflow
@@ -395,16 +393,8 @@ function(torch_compile_options libname)
       # NS: One can not compile CUDA code with extra-semi flag as nvcc generates code like
       # namespace MemoryOps_cu_d8602b38_109889 __attribute__((visibility("hidden")))  { };
       list(APPEND private_compile_options -Wextra-semi)
-    else()
-      # NVCC inserts whitespace into literal operators, triggering a spurious Clang warning.
-      list(APPEND private_compile_options -Wno-deprecated-literal-operator)
     endif()
     list(APPEND private_compile_options -Wmove)
-  else()
-    list(APPEND private_compile_options
-      # Considered to be flaky.  See the discussion at
-      # https://github.com/pytorch/pytorch/pull/9608
-      -Wno-maybe-uninitialized)
   endif()
 
   if(WERROR)
@@ -416,9 +406,6 @@ function(torch_compile_options libname)
       -Werror=pedantic
       -Werror=unused
       -Wno-error=unused-parameter
-      # Deprecated APIs (e.g. c10::checked_convert) must warn, not break the
-      # build, so they can be retired while external/BC callers migrate.
-      -Wno-error=deprecated-declarations
     )
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
       list(APPEND private_compile_options -Wredundant-move -Wpessimizing-move)

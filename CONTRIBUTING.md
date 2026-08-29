@@ -412,7 +412,6 @@ dependencies as well as the nightly binaries into the repo directory.
           [miopen](aten/src/ATen/native/miopen) [cudnn](aten/src/ATen/native/cudnn)
           - implementations of operators which simply bind to some
             backend library.
-        * [quantized](aten/src/ATen/native/quantized/) - Quantized tensor (i.e. QTensor) operation implementations. [README](aten/src/ATen/native/quantized/README.md) contains details including how to implement native quantized operations.
 * [torch](torch) - The actual PyTorch library. Everything that is not
   in [csrc](torch/csrc) is a Python module, following the PyTorch Python
   frontend module structure.
@@ -436,11 +435,9 @@ dependencies as well as the nightly binaries into the repo directory.
     automatic differentiation support.
   * [test_nn.py](test/test_nn.py) - Tests for NN operators and
     their automatic differentiation.
-  * [test_jit.py](test/test_jit.py) - Tests for the JIT compiler
     and TorchScript.
   * ...
   * [cpp](test/cpp) - C++ unit tests for PyTorch C++ frontend.
-    * [api](test/cpp/api) - [README](test/cpp/api/README.md)
     * [jit](test/cpp/jit) - [README](test/cpp/jit/README.md)
   * [expect](test/expect) - Automatically generated "expect" files
     which are used to compare against expected output.
@@ -942,20 +939,14 @@ On the initial build, you can also speed things up by disabling the features you
 - `USE_NNPACK=0` will disable compiling with NNPACK.
 - `USE_FLASH_ATTENTION=0` and `USE_MEM_EFF_ATTENTION=0` will disable compiling flash attention and memory efficient kernels respectively.
 - `USE_CPU_VECTORIZATION=0` will disable building vectorized CPU kernel variants (AVX2, AVX512). Only the scalar DEFAULT kernels are built. Fine for correctness/dispatch work; not for CPU benchmarking.
-- `USE_COLORIZE_OUTPUT=1` will colorize compiler output for easier reading.
-- `TORCH_NATIVE_AOT=0` will disable the native-AOT stage-2 step (exporting the DSL kernels and embedding them into `libtorch_cuda`; see `tools/native_aot/build_stage2.py`, whose module docstring lists these in the order they are checked). Stage 2 already skips itself when the platform is not Linux, when the built torch does not import or was built without CUDA, when no toolchain targets this backend, when CUDA is older than 13 or cannot be determined, when the interpreter has no published DSL wheel and none is installed, when `BUILD_SHARED_LIBS=OFF` leaves a static `torch_cuda` that cannot take the version script, when nothing declares kernels, and when no op declares a target compatible with a supported arch -- note that with `TORCH_CUDA_ARCH_LIST` unset it exports for whatever GPU is present, so a GPU compatible with a declared target does not hit that last one. Once it decides it *will* export, a missing DSL wheel is a hard error rather than a skip, so this is the switch to use when you want a build without the DSL toolchain installed.
-
-  Native-AOT export for supported Hopper and Blackwell targets requires Triton at
-  build time alongside CuTeDSL. Install the pinned Triton wheel with
-  `bash scripts/install_triton_wheel.sh`. Embedded Triton kernels do not require
-  the Triton Python package at runtime.
+- `TORCH_NATIVE_AOT=0` will disable the native-AOT stage-2 step (exporting the DSL kernels and embedding them into `libtorch_cuda`; see `tools/native_aot/build_stage2.py`, whose module docstring lists these in the order they are checked). Stage 2 already skips itself when the platform is not Linux, when the built torch does not import or was built without CUDA, when no toolchain targets this backend, when CUDA is older than 13 or cannot be determined, when the interpreter has no published DSL wheel and none is installed, when `BUILD_SHARED_LIBS=OFF` leaves a static `torch_cuda` that cannot take the version script, when nothing declares kernels, and when no supported arch is targeted -- note that with `TORCH_CUDA_ARCH_LIST` unset it exports for whatever GPU is present, so a machine with a supported GPU does not hit that last one. Once it decides it *will* export, a missing DSL wheel is a hard error rather than a skip, so this is the switch to use when you want a build without the DSL toolchain installed.
 
 The full list of build environment variables, what each one does, and how it reaches CMake is
 documented at the top of [`cmake/EnvVarForwarding.cmake`](./cmake/EnvVarForwarding.cmake).
 
 For example, a good default for the most minimal build is to add to your bashrc is:
 ```bash
-alias BUILD_CONFIG='CMAKE_GENERATOR=Ninja USE_DISTRIBUTED=0 USE_FLASH_ATTENTION=0 USE_MEM_EFF_ATTENTION=0 USE_MKLDNN=0 USE_CUDA=0 BUILD_TEST=0 USE_FBGEMM=0 USE_NNPACK=0 USE_CPU_VECTORIZATION=0 USE_COLORIZE_OUTPUT=1'
+alias BUILD_CONFIG='CMAKE_GENERATOR=Ninja USE_DISTRIBUTED=0 USE_FLASH_ATTENTION=0 USE_MEM_EFF_ATTENTION=0 USE_MKLDNN=0 USE_CUDA=0 BUILD_TEST=0 USE_FBGEMM=0 USE_NNPACK=0 USE_CPU_VECTORIZATION=0'
 ```
 
 You can then re-enable features selectively

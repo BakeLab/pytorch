@@ -335,7 +335,6 @@ cmake_dependent_option(INSTALL_TEST "Install test binaries if BUILD_TEST is on"
                        ON "BUILD_TEST" OFF)
 option(USE_RELATIVE_PATHS "Use relative paths in generated files for ccache friendliness" OFF)
 option(USE_CPP_CODE_COVERAGE "Compile C/C++ with code coverage flags" OFF)
-option(USE_COLORIZE_OUTPUT "Colorize output during compilation" ON)
 option(USE_ASAN "Use Address+Undefined Sanitizers" OFF)
 option(USE_LSAN "Use Leak Sanitizer" OFF)
 option(USE_TSAN "Use Thread Sanitizer" OFF)
@@ -435,7 +434,7 @@ option(BUILD_LIBTORCH_CPU_WITH_DEBUG
        "Enable RelWithDebInfo for libtorch_cpu target only" OFF)
 cmake_dependent_option(
   USE_CCACHE "Attempt using [S]CCache to wrap the compilation" ON "UNIX" OFF)
-option(WERROR "Build with -Werror supported by the compiler" OFF)
+option(WERROR "Build with -Werror supported by the compiler" ON)
 option(
   DEBUG_CUDA
   "When compiling DEBUG, also attempt to compile CUDA with debug flags (may cause nvcc to OOM)"
@@ -794,9 +793,6 @@ include(cmake/Allowlist.cmake)
 # ---[ Build flags Re-include to override append_cxx_flag_if_supported from
 # third_party/FBGEMM
 include(cmake/public/utils.cmake)
-if(USE_COLORIZE_OUTPUT)
-  set(CMAKE_COLOR_DIAGNOSTICS ON)
-endif()
 string(APPEND CMAKE_CXX_FLAGS " -O2 -fPIC")
 
 # This prevents use of `c10::optional`, `c10::nullopt` etc within the codebase
@@ -814,10 +810,7 @@ append_cxx_flag_if_supported("-Werror=braced-scalar-init" CMAKE_CXX_FLAGS)
 append_cxx_flag_if_supported("-Werror=range-loop-construct" CMAKE_CXX_FLAGS)
 append_cxx_flag_if_supported("-Werror=bool-operation" CMAKE_CXX_FLAGS)
 append_cxx_flag_if_supported("-Wnarrowing" CMAKE_CXX_FLAGS)
-append_cxx_flag_if_supported("-Wno-missing-field-initializers"
-                             CMAKE_CXX_FLAGS)
 append_cxx_flag_if_supported("-Wno-unknown-pragmas" CMAKE_CXX_FLAGS)
-append_cxx_flag_if_supported("-Wno-unused-parameter" CMAKE_CXX_FLAGS)
 append_cxx_flag_if_supported("-Wno-strict-overflow" CMAKE_CXX_FLAGS)
 append_cxx_flag_if_supported("-Wno-strict-aliasing" CMAKE_CXX_FLAGS)
 append_cxx_flag_if_supported("-Wno-stringop-overflow" CMAKE_CXX_FLAGS)
@@ -837,10 +830,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   string(APPEND CMAKE_CXX_FLAGS " -Wno-psabi")
 endif()
 
-append_cxx_flag_if_supported("-Wno-error=old-style-cast" CMAKE_CXX_FLAGS)
 append_cxx_flag_if_supported("-Wconstant-conversion" CMAKE_CXX_FLAGS)
-append_cxx_flag_if_supported("-Wno-aligned-allocation-unavailable"
-                             CMAKE_CXX_FLAGS)
 append_cxx_flag_if_supported("-Qunused-arguments" CMAKE_CXX_FLAGS)
 
 append_cxx_flag_if_supported("-faligned-new" CMAKE_CXX_FLAGS)
@@ -851,7 +841,6 @@ if(WERROR)
     set(WERROR FALSE)
   endif()
 endif()
-append_cxx_flag_if_supported("-Wno-maybe-uninitialized" CMAKE_CXX_FLAGS)
 append_cxx_flag_if_supported("-fstandalone-debug" CMAKE_CXX_FLAGS_DEBUG)
 string(APPEND CMAKE_CXX_FLAGS_DEBUG " -fno-omit-frame-pointer -O0")
 # aarch64 C++ stack unwinding uses frame-pointer chain walking, so frame
@@ -906,7 +895,6 @@ if(APPLE)
   append_cxx_flag_if_supported("-Wno-missing-braces" CMAKE_CXX_FLAGS)
 endif()
 
-append_cxx_flag_if_supported("-Wno-stringop-overflow" CMAKE_CXX_FLAGS)
 
 if(NOT APPLE AND UNIX)
   list(APPEND Caffe2_DEPENDENCY_LIBS dl)
