@@ -1394,7 +1394,6 @@ def include_paths(device_type: str = "cpu", torch_include_dirs=True) -> list[str
             os.path.join(lib_include, 'torch', 'csrc', 'api', 'include'),
         ])
     if device_type == "cuda" and IS_HIP_EXTENSION:
-        paths.append(os.path.join(lib_include, 'THH'))
         rocm_home_include = _join_rocm_home('include')
         # Distros that package ROCm under /usr give /usr/include; see the CUDA branch below.
         if rocm_home_include != '/usr/include':
