@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cassert>
 #include <climits>
 #include <cmath>
@@ -78,6 +79,61 @@ Windows llvm will not have this definition.
 
 // See Note [CPU_CAPABILITY namespace]
 namespace at::vec::inline CPU_CAPABILITY {
+
+// Vectorized<T> covers the real scalar types and c10::complex alike, and the
+// element functions live in two places: the real overloads in std, the complex
+// ones at global scope alongside c10::complex. This namespace holds both sets so
+// map() can pick by the element type. It has to be named at the call sites --
+// unqualified lookup inside Vectorized<T>::acos() finds the member and stops.
+namespace elementwise {
+using std::acos;
+using std::acosh;
+using std::asin;
+using std::asinh;
+using std::atan;
+using std::atanh;
+using std::cos;
+using std::cosh;
+using std::erf;
+using std::erfc;
+using std::exp;
+using std::expm1;
+using std::lgamma;
+using std::log;
+using std::log10;
+using std::log1p;
+using std::log2;
+using std::sin;
+using std::sinh;
+using std::sqrt;
+using std::tan;
+using std::tanh;
+using std::pow;
+using ::acos;
+using ::acosh;
+using ::asin;
+using ::asinh;
+using ::atan;
+using ::atanh;
+using ::cos;
+using ::cosh;
+using ::erf;
+using ::erfc;
+using ::exp;
+using ::expm1;
+using ::lgamma;
+using ::log;
+using ::log10;
+using ::log1p;
+using ::log2;
+using ::sin;
+using ::sinh;
+using ::sqrt;
+using ::tan;
+using ::tanh;
+using ::pow;
+} // namespace elementwise
+
 // at::Half and at::BFloat16 should be treated as floating point
 template <typename T>
 struct is_floating_point
@@ -321,23 +377,6 @@ struct Vectorized {
     }
     return ret;
   }
-  Vectorized<T> map(T (*const f)(const T&)) const {
-    Vectorized<T> ret;
-    for (int64_t i = 0; i != size(); i++) {
-      ret[i] = f(values[i]);
-    }
-    return ret;
-  }
-  // Seeded with lane 0 rather than an identity element, so that `op` need not
-  // have one.
-  template <typename Op>
-  T reduce(Op op) const {
-    T ret = values[0];
-    for (int64_t i = 1; i != size(); i++) {
-      ret = op(ret, values[i]);
-    }
-    return ret;
-  }
   template <
       typename other_t_abs = T,
       typename std::enable_if_t<
@@ -366,7 +405,7 @@ struct Vectorized {
     // complex_t_abs is for SFINAE and clarity. Make sure it is not changed.
     static_assert(std::is_same_v<complex_t_abs, T>, "complex_t_abs must be T");
     // Specifically map() does not perform the type conversion needed by abs.
-    return map([](T x) { return static_cast<T>(std::abs(x)); });
+    return map([](T x) { return static_cast<T>(::abs(x)); });
   }
 
   template <
@@ -394,7 +433,7 @@ struct Vectorized {
     // complex_t_angle is for SFINAE and clarity. Make sure it is not changed.
     static_assert(
         std::is_same_v<complex_t_angle, T>, "complex_t_angle must be T");
-    return map([](T x) { return static_cast<T>(std::arg(x)); });
+    return map([](T x) { return static_cast<T>(::arg(x)); });
   }
   template <
       typename other_t_real = T,
@@ -448,25 +487,25 @@ struct Vectorized {
     // complex_t_conj is for SFINAE and clarity. Make sure it is not changed.
     static_assert(
         std::is_same_v<complex_t_conj, T>, "complex_t_conj must be T");
-    return map([](T x) { return static_cast<T>(std::conj(x)); });
+    return map([](T x) { return static_cast<T>(::conj(x)); });
   }
   Vectorized<T> acos() const {
-    return map(std::acos);
+    return map(elementwise::acos);
   }
   Vectorized<T> acosh() const {
-    return map(std::acosh);
+    return map(elementwise::acosh);
   }
   Vectorized<T> asin() const {
-    return map(std::asin);
+    return map(elementwise::asin);
   }
   Vectorized<T> asinh() const {
-    return map(std::asinh);
+    return map(elementwise::asinh);
   }
   Vectorized<T> atan() const {
-    return map(std::atan);
+    return map(elementwise::atan);
   }
   Vectorized<T> atanh() const {
-    return map(std::atanh);
+    return map(elementwise::atanh);
   }
   Vectorized<T> atan2(const Vectorized<T>& exp) const {
     Vectorized<T> ret;
@@ -486,28 +525,28 @@ struct Vectorized {
     return ret;
   }
   Vectorized<T> erf() const {
-    return map(std::erf);
+    return map(elementwise::erf);
   }
   Vectorized<T> erfc() const {
-    return map(std::erfc);
+    return map(elementwise::erfc);
   }
   Vectorized<T> erfinv() const {
     return map(calc_erfinv);
   }
   Vectorized<T> exp() const {
-    return map(std::exp);
+    return map(elementwise::exp);
   }
   Vectorized<T> exp2() const {
     return map(exp2_impl);
   }
   Vectorized<T> expm1() const {
-    return map(std::expm1);
+    return map(elementwise::expm1);
   }
   Vectorized<T> exp_u20() const {
-    return map(std::exp);
+    return map(elementwise::exp);
   }
   Vectorized<T> fexp_u20() const {
-    return map(std::exp);
+    return map(elementwise::exp);
   }
   Vectorized<T> frac() const {
     return *this - this->trunc();
@@ -525,13 +564,13 @@ struct Vectorized {
     return ret;
   }
   Vectorized<T> log() const {
-    return map(std::log);
+    return map(elementwise::log);
   }
   Vectorized<T> log10() const {
-    return map(std::log10);
+    return map(elementwise::log10);
   }
   Vectorized<T> log1p() const {
-    return map(std::log1p);
+    return map(elementwise::log1p);
   }
   template <
       typename other_t_log2 = T,
@@ -539,7 +578,7 @@ struct Vectorized {
   Vectorized<T> log2() const {
     // other_t_log2 is for SFINAE and clarity. Make sure it is not changed.
     static_assert(std::is_same_v<other_t_log2, T>, "other_t_log2 must be T");
-    return map(std::log2);
+    return map(elementwise::log2);
   }
   template <
       typename complex_t_log2 = T,
@@ -550,16 +589,16 @@ struct Vectorized {
     static_assert(
         std::is_same_v<complex_t_log2, T>, "complex_t_log2 must be T");
     constexpr auto log_2 = c10::ln_2<T>;
-    return Vectorized(map(std::log)) / Vectorized(log_2);
+    return Vectorized(map(elementwise::log)) / Vectorized(log_2);
   }
   Vectorized<T> ceil() const {
     return map(at::native::ceil_impl);
   }
   Vectorized<T> cos() const {
-    return map(std::cos);
+    return map(elementwise::cos);
   }
   Vectorized<T> cosh() const {
-    return map(std::cosh);
+    return map(elementwise::cosh);
   }
   Vectorized<T> floor() const {
     return map(at::native::floor_impl);
@@ -613,36 +652,36 @@ struct Vectorized {
     return map(at::native::round_impl);
   }
   Vectorized<T> sin() const {
-    return map(std::sin);
+    return map(elementwise::sin);
   }
   Vectorized<T> sinh() const {
-    return map(std::sinh);
+    return map(elementwise::sinh);
   }
   Vectorized<T> tan() const {
-    return map(std::tan);
+    return map(elementwise::tan);
   }
   Vectorized<T> tanh() const {
-    return map(std::tanh);
+    return map(elementwise::tanh);
   }
   Vectorized<T> trunc() const {
     return map(at::native::trunc_impl);
   }
   Vectorized<T> lgamma() const {
-    return map(std::lgamma);
+    return map(elementwise::lgamma);
   }
   Vectorized<T> sqrt() const {
-    return map(std::sqrt);
+    return map(elementwise::sqrt);
   }
   Vectorized<T> reciprocal() const {
     return map([](T x) { return (T)1 / x; });
   }
   Vectorized<T> rsqrt() const {
-    return map([](T x) { return (T)1 / std::sqrt(x); });
+    return map([](T x) { return (T)1 / elementwise::sqrt(x); });
   }
   Vectorized<T> pow(const Vectorized<T>& exp) const {
     Vectorized<T> ret;
     for (const auto i : c10::irange(size())) {
-      ret[i] = std::pow(values[i], exp[i]);
+      ret[i] = elementwise::pow(values[i], exp[i]);
     }
     return ret;
   }
@@ -1125,7 +1164,7 @@ template <
         enable_if_t<!std::is_base_of_v<Vectorizedi, Vectorized<T>>, int> = 0>
 inline Vectorized<T> operator~(const Vectorized<T>& a) {
   using int_t = int_same_size_t<T>;
-  Vectorized<T> ones(c10::bit_cast<T>((int_t)(~(int_t)0))); // All bits are 1
+  Vectorized<T> ones(std::bit_cast<T>((int_t)(~(int_t)0))); // All bits are 1
   return a ^ ones;
 }
 

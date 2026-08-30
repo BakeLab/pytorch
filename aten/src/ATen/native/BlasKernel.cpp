@@ -404,12 +404,11 @@ bool gemv_use_fast_path<at::Half>(
     [[maybe_unused]] int64_t incx,
     [[maybe_unused]] at::Half beta,
     [[maybe_unused]] int64_t incy) {
-  // clang is capable of constant-folding fp16_ieee_from_fp32_value,
-  // so use it to get simple integer comparisons.
-  // https://godbolt.org/z/v936hroYb
-  using c10::detail::fp16_ieee_from_fp32_value;;
-  return (trans == 'T' || trans == 't') && incx == 1 &&
-    alpha.x == fp16_ieee_from_fp32_value(1.0f);
+  // Compare the bits rather than converting alpha back to float: Half's
+  // constructor is constexpr, so this is one integer comparison against a
+  // compile-time constant.
+  constexpr uint16_t kOneBits = at::Half(1.0f).x;
+  return (trans == 'T' || trans == 't') && incx == 1 && alpha.x == kOneBits;
 }
 template <>
 void gemv_fast_path<at::Half>(
@@ -727,7 +726,7 @@ namespace {
 template <typename scalar_t>
 struct vdot_op {
   scalar_t operator()(scalar_t x, scalar_t y) {
-    return std::conj(x) * y;
+    return ::conj(x) * y;
   }
 };
 } // anonymous namespace

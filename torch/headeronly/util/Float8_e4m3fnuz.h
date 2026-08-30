@@ -23,12 +23,7 @@
 
 #include <limits>
 
-#if defined(__cplusplus)
 #include <cstdint>
-#elif !defined(__OPENCL_VERSION__)
-#include <math.h>
-#include <stdint.h>
-#endif
 
 #include <iosfwd>
 #include <ostream>
@@ -49,16 +44,16 @@ struct alignas(1) Float8_e4m3fnuz {
       uint8_t bits,
       from_bits_t /*unused*/)
       : x(bits) {}
-  inline C10_HOST_DEVICE Float8_e4m3fnuz(float value);
-  inline C10_HOST_DEVICE operator float() const;
-  inline C10_HOST_DEVICE bool isnan() const;
-  inline C10_HOST_DEVICE bool isinf() const;
+  C10_HOST_DEVICE constexpr Float8_e4m3fnuz(float value);
+  C10_HOST_DEVICE constexpr operator float() const;
+  C10_HOST_DEVICE constexpr bool isnan() const;
+  C10_HOST_DEVICE constexpr bool isinf() const;
 };
 
 inline std::ostream& operator<<(
     std::ostream& out,
-    const Float8_e4m3fnuz& value) {
-  out << (float)value;
+    Float8_e4m3fnuz value) {
+  out << static_cast<float>(value);
   return out;
 }
 
@@ -68,7 +63,7 @@ namespace detail {
  * Convert a 32-bit floating-point number in IEEE single-precision format to a
  * 8-bit floating-point number in fp8 E4M3FNUZ format, in bit representation.
  */
-inline C10_HOST_DEVICE uint8_t fp8e4m3fnuz_from_fp32_value(float f) {
+C10_HOST_DEVICE constexpr uint8_t fp8e4m3fnuz_from_fp32_value(float f) {
   /*
    * Binary representation of 256.0f, which is the first value not representable
    * (i.e. the first value which would overflow into the sign bit, resulting in
@@ -123,7 +118,7 @@ inline C10_HOST_DEVICE uint8_t fp8e4m3fnuz_from_fp32_value(float f) {
     uint8_t mant_odd = (f_bits >> 20) & 1;
 
     // update exponent, rounding bias part 1
-    f_bits += ((uint32_t)(8 - 127) << 23) + 0x7FFFF;
+    f_bits += (static_cast<uint32_t>(8 - 127) << 23) + 0x7FFFF;
 
     // rounding bias part 2
     f_bits += mant_odd;
@@ -146,22 +141,22 @@ C10_CLANG_DIAGNOSTIC_IGNORE("-Wimplicit-int-float-conversion")
 
 /// Constructors
 
-inline C10_HOST_DEVICE Float8_e4m3fnuz::Float8_e4m3fnuz(float value)
+C10_HOST_DEVICE constexpr Float8_e4m3fnuz::Float8_e4m3fnuz(float value)
     : x(detail::fp8e4m3fnuz_from_fp32_value(value)) {}
 
 /// Implicit conversions
 
-inline C10_HOST_DEVICE Float8_e4m3fnuz::operator float() const {
+C10_HOST_DEVICE constexpr Float8_e4m3fnuz::operator float() const {
   return torch::headeronly::detail::fp8_fnuz_to_fp32_value<4, 3>(x);
 }
 
 /// Special values helper
 
-inline C10_HOST_DEVICE bool Float8_e4m3fnuz::isnan() const {
+C10_HOST_DEVICE constexpr bool Float8_e4m3fnuz::isnan() const {
   return x == 0b10000000;
 }
 
-inline C10_HOST_DEVICE bool Float8_e4m3fnuz::isinf() const {
+C10_HOST_DEVICE constexpr bool Float8_e4m3fnuz::isinf() const {
   // Note: fp8e4m3fnuz does not have infinity, so this always returns false.
   return false;
 }
@@ -169,54 +164,54 @@ inline C10_HOST_DEVICE bool Float8_e4m3fnuz::isinf() const {
 /// Arithmetic
 
 inline C10_HOST_DEVICE Float8_e4m3fnuz
-operator+(const Float8_e4m3fnuz& a, const Float8_e4m3fnuz& b) {
+operator+(Float8_e4m3fnuz a, Float8_e4m3fnuz b) {
   return static_cast<float>(a) + static_cast<float>(b);
 }
 
 inline C10_HOST_DEVICE Float8_e4m3fnuz
-operator-(const Float8_e4m3fnuz& a, const Float8_e4m3fnuz& b) {
+operator-(Float8_e4m3fnuz a, Float8_e4m3fnuz b) {
   return static_cast<float>(a) - static_cast<float>(b);
 }
 
 inline C10_HOST_DEVICE Float8_e4m3fnuz
-operator*(const Float8_e4m3fnuz& a, const Float8_e4m3fnuz& b) {
+operator*(Float8_e4m3fnuz a, Float8_e4m3fnuz b) {
   return static_cast<float>(a) * static_cast<float>(b);
 }
 
 inline C10_HOST_DEVICE Float8_e4m3fnuz operator/(
-    const Float8_e4m3fnuz& a,
-    const Float8_e4m3fnuz& b) __ubsan_ignore_float_divide_by_zero__ {
+    Float8_e4m3fnuz a,
+    Float8_e4m3fnuz b) __ubsan_ignore_float_divide_by_zero__ {
   return static_cast<float>(a) / static_cast<float>(b);
 }
 
-inline C10_HOST_DEVICE Float8_e4m3fnuz operator-(const Float8_e4m3fnuz& a) {
+inline C10_HOST_DEVICE Float8_e4m3fnuz operator-(Float8_e4m3fnuz a) {
   return -static_cast<float>(a);
 }
 
 inline C10_HOST_DEVICE Float8_e4m3fnuz& operator+=(
     Float8_e4m3fnuz& a,
-    const Float8_e4m3fnuz& b) {
+    Float8_e4m3fnuz b) {
   a = a + b;
   return a;
 }
 
 inline C10_HOST_DEVICE Float8_e4m3fnuz& operator-=(
     Float8_e4m3fnuz& a,
-    const Float8_e4m3fnuz& b) {
+    Float8_e4m3fnuz b) {
   a = a - b;
   return a;
 }
 
 inline C10_HOST_DEVICE Float8_e4m3fnuz& operator*=(
     Float8_e4m3fnuz& a,
-    const Float8_e4m3fnuz& b) {
+    Float8_e4m3fnuz b) {
   a = a * b;
   return a;
 }
 
 inline C10_HOST_DEVICE Float8_e4m3fnuz& operator/=(
     Float8_e4m3fnuz& a,
-    const Float8_e4m3fnuz& b) {
+    Float8_e4m3fnuz b) {
   a = a / b;
   return a;
 }
@@ -251,16 +246,16 @@ inline C10_HOST_DEVICE float operator/(float a, Float8_e4m3fnuz b)
   return a / static_cast<float>(b);
 }
 
-inline C10_HOST_DEVICE float& operator+=(float& a, const Float8_e4m3fnuz& b) {
+inline C10_HOST_DEVICE float& operator+=(float& a, Float8_e4m3fnuz b) {
   return a += static_cast<float>(b);
 }
-inline C10_HOST_DEVICE float& operator-=(float& a, const Float8_e4m3fnuz& b) {
+inline C10_HOST_DEVICE float& operator-=(float& a, Float8_e4m3fnuz b) {
   return a -= static_cast<float>(b);
 }
-inline C10_HOST_DEVICE float& operator*=(float& a, const Float8_e4m3fnuz& b) {
+inline C10_HOST_DEVICE float& operator*=(float& a, Float8_e4m3fnuz b) {
   return a *= static_cast<float>(b);
 }
-inline C10_HOST_DEVICE float& operator/=(float& a, const Float8_e4m3fnuz& b) {
+inline C10_HOST_DEVICE float& operator/=(float& a, Float8_e4m3fnuz b) {
   return a /= static_cast<float>(b);
 }
 
@@ -403,8 +398,6 @@ class numeric_limits<c10::Float8_e4m3fnuz> {
   static constexpr bool has_infinity = false;
   static constexpr bool has_quiet_NaN = true;
   static constexpr bool has_signaling_NaN = false;
-  static constexpr auto has_denorm = true;
-  static constexpr auto has_denorm_loss = true;
   static constexpr auto round_style = numeric_limits<float>::round_style;
   static constexpr bool is_iec559 = false;
   static constexpr bool is_bounded = true;

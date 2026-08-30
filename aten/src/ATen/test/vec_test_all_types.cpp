@@ -1,5 +1,6 @@
 #include <ATen/test/vec_test_all_types.h>
 #include <c10/util/irange.h>
+#include <bit>
 namespace {
 #if GTEST_HAS_TYPED_TEST
     template <typename T>
@@ -457,7 +458,7 @@ namespace {
             .setTestSeed(TestSeed());
         test_unary<vec>(
             NAME_INFO(atan),
-            RESOLVE_OVERLOAD(std::atan),
+            RESOLVE_OVERLOAD(::atan),
             [](vec v) { return v.atan(); },
             test_case,
             RESOLVE_OVERLOAD(filter_zero));
@@ -466,7 +467,7 @@ namespace {
         using vec = TypeParam;
         test_unary<vec>(
             NAME_INFO(log),
-            RESOLVE_OVERLOAD(std::log),
+            RESOLVE_OVERLOAD(::log),
             [](const vec& v) { return v.log(); },
             createDefaultUnaryTestCase<vec>(TestSeed()));
     }
@@ -482,7 +483,7 @@ namespace {
         using vec = TypeParam;
         test_unary<vec>(
             NAME_INFO(log10),
-            RESOLVE_OVERLOAD(std::log10),
+            RESOLVE_OVERLOAD(::log10),
             [](const vec& v) { return v.log10(); },
             createDefaultUnaryTestCase<vec>(TestSeed()));
     }
@@ -643,7 +644,7 @@ namespace {
         CACHE_ALIGN c10::Half actual_vals[vHalf::size()];
         vHalf(val).isnan().store(actual_vals);
         for (auto actual_val : actual_vals) {
-          EXPECT_EQ(expected, c10::bit_cast<uint16_t>(actual_val) != 0) << "fp16 isnan failure for bit pattern " << std::hex << ii << std::dec;
+          EXPECT_EQ(expected, std::bit_cast<uint16_t>(actual_val) != 0) << "fp16 isnan failure for bit pattern " << std::hex << ii << std::dec;
         }
       }
     }
@@ -657,7 +658,7 @@ namespace {
             at::vec::CPU_CAPABILITY::Vectorized<c10::BFloat16>(val).isnan())
             .store(actual_vals);
         for (int jj = 0; jj < at::vec::CPU_CAPABILITY::Vectorized<c10::BFloat16>::size(); ++jj) {
-          EXPECT_EQ(expected, c10::bit_cast<uint16_t>(actual_vals[jj]) != 0) << "bf16 isnan failure for bit pattern " << std::hex << ii << std::dec;
+          EXPECT_EQ(expected, std::bit_cast<uint16_t>(actual_vals[jj]) != 0) << "bf16 isnan failure for bit pattern " << std::hex << ii << std::dec;
         }
       }
     }
@@ -1113,7 +1114,7 @@ namespace {
         // generate expected_val
         for (int64_t i = 0; i < vec::size(); i++) {
             bit_rep hex_mask = 0;
-            hex_mask=c10::bit_cast<bit_rep>(mask[i]);
+            hex_mask=std::bit_cast<bit_rep>(mask[i]);
             expected_val[i] = (hex_mask & 0x01) ? b[i] : a[i];
         }
         // test with blendv

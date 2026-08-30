@@ -1,6 +1,7 @@
 #pragma once
 
 #include <complex>
+#include <numbers>
 
 #include <torch/headeronly/macros/Macros.h>
 #include <torch/headeronly/util/BFloat16.h>
@@ -67,7 +68,7 @@ namespace c10 {
 //
 // There are three types of assign operator:
 // - Assign a real value from the same scalar type
-//   - In std, this is templated as complex& operator=(const T& x)
+//   - In std, this is templated as complex& operator=(T x)
 //     with specialization `complex& operator=(T x)` for float/double/long
 //     double Since we only support float and double, on will use `complex&
 //     operator=(T x)`
@@ -152,7 +153,7 @@ struct alignas(sizeof(T) * 2) complex {
   T imag_ = T(0);
 
   constexpr complex() = default;
-  C10_HOST_DEVICE constexpr complex(const T& re, const T& im = T())
+  C10_HOST_DEVICE constexpr complex(T re, T im = T())
       : real_(re), imag_(im) {}
   template <typename U>
   explicit constexpr complex(const std::complex<U>& other)
@@ -170,11 +171,11 @@ struct alignas(sizeof(T) * 2) complex {
   // c10::complex<double>
   template <typename U = T>
   C10_HOST_DEVICE explicit constexpr complex(
-      const std::enable_if_t<std::is_same_v<U, float>, complex<double>>& other)
+      std::enable_if_t<std::is_same_v<U, float>, complex<double>> other)
       : real_(other.real_), imag_(other.imag_) {}
   template <typename U = T>
   C10_HOST_DEVICE constexpr complex(
-      const std::enable_if_t<std::is_same_v<U, double>, complex<float>>& other)
+      std::enable_if_t<std::is_same_v<U, double>, complex<float>> other)
       : real_(other.real_), imag_(other.imag_) {}
 
   constexpr complex<T>& operator=(T re) {
@@ -206,28 +207,28 @@ struct alignas(sizeof(T) * 2) complex {
   }
 
   template <typename U>
-  constexpr complex<T>& operator=(const complex<U>& rhs) {
+  constexpr complex<T>& operator=(complex<U> rhs) {
     real_ = rhs.real();
     imag_ = rhs.imag();
     return *this;
   }
 
   template <typename U>
-  constexpr complex<T>& operator+=(const complex<U>& rhs) {
+  constexpr complex<T>& operator+=(complex<U> rhs) {
     real_ += rhs.real();
     imag_ += rhs.imag();
     return *this;
   }
 
   template <typename U>
-  constexpr complex<T>& operator-=(const complex<U>& rhs) {
+  constexpr complex<T>& operator-=(complex<U> rhs) {
     real_ -= rhs.real();
     imag_ -= rhs.imag();
     return *this;
   }
 
   template <typename U>
-  constexpr complex<T>& operator*=(const complex<U>& rhs) {
+  constexpr complex<T>& operator*=(complex<U> rhs) {
     // (a + bi) * (c + di) = (a*c - b*d) + (a * d + b * c) i
     T a = real_;
     T b = imag_;
@@ -244,7 +245,7 @@ struct alignas(sizeof(T) * 2) complex {
 #define FORCE_INLINE_APPLE
 #endif
   template <typename U>
-  constexpr FORCE_INLINE_APPLE complex<T>& operator/=(const complex<U>& rhs)
+  constexpr FORCE_INLINE_APPLE complex<T>& operator/=(complex<U> rhs)
       __ubsan_ignore_float_divide_by_zero__ {
     // (a + bi) / (c + di) = (ac + bd)/(c^2 + d^2) + (bc - ad)/(c^2 + d^2) i
     // the calculation below follows numpy's complex division
@@ -351,82 +352,82 @@ constexpr complex<double> operator""_id(unsigned long long imag) {
 } // namespace complex_literals
 
 template <typename T>
-constexpr complex<T> operator+(const complex<T>& val) {
+constexpr complex<T> operator+(complex<T> val) {
   return val;
 }
 
 template <typename T>
-constexpr complex<T> operator-(const complex<T>& val) {
+constexpr complex<T> operator-(complex<T> val) {
   return complex<T>(-val.real(), -val.imag());
 }
 
 template <typename T>
-constexpr complex<T> operator+(const complex<T>& lhs, const complex<T>& rhs) {
+constexpr complex<T> operator+(complex<T> lhs, complex<T> rhs) {
   complex<T> result = lhs;
   return result += rhs;
 }
 
 template <typename T>
-constexpr complex<T> operator+(const complex<T>& lhs, const T& rhs) {
+constexpr complex<T> operator+(complex<T> lhs, T rhs) {
   complex<T> result = lhs;
   return result += rhs;
 }
 
 template <typename T>
-constexpr complex<T> operator+(const T& lhs, const complex<T>& rhs) {
+constexpr complex<T> operator+(T lhs, complex<T> rhs) {
   return complex<T>(lhs + rhs.real(), rhs.imag());
 }
 
 template <typename T>
-constexpr complex<T> operator-(const complex<T>& lhs, const complex<T>& rhs) {
+constexpr complex<T> operator-(complex<T> lhs, complex<T> rhs) {
   complex<T> result = lhs;
   return result -= rhs;
 }
 
 template <typename T>
-constexpr complex<T> operator-(const complex<T>& lhs, const T& rhs) {
+constexpr complex<T> operator-(complex<T> lhs, T rhs) {
   complex<T> result = lhs;
   return result -= rhs;
 }
 
 template <typename T>
-constexpr complex<T> operator-(const T& lhs, const complex<T>& rhs) {
+constexpr complex<T> operator-(T lhs, complex<T> rhs) {
   complex<T> result = -rhs;
   return result += lhs;
 }
 
 template <typename T>
-constexpr complex<T> operator*(const complex<T>& lhs, const complex<T>& rhs) {
+constexpr complex<T> operator*(complex<T> lhs, complex<T> rhs) {
   complex<T> result = lhs;
   return result *= rhs;
 }
 
 template <typename T>
-constexpr complex<T> operator*(const complex<T>& lhs, const T& rhs) {
+constexpr complex<T> operator*(complex<T> lhs, T rhs) {
   complex<T> result = lhs;
   return result *= rhs;
 }
 
 template <typename T>
-constexpr complex<T> operator*(const T& lhs, const complex<T>& rhs) {
+constexpr complex<T> operator*(T lhs, complex<T> rhs) {
   complex<T> result = rhs;
   return result *= lhs;
 }
 
 template <typename T>
-constexpr complex<T> operator/(const complex<T>& lhs, const complex<T>& rhs) {
+constexpr complex<T> operator/(complex<T> lhs, complex<T> rhs) {
   complex<T> result = lhs;
   return result /= rhs;
 }
 
 template <typename T>
-constexpr complex<T> operator/(const complex<T>& lhs, const T& rhs) {
+constexpr complex<T> operator/(complex<T> lhs, T rhs) {
   complex<T> result = lhs;
   return result /= rhs;
 }
 
 template <typename T>
-constexpr complex<T> operator/(const T& lhs, const complex<T>& rhs) {
+constexpr complex<T> operator/(T lhs, complex<T> rhs) {
   complex<T> result(lhs, T());
   return result /= rhs;
 }
@@ -489,39 +490,39 @@ constexpr c10::complex<fT> operator/(const iT& a, const c10::complex<fT>& b) {
 
 
 template <typename T>
-constexpr bool operator==(const complex<T>& lhs, const complex<T>& rhs) {
+constexpr bool operator==(complex<T> lhs, complex<T> rhs) {
   return (lhs.real() == rhs.real()) && (lhs.imag() == rhs.imag());
 }
 
 template <typename T>
-constexpr bool operator==(const complex<T>& lhs, const T& rhs) {
+constexpr bool operator==(complex<T> lhs, T rhs) {
   return (lhs.real() == rhs) && (lhs.imag() == T());
 }
 
 template <typename T>
-constexpr bool operator==(const T& lhs, const complex<T>& rhs) {
+constexpr bool operator==(T lhs, complex<T> rhs) {
   return (lhs == rhs.real()) && (T() == rhs.imag());
 }
 
 template <typename T>
-constexpr bool operator!=(const complex<T>& lhs, const complex<T>& rhs) {
+constexpr bool operator!=(complex<T> lhs, complex<T> rhs) {
   return !(lhs == rhs);
 }
 
 template <typename T>
-constexpr bool operator!=(const complex<T>& lhs, const T& rhs) {
+constexpr bool operator!=(complex<T> lhs, T rhs) {
   return !(lhs == rhs);
 }
 
 template <typename T>
-constexpr bool operator!=(const T& lhs, const complex<T>& rhs) {
+constexpr bool operator!=(T lhs, complex<T> rhs) {
   return !(lhs == rhs);
 }
 
 template <typename T, typename CharT, typename Traits>
 std::basic_ostream<CharT, Traits>& operator<<(
     std::basic_ostream<CharT, Traits>& os,
-    const complex<T>& x) {
+    complex<T> x) {
   return (os << static_cast<std::complex<T>>(x));
 }
 
@@ -536,7 +537,7 @@ std::basic_istream<CharT, Traits>& operator>>(
 }
 
 template <typename T>
-C10_HOST_DEVICE complex<T> polar(const T& r, const T& theta = T()) {
+C10_HOST_DEVICE complex<T> polar(T r, T theta = T()) {
 #if defined(__CUDACC__) || defined(__HIPCC__)
   return static_cast<complex<T>>(thrust::polar(r, theta));
 #else
@@ -553,15 +554,13 @@ struct alignas(4) complex<Half> {
 
   // Constructors
   complex() = default;
-  // Half constructor is not constexpr so the following constructor can't
-  // be constexpr
-  C10_HOST_DEVICE explicit inline complex(const Half& real, const Half& imag)
+  C10_HOST_DEVICE explicit constexpr complex(Half real, Half imag)
       : real_(real), imag_(imag) {}
-  C10_HOST_DEVICE inline complex(const c10::complex<float>& value)
+  C10_HOST_DEVICE constexpr complex(c10::complex<float> value)
       : real_(value.real()), imag_(value.imag()) {}
 
   // Conversion operator
-  inline C10_HOST_DEVICE operator c10::complex<float>() const {
+  constexpr C10_HOST_DEVICE operator c10::complex<float>() const {
     return {real_, imag_};
   }
 
@@ -602,17 +601,13 @@ struct alignas(4) complex<BFloat16> {
 
   // Constructors
   complex() = default;
-  // BFloat16 constructor is not constexpr so the following constructor can't
-  // be constexpr
-  C10_HOST_DEVICE explicit inline complex(
-      const BFloat16& real,
-      const BFloat16& imag)
+  C10_HOST_DEVICE explicit constexpr complex(BFloat16 real, BFloat16 imag)
       : real_(real), imag_(imag) {}
-  C10_HOST_DEVICE inline complex(const c10::complex<float>& value)
+  C10_HOST_DEVICE constexpr complex(c10::complex<float> value)
       : real_(value.real()), imag_(value.imag()) {}
 
   // Conversion operator
-  inline C10_HOST_DEVICE operator c10::complex<float>() const {
+  constexpr C10_HOST_DEVICE operator c10::complex<float>() const {
     return {real_, imag_};
   }
 

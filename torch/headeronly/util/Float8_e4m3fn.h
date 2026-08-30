@@ -17,17 +17,9 @@
 #include <torch/headeronly/macros/Macros.h>
 #include <torch/headeronly/util/floating_point_utils.h>
 
-#if defined(__cplusplus)
-#include <cmath>
 #include <cstdint>
-#elif !defined(__OPENCL_VERSION__)
-#include <math.h>
-#include <stdint.h>
-#endif
-
-
-#include <climits>
-#include <iostream>
+#include <iosfwd>
+#include <ostream>
 
 namespace c10 {
 
@@ -43,14 +35,14 @@ struct alignas(1) Float8_e4m3fn {
 
   constexpr C10_HOST_DEVICE Float8_e4m3fn(uint8_t bits, from_bits_t /*unused*/)
       : x(bits) {}
-  inline C10_HOST_DEVICE Float8_e4m3fn(float value);
-  inline C10_HOST_DEVICE operator float() const;
-  inline C10_HOST_DEVICE bool isnan() const;
-  inline C10_HOST_DEVICE bool isinf() const;
+  C10_HOST_DEVICE constexpr Float8_e4m3fn(float value);
+  C10_HOST_DEVICE constexpr operator float() const;
+  C10_HOST_DEVICE constexpr bool isnan() const;
+  C10_HOST_DEVICE constexpr bool isinf() const;
 };
 
 inline std::ostream& operator<<(std::ostream& out, const Float8_e4m3fn& value) {
-  out << (float)value;
+  out << static_cast<float>(value);
   return out;
 }
 
@@ -63,7 +55,7 @@ namespace detail {
  *
  * @note The implementation doesn't use any floating-point operations.
  */
-inline C10_HOST_DEVICE float fp8e4m3fn_to_fp32_value(uint8_t input) {
+C10_HOST_DEVICE constexpr float fp8e4m3fn_to_fp32_value(uint8_t input) {
   /*
    * Extend the fp8 E4M3FN number to 32 bits and shift to the
    * upper part of the 32-bit word:
@@ -75,7 +67,7 @@ inline C10_HOST_DEVICE float fp8e4m3fn_to_fp32_value(uint8_t input) {
    * S - sign bit, E - bits of the biased exponent, M - bits of the mantissa, 0
    * - zero bits.
    */
-  const uint32_t w = (uint32_t)input << 24;
+  const uint32_t w = static_cast<uint32_t>(input) << 24;
   /*
    * Extract the sign of the input number into the high bit of the 32-bit word:
    *
@@ -104,17 +96,7 @@ inline C10_HOST_DEVICE float fp8e4m3fn_to_fp32_value(uint8_t input) {
    * mantissa will shift into exponent, turning the biased exponent into 1, and
    * making mantissa normalized (i.e. without leading 1).
    */
-#if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__)
-  uint32_t renorm_shift = __clz(nonsign);
-#elif defined(__SYCL_DEVICE_ONLY__)
-  // Note: zero is not a supported input into `__builtin_clz`
-  uint32_t renorm_shift =
-      nonsign != 0 ? __builtin_clz(nonsign) : sizeof(uint32_t) * CHAR_BIT;
-#else
-  // Note: zero is not a supported input into `__builtin_clz`
-  uint32_t renorm_shift =
-      nonsign != 0 ? __builtin_clz(nonsign) : sizeof(uint32_t) * CHAR_BIT;
-#endif
+  uint32_t renorm_shift = count_leading_zeros(nonsign);
   renorm_shift = renorm_shift > 4 ? renorm_shift - 4 : 0;
   /*
    * Iff fp8e4m3fn number has all exponent and mantissa bits set to 1,
@@ -123,7 +105,7 @@ inline C10_HOST_DEVICE float fp8e4m3fn_to_fp32_value(uint8_t input) {
    * is Nan, 0x00000000 otherwise
    */
   const int32_t inf_nan_mask =
-      ((int32_t)(nonsign + 0x01000000) >> 8) & INT32_C(0x7F800000);
+      (static_cast<int32_t>(nonsign + 0x01000000) >> 8) & INT32_C(0x7F800000);
   /*
    * Iff nonsign is 0, it overflows into 0xFFFFFFFF, turning bit 31
    * into 1. Otherwise, bit 31 remains 0. The signed shift right by 31
@@ -131,7 +113,7 @@ inline C10_HOST_DEVICE float fp8e4m3fn_to_fp32_value(uint8_t input) {
    * 0xFFFFFFFF if the half-precision number was zero (+0.0h or -0.0h)
    * 0x00000000 otherwise
    */
-  const int32_t zero_mask = (int32_t)(nonsign - 1) >> 31;
+  const int32_t zero_mask = static_cast<int32_t>(nonsign - 1) >> 31;
   /*
    * 1. Shift nonsign left by renorm_shift to normalize it (if the input
    * was denormal)
@@ -161,7 +143,7 @@ inline C10_HOST_DEVICE float fp8e4m3fn_to_fp32_value(uint8_t input) {
  * Convert a 32-bit floating-point number in IEEE single-precision format to a
  * 8-bit floating-point number in fp8 E4M3FN format, in bit representation.
  */
-inline C10_HOST_DEVICE uint8_t fp8e4m3fn_from_fp32_value(float f) {
+C10_HOST_DEVICE constexpr uint8_t fp8e4m3fn_from_fp32_value(float f) {
   /*
    * Binary representation of 480.0f, which is the first value
    * not representable in fp8e4m3fn range:
@@ -216,7 +198,7 @@ inline C10_HOST_DEVICE uint8_t fp8e4m3fn_from_fp32_value(float f) {
       uint8_t mant_odd = (f_bits >> 20) & 1;
 
       // update exponent, rounding bias part 1
-      f_bits += ((uint32_t)(7 - 127) << 23) + 0x7FFFF;
+      f_bits += (static_cast<uint32_t>(7 - 127) << 23) + 0x7FFFF;
 
       // rounding bias part 2
       f_bits += mant_odd;
@@ -245,22 +227,22 @@ C10_CLANG_DIAGNOSTIC_IGNORE("-Wimplicit-int-float-conversion")
 
 /// Constructors
 
-inline C10_HOST_DEVICE Float8_e4m3fn::Float8_e4m3fn(float value)
+C10_HOST_DEVICE constexpr Float8_e4m3fn::Float8_e4m3fn(float value)
     : x(detail::fp8e4m3fn_from_fp32_value(value)) {}
 
 /// Implicit conversions
 
-inline C10_HOST_DEVICE Float8_e4m3fn::operator float() const {
+C10_HOST_DEVICE constexpr Float8_e4m3fn::operator float() const {
   return detail::fp8e4m3fn_to_fp32_value(x);
 }
 
 /// Special values helper
 
-inline C10_HOST_DEVICE bool Float8_e4m3fn::isnan() const {
+C10_HOST_DEVICE constexpr bool Float8_e4m3fn::isnan() const {
   return (x & 0b01111111) == 0b01111111;
 }
 
-inline C10_HOST_DEVICE bool Float8_e4m3fn::isinf() const {
+C10_HOST_DEVICE constexpr bool Float8_e4m3fn::isinf() const {
   // Note: fp8e4m3fn does not have infinity, so this always returns false.
   return false;
 }
@@ -268,54 +250,54 @@ inline C10_HOST_DEVICE bool Float8_e4m3fn::isinf() const {
 /// Arithmetic
 
 inline C10_HOST_DEVICE Float8_e4m3fn
-operator+(const Float8_e4m3fn& a, const Float8_e4m3fn& b) {
+operator+(Float8_e4m3fn a, Float8_e4m3fn b) {
   return static_cast<float>(a) + static_cast<float>(b);
 }
 
 inline C10_HOST_DEVICE Float8_e4m3fn
-operator-(const Float8_e4m3fn& a, const Float8_e4m3fn& b) {
+operator-(Float8_e4m3fn a, Float8_e4m3fn b) {
   return static_cast<float>(a) - static_cast<float>(b);
 }
 
 inline C10_HOST_DEVICE Float8_e4m3fn
-operator*(const Float8_e4m3fn& a, const Float8_e4m3fn& b) {
+operator*(Float8_e4m3fn a, Float8_e4m3fn b) {
   return static_cast<float>(a) * static_cast<float>(b);
 }
 
 inline C10_HOST_DEVICE Float8_e4m3fn operator/(
-    const Float8_e4m3fn& a,
-    const Float8_e4m3fn& b) __ubsan_ignore_float_divide_by_zero__ {
+    Float8_e4m3fn a,
+    Float8_e4m3fn b) __ubsan_ignore_float_divide_by_zero__ {
   return static_cast<float>(a) / static_cast<float>(b);
 }
 
-inline C10_HOST_DEVICE Float8_e4m3fn operator-(const Float8_e4m3fn& a) {
+inline C10_HOST_DEVICE Float8_e4m3fn operator-(Float8_e4m3fn a) {
   return -static_cast<float>(a);
 }
 
 inline C10_HOST_DEVICE Float8_e4m3fn& operator+=(
     Float8_e4m3fn& a,
-    const Float8_e4m3fn& b) {
+    Float8_e4m3fn b) {
   a = a + b;
   return a;
 }
 
 inline C10_HOST_DEVICE Float8_e4m3fn& operator-=(
     Float8_e4m3fn& a,
-    const Float8_e4m3fn& b) {
+    Float8_e4m3fn b) {
   a = a - b;
   return a;
 }
 
 inline C10_HOST_DEVICE Float8_e4m3fn& operator*=(
     Float8_e4m3fn& a,
-    const Float8_e4m3fn& b) {
+    Float8_e4m3fn b) {
   a = a * b;
   return a;
 }
 
 inline C10_HOST_DEVICE Float8_e4m3fn& operator/=(
     Float8_e4m3fn& a,
-    const Float8_e4m3fn& b) {
+    Float8_e4m3fn b) {
   a = a / b;
   return a;
 }
@@ -350,16 +332,16 @@ inline C10_HOST_DEVICE float operator/(float a, Float8_e4m3fn b)
   return a / static_cast<float>(b);
 }
 
-inline C10_HOST_DEVICE float& operator+=(float& a, const Float8_e4m3fn& b) {
+inline C10_HOST_DEVICE float& operator+=(float& a, Float8_e4m3fn b) {
   return a += static_cast<float>(b);
 }
-inline C10_HOST_DEVICE float& operator-=(float& a, const Float8_e4m3fn& b) {
+inline C10_HOST_DEVICE float& operator-=(float& a, Float8_e4m3fn b) {
   return a -= static_cast<float>(b);
 }
-inline C10_HOST_DEVICE float& operator*=(float& a, const Float8_e4m3fn& b) {
+inline C10_HOST_DEVICE float& operator*=(float& a, Float8_e4m3fn b) {
   return a *= static_cast<float>(b);
 }
-inline C10_HOST_DEVICE float& operator/=(float& a, const Float8_e4m3fn& b) {
+inline C10_HOST_DEVICE float& operator/=(float& a, Float8_e4m3fn b) {
   return a /= static_cast<float>(b);
 }
 
@@ -497,8 +479,6 @@ class numeric_limits<c10::Float8_e4m3fn> {
   static constexpr bool has_infinity = false;
   static constexpr bool has_quiet_NaN = true;
   static constexpr bool has_signaling_NaN = false;
-  static constexpr auto has_denorm = true;
-  static constexpr auto has_denorm_loss = true;
   static constexpr auto round_style = numeric_limits<float>::round_style;
   static constexpr bool is_iec559 = false;
   static constexpr bool is_bounded = true;

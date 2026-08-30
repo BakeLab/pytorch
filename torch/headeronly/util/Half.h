@@ -10,19 +10,12 @@
 /// intrinsics directly on the Half type from device code.
 
 #include <torch/headeronly/macros/Macros.h>
-#include <torch/headeronly/util/bit_cast.h>
+#include <bit>
 #include <torch/headeronly/util/floating_point_utils.h>
 
-#if defined(__cplusplus)
-#include <cmath>
-#elif !defined(__OPENCL_VERSION__)
-#include <math.h>
-#endif
-
-
 #include <cstdint>
-#include <cstring>
 #include <ostream>
+#include <type_traits>
 
 #ifdef __CUDACC__
 #include <cuda_fp16.h>
@@ -36,11 +29,6 @@
 #include <CL/sycl.hpp> // for SYCL 1.2.1
 #elif defined(SYCL_LANGUAGE_VERSION)
 #include <sycl/sycl.hpp> // for SYCL 2020
-#endif
-
-#if (defined(CPU_CAPABILITY_AVX2) || defined(CPU_CAPABILITY_AVX512)) && \
-    !defined(__APPLE__)
-#include <torch/headeronly/cpu/vec/vec_half.h>
 #endif
 
 #if defined(__aarch64__) && !defined(__CUDACC__)
@@ -80,11 +68,11 @@ struct alignas(2) Half {
   constexpr C10_HOST_DEVICE Half(unsigned short bits, from_bits_t /*unused*/)
       : x(bits) {}
 #if defined(__aarch64__) && !defined(__CUDACC__)
-  inline Half(float16_t value);
-  inline operator float16_t() const;
+  constexpr Half(float16_t value);
+  constexpr operator float16_t() const;
 #else
-  inline C10_HOST_DEVICE Half(float value);
-  inline C10_HOST_DEVICE operator float() const;
+  constexpr C10_HOST_DEVICE Half(float value);
+  constexpr C10_HOST_DEVICE operator float() const;
 #endif
 
 #if defined(__CUDACC__) || defined(__HIPCC__)
@@ -98,7 +86,7 @@ struct alignas(2) Half {
 };
 
 inline std::ostream& operator<<(std::ostream& out, const Half& value) {
-  out << (float)value;
+  out << static_cast<float>(value);
   return out;
 }
 
@@ -112,10 +100,12 @@ namespace detail {
  * mode and no operations on denormals) floating-point operations and bitcasts
  * between integer and floating-point variables.
  */
-C10_HOST_DEVICE inline float fp16_ieee_to_fp32_value(uint16_t h) {
+C10_HOST_DEVICE constexpr float fp16_ieee_to_fp32_value(uint16_t h) {
 #ifdef C10_X86_F16
-  return _cvtsh_ss(h);
-#else
+  if (!std::is_constant_evaluated()) {
+    return _cvtsh_ss(h);
+  }
+#endif
   /*
    * Extend the half-precision floating-point number to 32 bits and shift to the
    * upper part of the 32-bit word:
@@ -127,7 +117,7 @@ C10_HOST_DEVICE inline float fp16_ieee_to_fp32_value(uint16_t h) {
    * S - sign bit, E - bits of the biased exponent, M - bits of the mantissa, 0
    * - zero bits.
    */
-  const uint32_t w = (uint32_t)h << 16;
+  const uint32_t w = static_cast<uint32_t>(h) << 16;
   /*
    * Extract the sign of the input number into the high bit of the 32-bit word:
    *
@@ -182,11 +172,8 @@ C10_HOST_DEVICE inline float fp16_ieee_to_fp32_value(uint16_t h) {
    */
   constexpr uint32_t exp_offset = UINT32_C(0xE0) << 23;
   // const float exp_scale = 0x1.0p-112f;
-  constexpr uint32_t scale_bits = (uint32_t)15 << 23;
-  float exp_scale_val = 0;
-  std::memcpy(&exp_scale_val, &scale_bits, sizeof(exp_scale_val));
-
-  const float exp_scale = exp_scale_val;
+  constexpr uint32_t scale_bits = static_cast<uint32_t>(15) << 23;
+  const float exp_scale = fp32_from_bits(scale_bits);
   const float normalized_value =
       fp32_from_bits((two_w >> 4) + exp_offset) * exp_scale;
 
@@ -239,7 +226,6 @@ C10_HOST_DEVICE inline float fp16_ieee_to_fp32_value(uint16_t h) {
       (two_w < denormalized_cutoff ? fp32_to_bits(denormalized_value)
                                    : fp32_to_bits(normalized_value));
   return fp32_from_bits(result);
-#endif // C10_X86_F16
 }
 
 /*
@@ -251,26 +237,26 @@ C10_HOST_DEVICE inline float fp16_ieee_to_fp32_value(uint16_t h) {
  * mode and no operations on denormals) floating-point operations and bitcasts
  * between integer and floating-point variables.
  */
-inline uint16_t fp16_ieee_from_fp32_value(float f) {
+C10_HOST_DEVICE constexpr uint16_t fp16_ieee_from_fp32_value(float f) {
 #ifdef C10_X86_F16
-  return _cvtss_sh(f, _MM_FROUND_TO_NEAREST_INT);
-#else
+  if (!std::is_constant_evaluated()) {
+    return _cvtss_sh(f, _MM_FROUND_TO_NEAREST_INT);
+  }
+#endif
   // const float scale_to_inf = 0x1.0p+112f;
   // const float scale_to_zero = 0x1.0p-110f;
-  constexpr uint32_t scale_to_inf_bits = (uint32_t)239 << 23;
-  constexpr uint32_t scale_to_zero_bits = (uint32_t)17 << 23;
-  float scale_to_inf_val = 0, scale_to_zero_val = 0;
-  std::memcpy(&scale_to_inf_val, &scale_to_inf_bits, sizeof(scale_to_inf_val));
-  std::memcpy(
-      &scale_to_zero_val, &scale_to_zero_bits, sizeof(scale_to_zero_val));
-  const float scale_to_inf = scale_to_inf_val;
-  const float scale_to_zero = scale_to_zero_val;
-
-  float base = (fabsf(f) * scale_to_inf) * scale_to_zero;
+  constexpr uint32_t scale_to_inf_bits = static_cast<uint32_t>(239) << 23;
+  constexpr uint32_t scale_to_zero_bits = static_cast<uint32_t>(17) << 23;
+  const float scale_to_inf = fp32_from_bits(scale_to_inf_bits);
+  const float scale_to_zero = fp32_from_bits(scale_to_zero_bits);
 
   const uint32_t w = fp32_to_bits(f);
-  const uint32_t shl1_w = w + w;
   const uint32_t sign = w & UINT32_C(0x80000000);
+  // fabsf(f) as the bit operation it is. Clearing the sign bit gives the same
+  // value for every input including NaN, and unlike fabsf it can be
+  // constant-evaluated by clang, which has not implemented P0533.
+  float base = (fp32_from_bits(w ^ sign) * scale_to_inf) * scale_to_zero;
+  const uint32_t shl1_w = w + w;
   uint32_t bias = shl1_w & UINT32_C(0xFF000000);
   if (bias < UINT32_C(0x71000000)) {
     bias = UINT32_C(0x71000000);
@@ -284,7 +270,6 @@ inline uint16_t fp16_ieee_from_fp32_value(float f) {
   return static_cast<uint16_t>(
       (sign >> 16) |
       (shl1_w > UINT32_C(0xFF000000) ? UINT16_C(0x7E00) : nonsign));
-#endif // C10_X86_F16
 }
 
 /*
@@ -306,7 +291,7 @@ inline uint32_t fp16_ieee_to_fp32_bits(uint16_t h) {
    * S - sign bit, E - bits of the biased exponent, M - bits of the mantissa, 0
    * - zero bits.
    */
-  const uint32_t w = (uint32_t)h << 16;
+  const uint32_t w = static_cast<uint32_t>(h) << 16;
   /*
    * Extract the sign of the input number into the high bit of the 32-bit word:
    *
@@ -344,7 +329,7 @@ inline uint32_t fp16_ieee_to_fp32_bits(uint16_t h) {
    * had exponent of 15 (i.e. was NaN or infinity) 0x00000000 otherwise
    */
   const int32_t inf_nan_mask =
-      ((int32_t)(nonsign + 0x04000000) >> 8) & INT32_C(0x7F800000);
+      (static_cast<int32_t>(nonsign + 0x04000000) >> 8) & INT32_C(0x7F800000);
   /*
    * Iff nonsign is 0, it overflows into 0xFFFFFFFF, turning bit 31
    * into 1. Otherwise, bit 31 remains 0. The signed shift right by 31
@@ -352,7 +337,7 @@ inline uint32_t fp16_ieee_to_fp32_bits(uint16_t h) {
    * 0xFFFFFFFF if the half-precision number was zero (+0.0h or -0.0h)
    * 0x00000000 otherwise
    */
-  const int32_t zero_mask = (int32_t)(nonsign - 1) >> 31;
+  const int32_t zero_mask = static_cast<int32_t>(nonsign - 1) >> 31;
   /*
    * 1. Shift nonsign left by renorm_shift to normalize it (if the input
    * was denormal)
@@ -382,22 +367,12 @@ inline uint32_t fp16_ieee_to_fp32_bits(uint16_t h) {
 #endif // C10_X86_F16
 
 #if defined(__aarch64__) && !defined(__CUDACC__)
-inline float16_t fp16_from_bits(uint16_t h) {
-  return c10::bit_cast<float16_t>(h);
+constexpr float16_t fp16_from_bits(uint16_t h) {
+  return std::bit_cast<float16_t>(h);
 }
 
-inline uint16_t fp16_to_bits(float16_t f) {
-  return c10::bit_cast<uint16_t>(f);
-}
-
-// According to https://godbolt.org/z/frExdbsWG it would translate to single
-// fcvt s0, h0
-inline float native_fp16_to_fp32_value(uint16_t h) {
-  return static_cast<float>(fp16_from_bits(h));
-}
-
-inline uint16_t native_fp16_from_fp32_value(float f) {
-  return fp16_to_bits(static_cast<float16_t>(f));
+constexpr uint16_t fp16_to_bits(float16_t f) {
+  return std::bit_cast<uint16_t>(f);
 }
 #endif
 
@@ -411,60 +386,71 @@ C10_CLANG_DIAGNOSTIC_IGNORE("-Wimplicit-int-float-conversion")
 
 #if defined(__aarch64__) && !defined(__CUDACC__)
 /// Constructors
-inline Half::Half(float16_t value) : x(detail::fp16_to_bits(value)) {}
-inline Half::operator float16_t() const {
+constexpr Half::Half(float16_t value) : x(detail::fp16_to_bits(value)) {}
+constexpr Half::operator float16_t() const {
   return detail::fp16_from_bits(x);
 }
 #else
 
-inline C10_HOST_DEVICE Half::Half(float value)
-    :
+namespace detail {
+
+// A hardware conversion is never a constant expression -- clang folds
+// _cvtss_sh, gcc does not -- so constant evaluation takes the portable software
+// conversion and everything else keeps the instruction it had. Both directions
+// agree on every input.
+C10_HOST_DEVICE constexpr uint16_t float_to_half_bits(float value) {
 #if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__)
-      x(__half_as_short(__float2half(value)))
+  if (!std::is_constant_evaluated()) {
+    return __half_as_short(__float2half(value));
+  }
 #elif defined(__SYCL_DEVICE_ONLY__)
-      x(c10::bit_cast<uint16_t>(sycl::half(value)))
-#elif (defined(CPU_CAPABILITY_AVX2) || defined(CPU_CAPABILITY_AVX512)) && \
-    !defined(__APPLE__)
-      x(at::vec::float2half_scalar(value))
-#else
-      x(detail::fp16_ieee_from_fp32_value(value))
+  if (!std::is_constant_evaluated()) {
+    return std::bit_cast<uint16_t>(sycl::half(value));
+  }
 #endif
-{
+  // x86 belongs to fp16_ieee_from_fp32_value, which takes _cvtss_sh under
+  // C10_X86_F16; at::vec::float2half_scalar would be a second dispatch to it.
+  return fp16_ieee_from_fp32_value(value);
 }
+
+C10_HOST_DEVICE constexpr float half_bits_to_float(uint16_t x) {
+#if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__)
+  if (!std::is_constant_evaluated()) {
+    return __half2float(*reinterpret_cast<const __half*>(&x));
+  }
+#elif defined(__SYCL_DEVICE_ONLY__)
+  if (!std::is_constant_evaluated()) {
+    return float(std::bit_cast<sycl::half>(x));
+  }
+#endif
+  return fp16_ieee_to_fp32_value(x);
+}
+
+} // namespace detail
+
+constexpr C10_HOST_DEVICE Half::Half(float value)
+    : x(detail::float_to_half_bits(value)) {}
 
 /// Implicit conversions
 
-inline C10_HOST_DEVICE Half::operator float() const {
-#if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__)
-  return __half2float(*reinterpret_cast<const __half*>(&x));
-#elif defined(__SYCL_DEVICE_ONLY__)
-  return float(c10::bit_cast<sycl::half>(x));
-#elif (defined(CPU_CAPABILITY_AVX2) || defined(CPU_CAPABILITY_AVX512)) && \
-    !defined(__APPLE__)
-  return at::vec::half2float_scalar(x);
-#elif defined(__aarch64__) && !defined(__CUDACC__)
-  return detail::native_fp16_to_fp32_value(x);
-#else
-  return detail::fp16_ieee_to_fp32_value(x);
-#endif
+constexpr C10_HOST_DEVICE Half::operator float() const {
+  return detail::half_bits_to_float(x);
 }
 
 #endif /* !defined(__aarch64__) || defined(__CUDACC__) \
         */
 
 #if defined(__CUDACC__) || defined(__HIPCC__)
-inline C10_HOST_DEVICE Half::Half(const __half& value) {
-  x = *reinterpret_cast<const unsigned short*>(&value);
-}
+inline C10_HOST_DEVICE Half::Half(const __half& value)
+    : x(*reinterpret_cast<const unsigned short*>(&value)) {}
 inline C10_HOST_DEVICE Half::operator __half() const {
   return *reinterpret_cast<const __half*>(&x);
 }
 #endif
 
 #ifdef SYCL_LANGUAGE_VERSION
-inline C10_HOST_DEVICE Half::Half(const sycl::half& value) {
-  x = *reinterpret_cast<const unsigned short*>(&value);
-}
+inline C10_HOST_DEVICE Half::Half(const sycl::half& value)
+    : x(*reinterpret_cast<const unsigned short*>(&value)) {}
 inline C10_HOST_DEVICE Half::operator sycl::half() const {
   return *reinterpret_cast<const sycl::half*>(&x);
 }
@@ -481,50 +467,50 @@ inline __device__ Half __ldg(const Half* ptr) {
 
 /// Arithmetic
 
-inline C10_HOST_DEVICE Half operator+(const Half& a, const Half& b) {
+inline C10_HOST_DEVICE Half operator+(Half a, Half b) {
   return static_cast<float>(a) + static_cast<float>(b);
 }
 
-inline C10_HOST_DEVICE Half operator-(const Half& a, const Half& b) {
+inline C10_HOST_DEVICE Half operator-(Half a, Half b) {
   return static_cast<float>(a) - static_cast<float>(b);
 }
 
-inline C10_HOST_DEVICE Half operator*(const Half& a, const Half& b) {
+inline C10_HOST_DEVICE Half operator*(Half a, Half b) {
   return static_cast<float>(a) * static_cast<float>(b);
 }
 
-inline C10_HOST_DEVICE Half operator/(const Half& a, const Half& b)
+inline C10_HOST_DEVICE Half operator/(Half a, Half b)
     __ubsan_ignore_float_divide_by_zero__ {
   return static_cast<float>(a) / static_cast<float>(b);
 }
 
-inline C10_HOST_DEVICE Half operator-(const Half& a) {
+inline C10_HOST_DEVICE Half operator-(Half a) {
 #if (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 530) || \
     defined(__HIP_DEVICE_COMPILE__)
   return __hneg(a);
 #elif defined(__SYCL_DEVICE_ONLY__)
-  return -c10::bit_cast<sycl::half>(a);
+  return -std::bit_cast<sycl::half>(a);
 #else
   return -static_cast<float>(a);
 #endif
 }
 
-inline C10_HOST_DEVICE Half& operator+=(Half& a, const Half& b) {
+inline C10_HOST_DEVICE Half& operator+=(Half& a, Half b) {
   a = a + b;
   return a;
 }
 
-inline C10_HOST_DEVICE Half& operator-=(Half& a, const Half& b) {
+inline C10_HOST_DEVICE Half& operator-=(Half& a, Half b) {
   a = a - b;
   return a;
 }
 
-inline C10_HOST_DEVICE Half& operator*=(Half& a, const Half& b) {
+inline C10_HOST_DEVICE Half& operator*=(Half& a, Half b) {
   a = a * b;
   return a;
 }
 
-inline C10_HOST_DEVICE Half& operator/=(Half& a, const Half& b) {
+inline C10_HOST_DEVICE Half& operator/=(Half& a, Half b) {
   a = a / b;
   return a;
 }
@@ -559,16 +545,16 @@ inline C10_HOST_DEVICE float operator/(float a, Half b)
   return a / static_cast<float>(b);
 }
 
-inline C10_HOST_DEVICE float& operator+=(float& a, const Half& b) {
+inline C10_HOST_DEVICE float& operator+=(float& a, Half b) {
   return a += static_cast<float>(b);
 }
-inline C10_HOST_DEVICE float& operator-=(float& a, const Half& b) {
+inline C10_HOST_DEVICE float& operator-=(float& a, Half b) {
   return a -= static_cast<float>(b);
 }
-inline C10_HOST_DEVICE float& operator*=(float& a, const Half& b) {
+inline C10_HOST_DEVICE float& operator*=(float& a, Half b) {
   return a *= static_cast<float>(b);
 }
-inline C10_HOST_DEVICE float& operator/=(float& a, const Half& b) {
+inline C10_HOST_DEVICE float& operator/=(float& a, Half b) {
   return a /= static_cast<float>(b);
 }
 
@@ -698,8 +684,6 @@ namespace detail {
 #if defined(__aarch64__) && !defined(__CUDACC__)
 using c10::detail::fp16_from_bits;
 using c10::detail::fp16_to_bits;
-using c10::detail::native_fp16_from_fp32_value;
-using c10::detail::native_fp16_to_fp32_value;
 #endif
 
 using c10::detail::fp16_ieee_from_fp32_value;
@@ -721,9 +705,6 @@ class numeric_limits<c10::Half> {
   static constexpr bool has_infinity = true;
   static constexpr bool has_quiet_NaN = true;
   static constexpr bool has_signaling_NaN = true;
-  static constexpr auto has_denorm = numeric_limits<float>::has_denorm;
-  static constexpr auto has_denorm_loss =
-      numeric_limits<float>::has_denorm_loss;
   static constexpr auto round_style = numeric_limits<float>::round_style;
   static constexpr bool is_iec559 = true;
   static constexpr bool is_bounded = true;
