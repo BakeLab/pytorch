@@ -37,9 +37,6 @@ typedef struct ExtraState ExtraState;
 
 #ifdef __cplusplus
 
-C10_DIAGNOSTIC_PUSH_AND_IGNORED_IF_DEFINED(
-    "-Wdeprecated-copy-with-user-provided-dtor")
-C10_DIAGNOSTIC_PUSH_AND_IGNORED_IF_DEFINED("-Wdeprecated-copy-dtor")
 // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 typedef struct VISIBILITY_HIDDEN CacheEntry {
   // check the guards: lambda: <locals of user function>: bool
@@ -87,8 +84,6 @@ typedef struct VISIBILITY_HIDDEN CacheEntry {
   std::size_t py_hash() const;
 
 } CacheEntry;
-C10_DIAGNOSTIC_POP()
-C10_DIAGNOSTIC_POP()
 
 #endif
 
