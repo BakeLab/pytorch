@@ -1087,7 +1087,7 @@ template <
         enable_if_t<!std::is_base_of_v<Vectorizedi, Vectorized<T>>, int> = 0>
 inline Vectorized<T> operator~(const Vectorized<T>& a) {
   using int_t = int_same_size_t<T>;
-  Vectorized<T> ones(c10::bit_cast<T>((int_t)(~(int_t)0))); // All bits are 1
+  Vectorized<T> ones(std::bit_cast<T>((int_t)(~(int_t)0))); // All bits are 1
   return a ^ ones;
 }
 
@@ -1471,3 +1471,4 @@ std::ostream& operator<<(std::ostream& stream, const Vectorized<T>& vec) {
 #include <ATen/cpu/vec/vec_convert.h>
 #include <ATen/cpu/vec/vec_mask.h>
 #include <ATen/cpu/vec/vec_n.h>
+#include <bit>
