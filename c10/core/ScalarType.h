@@ -23,8 +23,6 @@
 
 #include <torch/headeronly/core/ScalarType.h>
 
-C10_DIAGNOSTIC_PUSH_AND_IGNORED_IF_DEFINED("-Wswitch-enum")
-C10_DIAGNOSTIC_PUSH_AND_IGNORED_IF_DEFINED("-Wswitch-default")
 
 namespace c10 {
 
@@ -309,6 +307,3 @@ C10_API std::string_view getScalarTypeAbbr(ScalarType scalarType);
 C10_API const std::unordered_map<std::string, ScalarType>& getStringToDtypeMap();
 
 } // namespace c10
-
-C10_DIAGNOSTIC_POP()
-C10_DIAGNOSTIC_POP()

@@ -828,9 +828,13 @@ id<MTLLibrary> MetalShaderLibrary::compileLibrary(const std::string& src) {
   if (!options) {
     options = [[MTLCompileOptions new] autorelease];
     [options setLanguageVersion:static_cast<MTLLanguageVersion>(metal_language_version())];
-    options.mathMode = fast_math ? MTLMathModeFast : MTLMathModeSafe;
-    options.mathFloatingPointFunctions =
-        fast_math ? MTLMathFloatingPointFunctionsFast : MTLMathFloatingPointFunctionsPrecise;
+    if (is_macos_at_least(MacOSVersion::MACOS_15_0)) {
+      options.mathMode = fast_math ? MTLMathModeFast : MTLMathModeSafe;
+      options.mathFloatingPointFunctions =
+          fast_math ? MTLMathFloatingPointFunctionsFast : MTLMathFloatingPointFunctionsPrecise;
+    } else {
+      [options setFastMathEnabled:fast_math ? YES : NO];
+    }
   }
 
   const auto str = [NSString stringWithCString:src.c_str() encoding:NSASCIIStringEncoding];
