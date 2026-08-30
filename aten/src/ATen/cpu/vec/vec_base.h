@@ -307,6 +307,20 @@ struct Vectorized {
     }
     return false;
   }
+  Vectorized<T> map(T (*const f)(T)) const {
+    Vectorized<T> ret;
+    for (int64_t i = 0; i != size(); i++) {
+      ret[i] = f(values[i]);
+    }
+    return ret;
+  }
+  T reduce(T (*const f)(T)) const {
+    T ret = 0;
+    for (int64_t i = 0; i != size(); i++) {
+      ret = f(ret, values[i]);
+    }
+    return ret;
+  }
   Vectorized<T> map(T (*const f)(const T&)) const {
     Vectorized<T> ret;
     for (int64_t i = 0; i != size(); i++) {
