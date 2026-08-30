@@ -5,7 +5,6 @@
 
 #include <fmt/format.h>
 #include <fmt/ranges.h>
-#include <pybind11/stl.h>
 
 #include <c10/util/irange.h>
 #include <vector>
