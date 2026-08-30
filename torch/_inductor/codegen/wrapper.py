@@ -1336,17 +1336,8 @@ def kernel_profile_enabled() -> bool:
     through an include that only these platforms emit. Callers that build
     profiling metadata must use this rather than the config flag alone:
     `_get_profiling_args` emits codegen for ReinterpretView arguments, so
-    building metadata the shim then declines to emit would leak a handle.
-
-    `config.memory_planning` disables it: every record sits in a `{}` block,
-    and those blocks are a boundary only to memory_plan_reuse. MemoryPlanner
-    runs in its place and does not see them, so a pool first created inside one
-    would be declared there and named by a line after it."""
-    return (
-        config.cpp.enable_kernel_profile
-        and sys.platform in ("linux", "win32")
-        and not config.memory_planning
-    )
+    building metadata the shim then declines to emit would leak a handle."""
+    return config.cpp.enable_kernel_profile and sys.platform == "linux"
 
 
 def _profiling_arg_entry(value: Any) -> str | None:
