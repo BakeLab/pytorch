@@ -3,7 +3,6 @@
 #include <ATen/autocast_mode.h>
 #include <ATen/core/functional.h>
 #include <c10/core/SafePyObject.h>
-#include <c10/core/impl/PyInterpreter.h>
 #include <c10/util/Exception.h>
 #include <c10/util/ScopeExit.h>
 #define PY_SSIZE_T_CLEAN
@@ -15,7 +14,6 @@
 #include <fmt/format.h>
 #include <torch/csrc/Device.h>
 #include <torch/csrc/DynamicTypes.h>
-#include <torch/csrc/autograd/grad_mode.h>
 #include <torch/csrc/autograd/utils/wrap_outputs.h>
 #include <torch/csrc/dynamo/guards.h>
 #include <torch/csrc/inductor/inductor_ops.h>
@@ -25,7 +23,6 @@
 #include <torch/csrc/utils/python_numbers.h>
 #include <torch/csrc/utils/python_strings.h>
 #include <torch/csrc/utils/python_symnode.h>
-#include <torch/csrc/utils/pythoncapi_compat.h>
 #include <torch/csrc/utils/tensor_memoryformats.h>
 #include <torch/extension.h>
 #include <array>

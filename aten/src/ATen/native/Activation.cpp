@@ -4,7 +4,6 @@
 #include <ATen/CPUGeneratorImpl.h>
 #include <ATen/Context.h>
 #include <ATen/core/Tensor.h>
-#include <ATen/Config.h>
 #include <ATen/Dispatch.h>
 #include <ATen/TensorIterator.h>
 #include <ATen/TensorOperators.h>
