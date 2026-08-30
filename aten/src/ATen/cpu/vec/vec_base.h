@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cassert>
 #include <climits>
 #include <cmath>
@@ -1111,7 +1112,7 @@ template <
         enable_if_t<!std::is_base_of_v<Vectorizedi, Vectorized<T>>, int> = 0>
 inline Vectorized<T> operator~(const Vectorized<T>& a) {
   using int_t = int_same_size_t<T>;
-  Vectorized<T> ones(c10::bit_cast<T>((int_t)(~(int_t)0))); // All bits are 1
+  Vectorized<T> ones(std::bit_cast<T>((int_t)(~(int_t)0))); // All bits are 1
   return a ^ ones;
 }
 

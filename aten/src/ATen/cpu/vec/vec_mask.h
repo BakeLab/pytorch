@@ -3,6 +3,7 @@
 #include <ATen/cpu/vec/vec_base.h>
 #include <ATen/cpu/vec/vec_n.h>
 #include <c10/util/irange.h>
+#include <bit>
 namespace at::vec {
 inline namespace CPU_CAPABILITY {
 
@@ -131,7 +132,7 @@ class VecMask {
       return static_cast<bool>(b);
     } else {
       using int_t = int_same_size_t<T>;
-      return b ? c10::bit_cast<T>(static_cast<int_t>(-1)) : static_cast<T>(0);
+      return b ? std::bit_cast<T>(static_cast<int_t>(-1)) : static_cast<T>(0);
     }
   }
 
