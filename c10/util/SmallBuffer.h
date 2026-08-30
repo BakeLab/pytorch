@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
+#include <utility>
 
 /** Helper class for allocating temporary fixed size arrays with SBO.
  *
