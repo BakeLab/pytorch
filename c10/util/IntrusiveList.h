@@ -67,6 +67,8 @@ class ListIterator {
   using pointer = value_type*;
   using reference = value_type&;
 
+  // A sentinel has to be semiregular, so <ranges> needs this to be
+  // default-initializable before it will call the container a range.
   ListIterator() = default;
   explicit ListIterator(P* ptr) : ptr_(ptr) {}
   ~ListIterator() = default;
@@ -109,10 +111,12 @@ class ListIterator {
     return *this;
   }
 
+  // std::weakly_incrementable, and so every <ranges> concept above it, needs
+  // the post-forms as well.
   ListIterator operator++(int) {
-    auto old = *this;
+    ListIterator it = *this;
     ++*this;
-    return old;
+    return it;
   }
 
   ListIterator& operator--() {
@@ -122,9 +126,9 @@ class ListIterator {
   }
 
   ListIterator operator--(int) {
-    auto old = *this;
+    ListIterator it = *this;
     --*this;
-    return old;
+    return it;
   }
 
   [[nodiscard]] auto* operator->() const {
