@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
 #include <torch/headeronly/util/TypeCast.h>
-#include <torch/headeronly/util/bit_cast.h>
 
+#include <bit>
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
@@ -50,14 +50,13 @@ TEST(TestCast, TestReportOverflow) {
 
 TEST(TestCast, TestBitcast) {
   using torch::headeronly::BFloat16;
-  using torch::headeronly::bit_cast;
   using torch::headeronly::Half;
 
   BFloat16 a = 3.0f;
   Half b = 3.0f;
 
-  EXPECT_EQ(bit_cast<BFloat16>(bit_cast<Half>(a)), a);
-  EXPECT_EQ(bit_cast<Half>(bit_cast<BFloat16>(b)), b);
+  EXPECT_EQ(std::bit_cast<BFloat16>(std::bit_cast<Half>(a)), a);
+  EXPECT_EQ(std::bit_cast<Half>(std::bit_cast<BFloat16>(b)), b);
 }
 
 } // namespace aot_inductor
