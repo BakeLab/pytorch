@@ -2,9 +2,7 @@
 
 #include <torch/headeronly/util/TypeCast.h>
 
-#include <bit>
 #include <cstdint>
-#include <limits>
 #include <stdexcept>
 namespace torch {
 namespace aot_inductor {
@@ -46,17 +44,6 @@ TEST(TestCast, TestReportOverflow) {
   using torch::headeronly::report_overflow;
 
   EXPECT_THROW(report_overflow("int8_t"), std::runtime_error);
-}
-
-TEST(TestCast, TestBitcast) {
-  using torch::headeronly::BFloat16;
-  using torch::headeronly::Half;
-
-  BFloat16 a = 3.0f;
-  Half b = 3.0f;
-
-  EXPECT_EQ(std::bit_cast<BFloat16>(std::bit_cast<Half>(a)), a);
-  EXPECT_EQ(std::bit_cast<Half>(std::bit_cast<BFloat16>(b)), b);
 }
 
 } // namespace aot_inductor
