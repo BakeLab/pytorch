@@ -6,7 +6,6 @@
 #include <ATen/Dispatch.h>
 #include <ATen/SparseCsrTensorImpl.h>
 #include <ATen/SparseCsrTensorUtils.h>
-#include <ATen/SparseTensorImpl.h>
 #include <ATen/native/LinearAlgebraUtils.h>
 #include <c10/util/irange.h>
 
