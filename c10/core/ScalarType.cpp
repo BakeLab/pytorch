@@ -247,6 +247,8 @@ std::pair<std::string_view, std::string_view> getDtypeNames(
       return {"float8_e5m3fnu", ""};
     case c10::ScalarType::Float4_e2m1fn_x2:
       return {"float4_e2m1fn_x2", ""};
+    case c10::ScalarType::NumOptions:
+    case c10::ScalarType::Undefined:
     default:
       TORCH_CHECK(false, "Unimplemented scalar type");
   }
