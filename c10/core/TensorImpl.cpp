@@ -1061,6 +1061,8 @@ void TensorImpl::empty_tensor_restride_symint(MemoryFormat memory_format) {
       sym_shape_meta.assume_non_overlapping_and_dense();
       break;
     }
+    case MemoryFormat::NumOptions:
+    case MemoryFormat::Preserve:
     default:
       break;
   }
