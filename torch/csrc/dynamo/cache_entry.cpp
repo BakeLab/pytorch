@@ -5,7 +5,7 @@
 #include <torch/csrc/dynamo/cache_entry.h>
 #include <torch/csrc/dynamo/extra_state.h>
 #include <torch/csrc/dynamo/guards.h>
-#include <torch/csrc/utils/pythoncapi_compat.h>
+#include <torch/csrc/python_headers.h>
 
 CacheEntry::CacheEntry(const py::handle& guarded_code, PyObject* backend)
     : guard_manager{guarded_code.attr("guard_manager")},
@@ -99,8 +99,7 @@ PyObject* get_backend(PyObject* callback) {
   PyObject* orig_backend_str{get_orig_backend_str()};
   PyObject* next{nullptr};
 
-  // PyObject_GetOptionalAttr is in the C-API compat file, and more efficient
-  // than calling hasattr/getattr.
+  // PyObject_GetOptionalAttr avoids separate hasattr/getattr calls.
   while (PyObject_GetOptionalAttr(callback, orig_backend_str, &next) > 0) {
     // Return borrowed; the previous hop's attribute keeps it alive.
     Py_DECREF(next);

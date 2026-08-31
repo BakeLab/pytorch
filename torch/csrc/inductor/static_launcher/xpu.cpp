@@ -14,7 +14,7 @@
 #include <optional>
 #include <type_traits>
 
-#include <torch/csrc/utils/pythoncapi_compat.h>
+#include <torch/csrc/python_headers.h>
 
 #include <ATen/Context.h>
 #include <ATen/xpu/level_zero_stub/ATenLevelZero.h>
