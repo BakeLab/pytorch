@@ -42,8 +42,8 @@ struct alignas(1) Float8_e8m0fnu {
 
 inline std::ostream& operator<<(
     std::ostream& out,
-    const Float8_e8m0fnu& value) {
-  out << (float)value;
+    Float8_e8m0fnu value) {
+  out << static_cast<float>(value);
   return out;
 }
 

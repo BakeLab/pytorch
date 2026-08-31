@@ -52,8 +52,8 @@ struct alignas(1) Float8_e4m3fnuz {
 
 inline std::ostream& operator<<(
     std::ostream& out,
-    const Float8_e4m3fnuz& value) {
-  out << (float)value;
+    Float8_e4m3fnuz value) {
+  out << static_cast<float>(value);
   return out;
 }
 
@@ -118,7 +118,7 @@ C10_HOST_DEVICE constexpr uint8_t fp8e4m3fnuz_from_fp32_value(float f) {
     uint8_t mant_odd = (f_bits >> 20) & 1;
 
     // update exponent, rounding bias part 1
-    f_bits += ((uint32_t)(8 - 127) << 23) + 0x7FFFF;
+    f_bits += (static_cast<uint32_t>(8 - 127) << 23) + 0x7FFFF;
 
     // rounding bias part 2
     f_bits += mant_odd;
@@ -164,54 +164,54 @@ C10_HOST_DEVICE constexpr bool Float8_e4m3fnuz::isinf() const {
 /// Arithmetic
 
 inline C10_HOST_DEVICE Float8_e4m3fnuz
-operator+(const Float8_e4m3fnuz& a, const Float8_e4m3fnuz& b) {
+operator+(Float8_e4m3fnuz a, Float8_e4m3fnuz b) {
   return static_cast<float>(a) + static_cast<float>(b);
 }
 
 inline C10_HOST_DEVICE Float8_e4m3fnuz
-operator-(const Float8_e4m3fnuz& a, const Float8_e4m3fnuz& b) {
+operator-(Float8_e4m3fnuz a, Float8_e4m3fnuz b) {
   return static_cast<float>(a) - static_cast<float>(b);
 }
 
 inline C10_HOST_DEVICE Float8_e4m3fnuz
-operator*(const Float8_e4m3fnuz& a, const Float8_e4m3fnuz& b) {
+operator*(Float8_e4m3fnuz a, Float8_e4m3fnuz b) {
   return static_cast<float>(a) * static_cast<float>(b);
 }
 
 inline C10_HOST_DEVICE Float8_e4m3fnuz operator/(
-    const Float8_e4m3fnuz& a,
-    const Float8_e4m3fnuz& b) __ubsan_ignore_float_divide_by_zero__ {
+    Float8_e4m3fnuz a,
+    Float8_e4m3fnuz b) __ubsan_ignore_float_divide_by_zero__ {
   return static_cast<float>(a) / static_cast<float>(b);
 }
 
-inline C10_HOST_DEVICE Float8_e4m3fnuz operator-(const Float8_e4m3fnuz& a) {
+inline C10_HOST_DEVICE Float8_e4m3fnuz operator-(Float8_e4m3fnuz a) {
   return -static_cast<float>(a);
 }
 
 inline C10_HOST_DEVICE Float8_e4m3fnuz& operator+=(
     Float8_e4m3fnuz& a,
-    const Float8_e4m3fnuz& b) {
+    Float8_e4m3fnuz b) {
   a = a + b;
   return a;
 }
 
 inline C10_HOST_DEVICE Float8_e4m3fnuz& operator-=(
     Float8_e4m3fnuz& a,
-    const Float8_e4m3fnuz& b) {
+    Float8_e4m3fnuz b) {
   a = a - b;
   return a;
 }
 
 inline C10_HOST_DEVICE Float8_e4m3fnuz& operator*=(
     Float8_e4m3fnuz& a,
-    const Float8_e4m3fnuz& b) {
+    Float8_e4m3fnuz b) {
   a = a * b;
   return a;
 }
 
 inline C10_HOST_DEVICE Float8_e4m3fnuz& operator/=(
     Float8_e4m3fnuz& a,
-    const Float8_e4m3fnuz& b) {
+    Float8_e4m3fnuz b) {
   a = a / b;
   return a;
 }
@@ -246,16 +246,16 @@ inline C10_HOST_DEVICE float operator/(float a, Float8_e4m3fnuz b)
   return a / static_cast<float>(b);
 }
 
-inline C10_HOST_DEVICE float& operator+=(float& a, const Float8_e4m3fnuz& b) {
+inline C10_HOST_DEVICE float& operator+=(float& a, Float8_e4m3fnuz b) {
   return a += static_cast<float>(b);
 }
-inline C10_HOST_DEVICE float& operator-=(float& a, const Float8_e4m3fnuz& b) {
+inline C10_HOST_DEVICE float& operator-=(float& a, Float8_e4m3fnuz b) {
   return a -= static_cast<float>(b);
 }
-inline C10_HOST_DEVICE float& operator*=(float& a, const Float8_e4m3fnuz& b) {
+inline C10_HOST_DEVICE float& operator*=(float& a, Float8_e4m3fnuz b) {
   return a *= static_cast<float>(b);
 }
-inline C10_HOST_DEVICE float& operator/=(float& a, const Float8_e4m3fnuz& b) {
+inline C10_HOST_DEVICE float& operator/=(float& a, Float8_e4m3fnuz b) {
   return a /= static_cast<float>(b);
 }
 
