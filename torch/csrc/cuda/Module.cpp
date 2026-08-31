@@ -50,7 +50,6 @@
 #include <torch/csrc/utils/pycfunction_helpers.h>
 #include <torch/csrc/utils/python_numbers.h>
 #include <torch/csrc/utils/python_strings.h>
-#include <torch/csrc/utils/pythoncapi_compat.h>
 #include <array>
 #include <cstdint>
 #include <iostream>
