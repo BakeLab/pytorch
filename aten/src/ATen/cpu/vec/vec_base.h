@@ -303,23 +303,6 @@ struct Vectorized {
     }
     return ret;
   }
-  Vectorized<T> map(T (*const f)(const T&)) const {
-    Vectorized<T> ret;
-    for (int64_t i = 0; i != size(); i++) {
-      ret[i] = f(values[i]);
-    }
-    return ret;
-  }
-  // Seeded with lane 0 rather than an identity element, so that `op` need not
-  // have one.
-  template <typename Op>
-  T reduce(Op op) const {
-    T ret = values[0];
-    for (int64_t i = 1; i != size(); i++) {
-      ret = op(ret, values[i]);
-    }
-    return ret;
-  }
   template <
       typename other_t_abs = T,
       typename std::enable_if_t<
