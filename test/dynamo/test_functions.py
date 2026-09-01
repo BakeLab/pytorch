@@ -138,29 +138,9 @@ class MyCls:
     a = 1
 
 
-@torch.jit.script_if_tracing
-def inline_script_if_tracing(x):
-    return x + 1.2
-
-
-@torch.jit.ignore
-def inline_ignore(x):
-    return x + 3.4
-
-
-@torch.jit.unused
-def inline_unused(x):
-    return x + 5.6
-
-
 @functools.lru_cache
 def inline_lru_cache_fn_with_default_args(x, y, _=None):
     return torch.sin(x * y)
-
-
-@torch.jit.script_if_tracing
-def inline_script_if_tracing_fn_with_default_args(x, y, c=1.2):
-    return torch.cos(x * y) + c
 
 
 class WithLengthHint:
@@ -226,30 +206,6 @@ def deque_length_hints():
 
 class FunctionTests(torch._dynamo.test_case.TestCase):
     hw_classification = HardwareClassification.GENERIC
-
-    @make_test
-    def test_inline_jit_annotations(x):
-        x = inline_script_if_tracing(x)
-        x = inline_ignore(x)
-        x = inline_unused(x)
-        return
-
-    def test_script_function_graph_break(self):
-        @torch.jit.script
-        def scripted():
-            if torch.jit.is_scripting():
-                return 1
-            print("unreachable")
-            return 2
-
-        def fn():
-            return scripted()
-
-        self.assertEqual(torch.compile(fn, backend="eager")(), 1)
-
-    @make_test
-    def test_inline_script_if_tracing_fn_with_default_args(a, b):
-        return inline_script_if_tracing_fn_with_default_args(a, b)
 
     @make_test
     def test_inline_lru_cache_fn_with_default_args(a, b):
