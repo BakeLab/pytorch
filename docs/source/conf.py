@@ -862,7 +862,6 @@ coverage_ignore_functions = [
     "DumpUnpickler",
     "FakeClass",
     "FakeObject",
-    # torch.utils.tensorboard.writer
     "FileWriter",
     "SummaryWriter",
     # torch.utils.throughput_benchmark
