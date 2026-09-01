@@ -7,9 +7,9 @@
 
 namespace torch::cuda::CUDAPluggableAllocator {
 
-int device_count = 0;
+static int device_count = 0;
 
-void custom_raw_deleter(void* ptr);
+static void custom_raw_deleter(void* ptr);
 
 _AllocationMetadata::_AllocationMetadata() : size(0), device_idx(-1) {}
 
@@ -373,7 +373,7 @@ void CUDAPluggableAllocator::copy_data(
       c10::cuda::getCurrentCUDAStream()));
 }
 
-std::shared_ptr<c10::cuda::CUDACachingAllocator::CUDAAllocator>
+static std::shared_ptr<c10::cuda::CUDACachingAllocator::CUDAAllocator>
     current_custom_allocator;
 
 std::shared_ptr<c10::cuda::CUDACachingAllocator::CUDAAllocator>
