@@ -2395,7 +2395,6 @@ from torch import (  # usort: skip
     fft as fft,
     foreach as foreach,
     futures as futures,
-    hub as hub,
     jit as jit,
     linalg as linalg,
     multiprocessing as multiprocessing,
