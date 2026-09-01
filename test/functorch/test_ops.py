@@ -1091,7 +1091,6 @@ class TestOperatorsDevice(TestCase):
                 {torch.float32: tol(atol=1e-03, rtol=1e-03)},
                 device_type="cuda",
             ),
-            tol1("svd", {torch.float32: tol(atol=1e-03, rtol=5e-04)}),
             tol1("matrix_exp", {torch.float32: tol(atol=1e-03, rtol=5e-04)}),
             tol1("masked.prod", {torch.float32: tol(atol=2e-03, rtol=2e-04)}),
         ),
@@ -1225,9 +1224,6 @@ class TestOperatorsDevice(TestCase):
                 "linalg.svd",
                 {torch.float32: tol(atol=5e-04, rtol=1e-04)},
                 device_type="cuda",
-            ),
-            tol1(
-                "svd", {torch.float32: tol(atol=5e-04, rtol=1e-04)}, device_type="cuda"
             ),
             tol1(
                 "linalg.householder_product",
@@ -2114,7 +2110,6 @@ class TestOperatorsDevice(TestCase):
                 "nn.functional.conv_transpose2d",
                 {torch.float32: tol(atol=5e-04, rtol=5e-04)},
             ),
-            tol1("svd", {torch.float32: tol(atol=5e-04, rtol=5e-04)}),
             tol1("matrix_exp", {torch.float32: tol(atol=5e-04, rtol=5e-04)}),
         ),
     )
