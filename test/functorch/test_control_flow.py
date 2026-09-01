@@ -8372,7 +8372,7 @@ def forward(self, L_pred_ : torch.Tensor, L_x_ : torch.Tensor):
         "CUDA 12.4 or greater is required for CUDA Graphs with conditional nodes",
     )
     def test_cond_traced_record_stream_reuse(self):
-        torch.cuda.memory._set_allocator_settings(
+        torch._C._accelerator_setAllocatorSettings(
             "graph_capture_record_stream_reuse:True"
         )
         try:
@@ -8392,7 +8392,7 @@ def forward(self, L_pred_ : torch.Tensor, L_x_ : torch.Tensor):
                 with torch.cuda.graph(g), CUDAGraphCaptureControlFlowOpDispatchMode():
                     torch.cond(predicate, true_fn, false_fn, [])
         finally:
-            torch.cuda.memory._set_allocator_settings(
+            torch._C._accelerator_setAllocatorSettings(
                 "graph_capture_record_stream_reuse:False"
             )
 
