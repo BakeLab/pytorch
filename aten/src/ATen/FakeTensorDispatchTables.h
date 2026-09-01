@@ -46,9 +46,4 @@ TORCH_API void fakeDispatchTableRemove(
     FakeDispatchCategory category,
     const c10::OperatorName& name);
 
-// True iff `name` is registered under `category`.
-TORCH_API bool fakeDispatchTableContains(
-    FakeDispatchCategory category,
-    const c10::OperatorName& name);
-
 } // namespace at::impl
