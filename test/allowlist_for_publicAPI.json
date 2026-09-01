@@ -43,7 +43,6 @@
     "Optional",
     "PrefixStore",
     "ProcessGroup",
-    "ProcessGroupGloo",
     "ReduceOp",
     "ReduceOptions",
     "ReduceScatterOptions",
@@ -1687,9 +1686,6 @@
   "torch.utils.model_zoo": [
     "load_url",
     "tqdm"
-  ],
-  "torch.utils.tensorboard": [
-    "RecordWriter"
   ],
   "torch.csrc.jit.tensorexpr.codegen_external": [
     "FileManager",
