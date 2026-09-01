@@ -30,54 +30,49 @@ through the `torch.distributed.backends` entry point group and loaded on first u
 - `nccl-lazy`: CUDA. Variant of `nccl` that runs collectives on one communicator and
   creates a 2-rank communicator per point-to-point peer pair on first use.
 - `nccl-legacy`: CUDA. The legacy `ProcessGroupNCCL` implementation.
-- `mpi`: only when PyTorch is built with MPI.
-- `ucc`: CPU and CUDA; only when PyTorch is built with UCC.
 - `xccl`: Intel XPU.
 - `fake`: no-op backend for testing.
 
 The table below shows which functions are available for use with a CPU or GPU
-for four of these backends. For NCCL, GPU refers to CUDA GPU while for XCCL to
+for three of these backends. For NCCL, GPU refers to CUDA GPU while for XCCL to
 XPU GPU.
 
-MPI supports CUDA only if the implementation used to build PyTorch supports it.
 
 ```{eval-rst}
-+----------------+-----------+-----------+-----------+-----------+
-| Backend        | ``gloo``  | ``mpi``   | ``nccl``  | ``xccl``  |
-+----------------+-----+-----+-----+-----+-----+-----+-----+-----+
-| Device         | CPU | GPU | CPU | GPU | CPU | GPU | CPU | GPU |
-+================+=====+=====+=====+=====+=====+=====+=====+=====+
-| send           | ✓   | ✘   | ✓   | ?   | ✘   | ✓   | ✘   | ✓   |
-+----------------+-----+-----+-----+-----+-----+-----+-----+-----+
-| recv           | ✓   | ✘   | ✓   | ?   | ✘   | ✓   | ✘   | ✓   |
-+----------------+-----+-----+-----+-----+-----+-----+-----+-----+
-| broadcast      | ✓   | ✓   | ✓   | ?   | ✘   | ✓   | ✘   | ✓   |
-+----------------+-----+-----+-----+-----+-----+-----+-----+-----+
-| all_reduce     | ✓   | ✓   | ✓   | ?   | ✘   | ✓   | ✘   | ✓   |
-+----------------+-----+-----+-----+-----+-----+-----+-----+-----+
-| reduce         | ✓   | ✓   | ✓   | ?   | ✘   | ✓   | ✘   | ✓   |
-+----------------+-----+-----+-----+-----+-----+-----+-----+-----+
-| all_gather     | ✓   | ✓   | ✓   | ?   | ✘   | ✓   | ✘   | ✓   |
-+----------------+-----+-----+-----+-----+-----+-----+-----+-----+
-| gather         | ✓   | ✓   | ✓   | ?   | ✘   | ✓   | ✘   | ✓   |
-+----------------+-----+-----+-----+-----+-----+-----+-----+-----+
-| scatter        | ✓   | ✓   | ✓   | ?   | ✘   | ✓   | ✘   | ✓   |
-+----------------+-----+-----+-----+-----+-----+-----+-----+-----+
-| reduce_scatter | ✓   | ✓   | ✘   | ✘   | ✘   | ✓   | ✘   | ✓   |
-+----------------+-----+-----+-----+-----+-----+-----+-----+-----+
-| all_to_all     | ✘   | ✘   | ✓   | ?   | ✘   | ✓   | ✘   | ✓   |
-+----------------+-----+-----+-----+-----+-----+-----+-----+-----+
-| barrier        | ✓   | ✘   | ✓   | ?   | ✘   | ✓   | ✘   | ✓   |
-+----------------+-----+-----+-----+-----+-----+-----+-----+-----+
++----------------+-----------+-----------
+| Backend        | ``gloo``  | ``xccl``  |
++----------------+-----+-----+-----+-----+
+| Device         | CPU | GPU | CPU | GPU |
++================+=====+=====+=====+=====+
+| send           | ✓   | ✘   | ✘   | ✓   |
++----------------+-----+-----+-----+-----+
+| recv           | ✓   | ✘   | ✘   | ✓   |
++----------------+-----+-----+-----+-----+
+| broadcast      | ✓   | ✓   | ✘   | ✓   |
++----------------+-----+-----+-----+-----+
+| all_reduce     | ✓   | ✓   | ✘   | ✓   |
++----------------+-----+-----+-----+-----+
+| reduce         | ✓   | ✓   | ✘   | ✓   |
++----------------+-----+-----+-----+-----+
+| all_gather     | ✓   | ✓   | ✘   | ✓   |
++----------------+-----+-----+-----+-----+
+| gather         | ✓   | ✓   | ✘   | ✓   |
++----------------+-----+-----+-----+-----+
+| scatter        | ✓   | ✓   | ✘   | ✓   |
++----------------+-----+-----+-----+-----+
+| reduce_scatter | ✓   | ✓   | ✘   | ✓   |
++----------------+-----+-----+-----+-----+
+| all_to_all     | ✘   | ✘   | ✘   | ✓   |
++----------------+-----+-----+-----+-----+
+| barrier        | ✓   | ✘   | ✘   | ✓   |
++----------------+-----+-----+-----+-----+
 ```
 
 ### Backends that come with PyTorch
 
 PyTorch distributed package supports Linux (stable), macOS (stable), and Windows (prototype).
 By default for Linux, the Gloo and NCCL backends are built and included in PyTorch
-distributed (NCCL only when building with CUDA). MPI is an optional backend that can only be
-included if you build PyTorch from source. (e.g. building PyTorch on a host that has MPI
-installed.)
+distributed (NCCL only when building with CUDA). 
 
 :::{note}
 As of PyTorch v1.8, Windows supports all collective communications backends but NCCL,
@@ -122,7 +117,7 @@ In the past, we were often asked: "which backend should I use?".
 
 - CPU hosts with Ethernet interconnect
 
-  - Use Gloo, unless you have specific reasons to use MPI.
+  - Use Gloo.
 
 ### Common environment variables
 
@@ -262,10 +257,6 @@ inconsistent 'UUID' assignment across ranks, and to prevent races during initial
 ```
 
 ```{eval-rst}
-.. autofunction:: is_mpi_available
-```
-
-```{eval-rst}
 .. autofunction:: is_nccl_available
 ```
 
@@ -281,10 +272,9 @@ inconsistent 'UUID' assignment across ranks, and to prevent races during initial
 .. autofunction:: torch.distributed.distributed_c10d.irecv
 .. autofunction:: torch.distributed.distributed_c10d.is_gloo_available
 .. autofunction:: torch.distributed.distributed_c10d.is_initialized
-.. autofunction:: torch.distributed.distributed_c10d.is_mpi_available
+
 .. autofunction:: torch.distributed.distributed_c10d.is_nccl_available
 .. autofunction:: torch.distributed.distributed_c10d.is_torchelastic_launched
-.. autofunction:: torch.distributed.distributed_c10d.is_ucc_available
 ```
 
 ```{eval-rst}
@@ -759,7 +749,7 @@ is guaranteed to support two methods:
 - `wait()` - in the case of CPU collectives, will block the process until the operation is completed. In the case
   of CUDA collectives, will block the currently active CUDA stream until the operation is completed (but will not block the CPU).
 - `get_future()` - returns `torch._C.Future` object. Supported for NCCL, also supported for most operations on GLOO
-  and MPI, except for peer to peer operations.
+  except for peer to peer operations.
   Note: as we continue adopting Futures and merging APIs, `get_future()` call might become redundant.
 
 **Example**
