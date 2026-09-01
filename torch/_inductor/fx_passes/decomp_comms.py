@@ -224,7 +224,7 @@ def _is_l2_norm_op(node: fx.Node) -> bool:
     """True if node computes an L2 (Frobenius) norm."""
     if node.op != "call_function":
         return False
-    if node.target in (aten.frobenius_norm.dim, aten.norm.Scalar):
+    if node.target == aten.norm.Scalar:
         return True
     if node.target in (aten.linalg_vector_norm.default, aten.norm.ScalarOpt_dim):
         ord_arg = node.args[1] if len(node.args) > 1 else 2
@@ -241,7 +241,6 @@ _DECOMPOSABLE_REDUCTIONS = (
     aten.linalg_vector_norm.default,
     aten.norm.ScalarOpt_dim,
     aten.norm.Scalar,
-    aten.frobenius_norm.dim,
 )
 
 
@@ -291,7 +290,6 @@ def _reduction_includes_sharded_dim(node: fx.Node) -> bool:
     if node.target in (
         aten.linalg_vector_norm.default,
         aten.norm.ScalarOpt_dim,
-        aten.frobenius_norm.dim,
     ):
         dims = node.args[2] if len(node.args) > 2 else None
         return dims is None or _dims_include_zero(dims)
