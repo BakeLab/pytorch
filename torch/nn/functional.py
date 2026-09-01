@@ -3199,9 +3199,7 @@ def nll_loss(
     input: Tensor,
     target: Tensor,
     weight: Tensor | None = None,
-    size_average: bool | None = None,
     ignore_index: int = -100,
-    reduce: bool | None = None,
     reduction: str = "mean",
 ) -> Tensor:
     r"""Compute the negative log likelihood loss.
@@ -3217,17 +3215,13 @@ def nll_loss(
             K-dimensional loss.
         weight (Tensor, optional): A manual rescaling weight given to each
             class. If given, has to be a Tensor of size `C`
-        size_average (bool, optional): Deprecated (see :attr:`reduction`).
         ignore_index (int, optional): Specifies a target value that is ignored
-            and does not contribute to the input gradient. When :attr:`size_average` is
-            ``True``, the loss is averaged over non-ignored targets. Default: -100
-        reduce (bool, optional): Deprecated (see :attr:`reduction`).
+            and does not contribute to the input gradient. The loss is averaged
+            over non-ignored targets. Default: -100
         reduction (str, optional): Specifies the reduction to apply to the output:
             ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
             ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed. Note: :attr:`size_average`
-            and :attr:`reduce` are in the process of being deprecated, and in the meantime,
-            specifying either of those two args will override :attr:`reduction`. Default: ``'mean'``
+            elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``
 
     Example::
 
@@ -3245,13 +3239,9 @@ def nll_loss(
             input,
             target,
             weight=weight,
-            size_average=size_average,
             ignore_index=ignore_index,
-            reduce=reduce,
             reduction=reduction,
         )
-    if size_average is not None or reduce is not None:
-        reduction = _Reduction.legacy_get_string(size_average, reduce)
     return torch._C._nn.nll_loss_nd(
         input,
         target,
@@ -3267,9 +3257,7 @@ def poisson_nll_loss(
     target: Tensor,
     log_input: bool = True,
     full: bool = False,
-    size_average: bool | None = None,
     eps: float = 1e-8,
-    reduce: bool | None = None,
     reduction: str = "mean",
 ) -> Tensor:
     r"""Compute the Poisson negative log likelihood loss.
@@ -3285,16 +3273,12 @@ def poisson_nll_loss(
         full: Whether to compute full loss, i. e. to add the Stirling
             approximation term. Default: ``False``
             :math:`\text{target} * \log(\text{target}) - \text{target} + 0.5 * \log(2 * \pi * \text{target})`.
-        size_average (bool, optional): Deprecated (see :attr:`reduction`).
         eps (float, optional): Small value to avoid evaluation of :math:`\log(0)` when
             :attr:`log_input`\ =\ ``False``. Default: 1e-8
-        reduce (bool, optional): Deprecated (see :attr:`reduction`).
         reduction (str, optional): Specifies the reduction to apply to the output:
             ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
             ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed. Note: :attr:`size_average`
-            and :attr:`reduce` are in the process of being deprecated, and in the meantime,
-            specifying either of those two args will override :attr:`reduction`. Default: ``'mean'``
+            elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``
 
     """
     if has_torch_function_variadic(input, target):
@@ -3305,13 +3289,9 @@ def poisson_nll_loss(
             target,
             log_input=log_input,
             full=full,
-            size_average=size_average,
             eps=eps,
-            reduce=reduce,
             reduction=reduction,
         )
-    if size_average is not None or reduce is not None:
-        reduction = _Reduction.legacy_get_string(size_average, reduce)
     if reduction != "none" and reduction != "mean" and reduction != "sum":
         ret = input
         raise ValueError(reduction + " is not a valid value for reduction")
@@ -3419,8 +3399,6 @@ def gaussian_nll_loss(
 def kl_div(
     input: Tensor,
     target: Tensor,
-    size_average: bool | None = None,
-    reduce: bool | None = None,
     reduction: str = "mean",
     log_target: bool = False,
 ) -> Tensor:
@@ -3435,8 +3413,6 @@ def kl_div(
         input: Tensor of arbitrary shape in log-probabilities.
         target: Tensor of the same shape as input. See :attr:`log_target` for
             the target's interpretation.
-        size_average (bool, optional): Deprecated (see :attr:`reduction`).
-        reduce (bool, optional): Deprecated (see :attr:`reduction`).
         reduction (str, optional): Specifies the reduction to apply to the output:
             ``'none'`` | ``'batchmean'`` | ``'sum'`` | ``'mean'``.
             ``'none'``: no reduction will be applied
@@ -3449,10 +3425,6 @@ def kl_div(
             in the log space to avoid numerical issues caused by explicit ``log``.
             Default: ``False``
 
-    .. note::
-        :attr:`size_average` and :attr:`reduce` are in the process of being deprecated,
-        and in the meantime, specifying either of those two args will override :attr:`reduction`.
-
     .. warning::
         :attr:`reduction` = ``'mean'`` doesn't return the true kl divergence value, please use
         :attr:`reduction` = ``'batchmean'`` which aligns with KL math definition.
@@ -3463,27 +3435,22 @@ def kl_div(
             (input, target),
             input,
             target,
-            size_average=size_average,
-            reduce=reduce,
             reduction=reduction,
             log_target=log_target,
         )
-    if size_average is not None or reduce is not None:
-        reduction_enum = _Reduction.legacy_get_enum(size_average, reduce)
-    else:
-        if reduction == "mean":
-            warnings.warn(
-                "reduction: 'mean' divides the total loss by both the batch size and the support size."
-                "'batchmean' divides only by the batch size, and aligns with the KL div math definition."
-                "'mean' will be changed to behave the same as 'batchmean' in the next major release.",
-                stacklevel=2,
-            )
+    if reduction == "mean":
+        warnings.warn(
+            "reduction: 'mean' divides the total loss by both the batch size and the support size."
+            "'batchmean' divides only by the batch size, and aligns with the KL div math definition."
+            "'mean' will be changed to behave the same as 'batchmean' in the next major release.",
+            stacklevel=2,
+        )
 
-        # special case for batchmean
-        if reduction == "batchmean":
-            reduction_enum = _Reduction.get_enum("sum")
-        else:
-            reduction_enum = _Reduction.get_enum(reduction)
+    # special case for batchmean
+    if reduction == "batchmean":
+        reduction_enum = _Reduction.get_enum("sum")
+    else:
+        reduction_enum = _Reduction.get_enum(reduction)
 
     reduced = torch.kl_div(input, target, reduction_enum, log_target=log_target)
 
@@ -3497,9 +3464,7 @@ def cross_entropy(
     input: Tensor,
     target: Tensor,
     weight: Tensor | None = None,
-    size_average: bool | None = None,
     ignore_index: int = -100,
-    reduce: bool | None = None,
     reduction: str = "mean",
     label_smoothing: float = 0.0,
 ) -> Tensor:
@@ -3514,19 +3479,15 @@ def cross_entropy(
             see Shape section below for supported shapes.
         weight (Tensor, optional): a manual rescaling weight given to each
             class. If given, has to be a Tensor of size `C`
-        size_average (bool, optional): Deprecated (see :attr:`reduction`).
         ignore_index (int, optional): Specifies a target value that is ignored
-            and does not contribute to the input gradient. When :attr:`size_average` is
-            ``True``, the loss is averaged over non-ignored targets. Note that
+            and does not contribute to the input gradient. The loss is averaged
+            over non-ignored targets. Note that
             :attr:`ignore_index` is only applicable when the target contains class indices.
             Default: -100
-        reduce (bool, optional): Deprecated (see :attr:`reduction`).
         reduction (str, optional): Specifies the reduction to apply to the output:
             ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
             ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed. Note: :attr:`size_average`
-            and :attr:`reduce` are in the process of being deprecated, and in the meantime,
-            specifying either of those two args will override :attr:`reduction`. Default: ``'mean'``
+            elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``
         label_smoothing (float, optional): A float in [0.0, 1.0]. Specifies the amount
             of smoothing when computing the loss, where 0.0 means no smoothing. The targets
             become a mixture of the original ground truth and a uniform distribution as described in
@@ -3568,14 +3529,10 @@ def cross_entropy(
             input,
             target,
             weight=weight,
-            size_average=size_average,
             ignore_index=ignore_index,
-            reduce=reduce,
             reduction=reduction,
             label_smoothing=label_smoothing,
         )
-    if size_average is not None or reduce is not None:
-        reduction = _Reduction.legacy_get_string(size_average, reduce)
     return torch._C._nn.cross_entropy_loss(
         input,
         target,
@@ -3591,8 +3548,6 @@ def binary_cross_entropy(
     input: Tensor,
     target: Tensor,
     weight: Tensor | None = None,
-    size_average: bool | None = None,
-    reduce: bool | None = None,
     reduction: str = "mean",
 ) -> Tensor:
     r"""Compute Binary Cross Entropy between the target and input probabilities.
@@ -3604,14 +3559,10 @@ def binary_cross_entropy(
         target: Tensor of the same shape as input with values between 0 and 1.
         weight (Tensor, optional): a manual rescaling weight
                 if provided it's repeated to match input tensor shape
-        size_average (bool, optional): Deprecated (see :attr:`reduction`).
-        reduce (bool, optional): Deprecated (see :attr:`reduction`).
         reduction (str, optional): Specifies the reduction to apply to the output:
             ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
             ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed. Note: :attr:`size_average`
-            and :attr:`reduce` are in the process of being deprecated, and in the meantime,
-            specifying either of those two args will override :attr:`reduction`. Default: ``'mean'``
+            elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``
 
     Examples::
 
@@ -3627,14 +3578,9 @@ def binary_cross_entropy(
             input,
             target,
             weight=weight,
-            size_average=size_average,
-            reduce=reduce,
             reduction=reduction,
         )
-    if size_average is not None or reduce is not None:
-        reduction_enum = _Reduction.legacy_get_enum(size_average, reduce)
-    else:
-        reduction_enum = _Reduction.get_enum(reduction)
+    reduction_enum = _Reduction.get_enum(reduction)
     if target.size() != input.size():
         raise ValueError(
             f"Using a target size ({target.size()}) that is different to the input size ({input.size()}) is deprecated. "
@@ -3653,8 +3599,6 @@ def binary_cross_entropy_with_logits(
     input: Tensor,
     target: Tensor,
     weight: Tensor | None = None,
-    size_average: bool | None = None,
-    reduce: bool | None = None,
     reduction: str = "mean",
     pos_weight: Tensor | None = None,
 ) -> Tensor:
@@ -3668,14 +3612,10 @@ def binary_cross_entropy_with_logits(
         weight (Tensor, optional): a manual rescaling weight. If provided, the dimension
            of weight supports :ref:`broadcasting to a common shape <broadcasting-semantics>`
            with respect to the input (and target) shape.
-        size_average (bool, optional): Deprecated (see :attr:`reduction`).
-        reduce (bool, optional): Deprecated (see :attr:`reduction`).
         reduction (str, optional): Specifies the reduction to apply to the output:
             ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
             ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed. Note: :attr:`size_average`
-            and :attr:`reduce` are in the process of being deprecated, and in the meantime,
-            specifying either of those two args will override :attr:`reduction`. Default: ``'mean'``
+            elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``
         pos_weight (Tensor, optional): a weight of positive examples to be broadcasted with target.
             Must be a tensor with equal size along the class dimension to the number of classes.
             Pay close attention to PyTorch's broadcasting semantics in order to achieve the desired
@@ -3699,15 +3639,10 @@ def binary_cross_entropy_with_logits(
             input,
             target,
             weight=weight,
-            size_average=size_average,
-            reduce=reduce,
             reduction=reduction,
             pos_weight=pos_weight,
         )
-    if size_average is not None or reduce is not None:
-        reduction_enum = _Reduction.legacy_get_enum(size_average, reduce)
-    else:
-        reduction_enum = _Reduction.get_enum(reduction)
+    reduction_enum = _Reduction.get_enum(reduction)
 
     if not (target.size() == input.size()):
         raise ValueError(
@@ -4086,8 +4021,6 @@ def linear_cross_entropy(
 def smooth_l1_loss(
     input: Tensor,
     target: Tensor,
-    size_average: bool | None = None,
-    reduce: bool | None = None,
     reduction: str = "mean",
     beta: float = 1.0,
 ) -> Tensor:
@@ -4101,8 +4034,6 @@ def smooth_l1_loss(
     Args:
         input (Tensor): Predicted values.
         target (Tensor): Ground truth values.
-        size_average (bool, optional): Deprecated (see :attr:`reduction`).
-        reduce (bool, optional): Deprecated (see :attr:`reduction`).
         reduction (str, optional): Specifies the reduction to apply to the output:
                                    'none' | 'mean' | 'sum'. 'mean': the mean of the output is taken.
                                    'sum': the output will be summed. 'none': no reduction will be applied.
@@ -4120,8 +4051,6 @@ def smooth_l1_loss(
             (input, target),
             input,
             target,
-            size_average=size_average,
-            reduce=reduce,
             reduction=reduction,
             beta=beta,
         )
@@ -4132,8 +4061,6 @@ def smooth_l1_loss(
             "Please ensure they have the same size.",
             stacklevel=2,
         )
-    if size_average is not None or reduce is not None:
-        reduction = _Reduction.legacy_get_string(size_average, reduce)
 
     expanded_input, expanded_target = torch.broadcast_tensors(input, target)
 
@@ -4245,8 +4172,6 @@ def huber_loss(
 def l1_loss(
     input: Tensor,
     target: Tensor,
-    size_average: bool | None = None,
-    reduce: bool | None = None,
     reduction: str = "mean",
     weight: Tensor | None = None,
 ) -> Tensor:
@@ -4259,8 +4184,6 @@ def l1_loss(
     Args:
         input (Tensor): Predicted values.
         target (Tensor): Ground truth values.
-        size_average (bool, optional): Deprecated (see :attr:`reduction`).
-        reduce (bool, optional): Deprecated (see :attr:`reduction`).
         reduction (str, optional): Specifies the reduction to apply to the output:
                                    'none' | 'mean' | 'sum'. 'mean': the mean of the output is taken.
                                    'sum': the output will be summed. 'none': no reduction will be applied.
@@ -4276,8 +4199,6 @@ def l1_loss(
             (input, target, weight),
             input,
             target,
-            size_average=size_average,
-            reduce=reduce,
             reduction=reduction,
         )
     if target.size() != input.size():
@@ -4287,8 +4208,6 @@ def l1_loss(
             "Please ensure they have the same size.",
             stacklevel=2,
         )
-    if size_average is not None or reduce is not None:
-        reduction = _Reduction.legacy_get_string(size_average, reduce)
 
     expanded_input, expanded_target = torch.broadcast_tensors(input, target)
 
@@ -4321,8 +4240,6 @@ def l1_loss(
 def mse_loss(
     input: Tensor,
     target: Tensor,
-    size_average: bool | None = None,
-    reduce: bool | None = None,
     reduction: str = "mean",
     weight: Tensor | None = None,
 ) -> Tensor:
@@ -4333,8 +4250,6 @@ def mse_loss(
     Args:
         input (Tensor): Predicted values.
         target (Tensor): Ground truth values.
-        size_average (bool, optional): Deprecated (see :attr:`reduction`).
-        reduce (bool, optional): Deprecated (see :attr:`reduction`).
         reduction (str, optional): Specifies the reduction to apply to the output:
                                    'none' | 'mean' | 'sum'. 'mean': the mean of the output is taken.
                                    'sum': the output will be summed. 'none': no reduction will be applied.
@@ -4350,8 +4265,6 @@ def mse_loss(
             (input, target, weight),
             input,
             target,
-            size_average=size_average,
-            reduce=reduce,
             reduction=reduction,
             weight=weight,
         )
@@ -4364,8 +4277,6 @@ def mse_loss(
             stacklevel=2,
         )
 
-    if size_average is not None or reduce is not None:
-        reduction = _Reduction.legacy_get_string(size_average, reduce)
 
     expanded_input, expanded_target = torch.broadcast_tensors(input, target)
 
@@ -4401,8 +4312,6 @@ def margin_ranking_loss(
     input2: Tensor,
     target: Tensor,
     margin: float = 0,
-    size_average: bool | None = None,
-    reduce: bool | None = None,
     reduction: str = "mean",
 ) -> Tensor:
     r"""Compute the margin ranking loss.
@@ -4413,8 +4322,6 @@ def margin_ranking_loss(
         input1 (Tensor): Predicted values.
         input2 (Tensor): Predicted values.
         target (Tensor): Ground truth values.
-        size_average (bool, optional): Deprecated (see :attr:`reduction`).
-        reduce (bool, optional): Deprecated (see :attr:`reduction`).
         reduction (str, optional): Specifies the reduction to apply to the output:
                                    'none' | 'mean' | 'sum'. 'mean': the mean of the output is taken.
                                    'sum': the output will be summed. 'none': no reduction will be applied.
@@ -4431,14 +4338,9 @@ def margin_ranking_loss(
             input2,
             target,
             margin=margin,
-            size_average=size_average,
-            reduce=reduce,
             reduction=reduction,
         )
-    if size_average is not None or reduce is not None:
-        reduction_enum = _Reduction.legacy_get_enum(size_average, reduce)
-    else:
-        reduction_enum = _Reduction.get_enum(reduction)
+    reduction_enum = _Reduction.get_enum(reduction)
     if input1.dim() != input2.dim() or input1.dim() != target.dim():
         raise RuntimeError(
             f"margin_ranking_loss : All input tensors should have same dimension but got sizes: "
@@ -4451,8 +4353,6 @@ def hinge_embedding_loss(
     input: Tensor,
     target: Tensor,
     margin: float = 1.0,
-    size_average: bool | None = None,
-    reduce: bool | None = None,
     reduction: str = "mean",
 ) -> Tensor:
     r"""Compute the hinge embedding loss.
@@ -4463,8 +4363,6 @@ def hinge_embedding_loss(
        input (Tensor): Predicted values.
        target (Tensor): Ground truth values.
        margin (float, optional): Margin for hinge loss. Has a default value of 1.
-       size_average (bool, optional): Deprecated (see :attr:`reduction`).
-       reduce (bool, optional): Deprecated (see :attr:`reduction`).
        reduction (str, optional): Specifies the reduction to apply to the output:
                                   'none' | 'mean' | 'sum'. 'mean': the mean of the output is taken.
                                   'sum': the output will be summed. 'none': no reduction will be applied.
@@ -4480,22 +4378,15 @@ def hinge_embedding_loss(
             input,
             target,
             margin=margin,
-            size_average=size_average,
-            reduce=reduce,
             reduction=reduction,
         )
-    if size_average is not None or reduce is not None:
-        reduction_enum = _Reduction.legacy_get_enum(size_average, reduce)
-    else:
-        reduction_enum = _Reduction.get_enum(reduction)
+    reduction_enum = _Reduction.get_enum(reduction)
     return torch.hinge_embedding_loss(input, target, margin, reduction_enum)
 
 
 def multilabel_margin_loss(
     input: Tensor,
     target: Tensor,
-    size_average: bool | None = None,
-    reduce: bool | None = None,
     reduction: str = "mean",
 ) -> Tensor:
     r"""Compute the multilabel margin loss.
@@ -4505,8 +4396,6 @@ def multilabel_margin_loss(
     Args:
        input (Tensor): Predicted values.
        target (Tensor): Ground truth values.
-       size_average (bool, optional): Deprecated (see :attr:`reduction`).
-       reduce (bool, optional): Deprecated (see :attr:`reduction`).
        reduction (str, optional): Specifies the reduction to apply to the output:
                                   'none' | 'mean' | 'sum'. 'mean': the mean of the output is taken.
                                   'sum': the output will be summed. 'none': no reduction will be applied.
@@ -4521,14 +4410,9 @@ def multilabel_margin_loss(
             (input, target),
             input,
             target,
-            size_average=size_average,
-            reduce=reduce,
             reduction=reduction,
         )
-    if size_average is not None or reduce is not None:
-        reduction_enum = _Reduction.legacy_get_enum(size_average, reduce)
-    else:
-        reduction_enum = _Reduction.get_enum(reduction)
+    reduction_enum = _Reduction.get_enum(reduction)
     # pyrefly: ignore [bad-argument-type]
     return torch._C._nn.multilabel_margin_loss(input, target, reduction_enum)
 
@@ -4536,8 +4420,6 @@ def multilabel_margin_loss(
 def soft_margin_loss(
     input: Tensor,
     target: Tensor,
-    size_average: bool | None = None,
-    reduce: bool | None = None,
     reduction: str = "mean",
 ) -> Tensor:
     r"""Compute the soft margin loss.
@@ -4547,8 +4429,6 @@ def soft_margin_loss(
     Args:
        input (Tensor): Predicted values.
        target (Tensor): Ground truth values.
-       size_average (bool, optional): Deprecated (see :attr:`reduction`).
-       reduce (bool, optional): Deprecated (see :attr:`reduction`).
        reduction (str, optional): Specifies the reduction to apply to the output:
                                   'none' | 'mean' | 'sum'. 'mean': the mean of the output is taken.
                                   'sum': the output will be summed. 'none': no reduction will be applied.
@@ -4563,14 +4443,9 @@ def soft_margin_loss(
             (input, target),
             input,
             target,
-            size_average=size_average,
-            reduce=reduce,
             reduction=reduction,
         )
-    if size_average is not None or reduce is not None:
-        reduction_enum = _Reduction.legacy_get_enum(size_average, reduce)
-    else:
-        reduction_enum = _Reduction.get_enum(reduction)
+    reduction_enum = _Reduction.get_enum(reduction)
     # pyrefly: ignore [bad-argument-type]
     return torch._C._nn.soft_margin_loss(input, target, reduction_enum)
 
@@ -4579,8 +4454,6 @@ def multilabel_soft_margin_loss(
     input: Tensor,
     target: Tensor,
     weight: Tensor | None = None,
-    size_average: bool | None = None,
-    reduce: bool | None = None,
     reduction: str = "mean",
 ) -> Tensor:
     r"""Compute the multilabel soft margin loss.
@@ -4590,8 +4463,6 @@ def multilabel_soft_margin_loss(
     Args:
        input (Tensor): Predicted values.
        target (Tensor): Ground truth values.
-       size_average (bool, optional): Deprecated (see :attr:`reduction`).
-       reduce (bool, optional): Deprecated (see :attr:`reduction`).
        reduction (str, optional): Specifies the reduction to apply to the output:
                                   'none' | 'mean' | 'sum'. 'mean': the mean of the output is taken.
                                   'sum': the output will be summed. 'none': no reduction will be applied.
@@ -4607,12 +4478,8 @@ def multilabel_soft_margin_loss(
             input,
             target,
             weight=weight,
-            size_average=size_average,
-            reduce=reduce,
             reduction=reduction,
         )
-    if size_average is not None or reduce is not None:
-        reduction = _Reduction.legacy_get_string(size_average, reduce)
 
     loss = -(target * logsigmoid(input) + (1 - target) * logsigmoid(-input))
 
@@ -4640,8 +4507,6 @@ def cosine_embedding_loss(
     input2: Tensor,
     target: Tensor,
     margin: float = 0,
-    size_average: bool | None = None,
-    reduce: bool | None = None,
     reduction: str = "mean",
 ) -> Tensor:
     r"""Compute the cosine embedding loss.
@@ -4653,8 +4518,6 @@ def cosine_embedding_loss(
        input2 (Tensor): Predicted values.
        target (Tensor): Ground truth values.
        margin (float, optional): Margin for cosine embedding. Has a default value of 0.
-       size_average (bool, optional): Deprecated (see :attr:`reduction`).
-       reduce (bool, optional): Deprecated (see :attr:`reduction`).
        reduction (str, optional): Specifies the reduction to apply to the output:
                                   'none' | 'mean' | 'sum'. 'mean': the mean of the output is taken.
                                   'sum': the output will be summed. 'none': no reduction will be applied.
@@ -4671,14 +4534,9 @@ def cosine_embedding_loss(
             input2,
             target,
             margin=margin,
-            size_average=size_average,
-            reduce=reduce,
             reduction=reduction,
         )
-    if size_average is not None or reduce is not None:
-        reduction_enum = _Reduction.legacy_get_enum(size_average, reduce)
-    else:
-        reduction_enum = _Reduction.get_enum(reduction)
+    reduction_enum = _Reduction.get_enum(reduction)
     return torch.cosine_embedding_loss(input1, input2, target, margin, reduction_enum)
 
 
@@ -4688,8 +4546,6 @@ def multi_margin_loss(
     p: int = 1,
     margin: float = 1.0,
     weight: Tensor | None = None,
-    size_average: bool | None = None,
-    reduce: bool | None = None,
     reduction: str = "mean",
 ) -> Tensor:
     r"""Compute the multi margin loss, with optional weighting.
@@ -4702,8 +4558,6 @@ def multi_margin_loss(
         p (int, optional): Has a default value of 1. 1 and 2 are the only supported values.
         margin (float, optional): Margin for multi margin loss. Has a default value of 1.
         weight (Tensor, optional): Weights for each sample. Default: None.
-        size_average (bool, optional): Deprecated (see :attr:`reduction`).
-        reduce (bool, optional): Deprecated (see :attr:`reduction`).
         reduction (str, optional): Specifies the reduction to apply to the output:
                                   'none' | 'mean' | 'sum'. 'mean': the mean of the output is taken.
                                   'sum': the output will be summed. 'none': no reduction will be applied.
@@ -4721,14 +4575,9 @@ def multi_margin_loss(
             p=p,
             margin=margin,
             weight=weight,
-            size_average=size_average,
-            reduce=reduce,
             reduction=reduction,
         )
-    if size_average is not None or reduce is not None:
-        reduction_enum = _Reduction.legacy_get_enum(size_average, reduce)
-    else:
-        reduction_enum = _Reduction.get_enum(reduction)
+    reduction_enum = _Reduction.get_enum(reduction)
     if p != 1 and p != 2:
         raise ValueError("only p == 1 and p == 2 supported")
     if weight is not None:
@@ -6031,8 +5880,6 @@ def triplet_margin_loss(
     p: float = 2,
     eps: float = 1e-6,
     swap: bool = False,
-    size_average: bool | None = None,
-    reduce: bool | None = None,
     reduction: str = "mean",
 ) -> Tensor:
     r"""Compute the triplet loss between given input tensors and a margin greater than 0.
@@ -6050,14 +5897,9 @@ def triplet_margin_loss(
             p=p,
             eps=eps,
             swap=swap,
-            size_average=size_average,
-            reduce=reduce,
             reduction=reduction,
         )
-    if size_average is not None or reduce is not None:
-        reduction_enum = _Reduction.legacy_get_enum(size_average, reduce)
-    else:
-        reduction_enum = _Reduction.get_enum(reduction)
+    reduction_enum = _Reduction.get_enum(reduction)
     if margin <= 0:
         raise ValueError(f"margin must be greater than 0, got {margin}")
     return torch.triplet_margin_loss(
