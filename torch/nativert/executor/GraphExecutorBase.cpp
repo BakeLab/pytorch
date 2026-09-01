@@ -3,7 +3,7 @@
 
 #include <c10/util/Logging.h>
 #include <c10/util/irange.h>
-#include <caffe2/core/timer.h>
+#include <chrono>
 
 namespace torch::nativert {
 
@@ -96,7 +96,6 @@ ProfileMetrics GraphExecutorBase::benchmarkIndividualNodes(
   }
 
   // Execute kernels
-  caffe2::Timer timer;
   executionFrame.withManagedMemory([&](auto) {
     for ([[maybe_unused]] const auto _ : c10::irange(mainRuns)) {
       for (auto inputs : inputsList) {
@@ -107,9 +106,11 @@ ProfileMetrics GraphExecutorBase::benchmarkIndividualNodes(
           executionFrame.setIValue(inputValues[j]->id(), std::move(inputs[j]));
         }
         for (NodeIndex nodeIdx = 0; nodeIdx < nodeKernels_.size(); ++nodeIdx) {
-          timer.Start();
+          const auto start = std::chrono::high_resolution_clock::now();
           nodeKernels_[nodeIdx]->compute(executionFrame);
-          float millis = timer.MilliSeconds();
+          const float millis = std::chrono::duration<float, std::milli>(
+                                   std::chrono::high_resolution_clock::now() - start)
+                                   .count();
           results.timePerNode[nodeIdx] += millis;
         }
       }
