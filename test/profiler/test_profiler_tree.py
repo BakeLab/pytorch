@@ -611,11 +611,9 @@ class TestProfilerTree(_TestProfilerTreeBase):
                   aten::fill_
               nn.Module: MyModule_0
                 torch/nn/modules/module.py(...): _call_impl
-                  <built-in method _is_tracing of PyCapsule object at 0xXXXXXXXXXXXX>
                   test_profiler_tree.py(...): forward
                     nn.Module: ReLU_0
                       torch/nn/modules/module.py(...): _call_impl
-                        <built-in method _is_tracing of PyCapsule object at 0xXXXXXXXXXXXX>
                         torch/nn/modules/activation.py(...): forward
                           torch/nn/functional.py(...): relu
                             <built-in function _has_torch_function_unary>
@@ -624,7 +622,6 @@ class TestProfilerTree(_TestProfilerTreeBase):
                                 aten::clamp_min
                     nn.Module: Linear_0
                       torch/nn/modules/module.py(...): _call_impl
-                        <built-in method _is_tracing of PyCapsule object at 0xXXXXXXXXXXXX>
                         torch/nn/modules/linear.py(...): forward
                           torch/nn/modules/module.py(...): __getattr__
                           torch/nn/modules/module.py(...): __getattr__
@@ -644,7 +641,6 @@ class TestProfilerTree(_TestProfilerTreeBase):
                               aten::_unsafe_view
                     nn.Module: ReLU_1
                       torch/nn/modules/module.py(...): _call_impl
-                        <built-in method _is_tracing of PyCapsule object at 0xXXXXXXXXXXXX>
                         torch/nn/modules/activation.py(...): forward
                           torch/nn/functional.py(...): relu
                             <built-in function _has_torch_function_unary>
@@ -657,11 +653,9 @@ class TestProfilerTree(_TestProfilerTreeBase):
                   aten::fill_
               nn.Module: MyModule_0
                 torch/nn/modules/module.py(...): _call_impl
-                  <built-in method _is_tracing of PyCapsule object at 0xXXXXXXXXXXXX>
                   test_profiler_tree.py(...): forward
                     nn.Module: ReLU_0
                       torch/nn/modules/module.py(...): _call_impl
-                        <built-in method _is_tracing of PyCapsule object at 0xXXXXXXXXXXXX>
                         torch/nn/modules/activation.py(...): forward
                           torch/nn/functional.py(...): relu
                             <built-in function _has_torch_function_unary>
@@ -670,7 +664,6 @@ class TestProfilerTree(_TestProfilerTreeBase):
                                 aten::clamp_min
                     nn.Module: Linear_0
                       torch/nn/modules/module.py(...): _call_impl
-                        <built-in method _is_tracing of PyCapsule object at 0xXXXXXXXXXXXX>
                         torch/nn/modules/linear.py(...): forward
                           torch/nn/modules/module.py(...): __getattr__
                           torch/nn/modules/module.py(...): __getattr__
@@ -690,7 +683,6 @@ class TestProfilerTree(_TestProfilerTreeBase):
                               aten::_unsafe_view
                     nn.Module: ReLU_1
                       torch/nn/modules/module.py(...): _call_impl
-                        <built-in method _is_tracing of PyCapsule object at 0xXXXXXXXXXXXX>
                         torch/nn/modules/activation.py(...): forward
                           torch/nn/functional.py(...): relu
                             <built-in function _has_torch_function_unary>
@@ -988,7 +980,6 @@ class TestProfilerTreeCUDA(_TestProfilerTreeBase):
                       cudaLaunchKernel
                         void at::native::vectorized_elementwise_kernel<...>(...)
                 nn.Module: Linear_0
-                  <built-in method _is_tracing of PyCapsule object at 0xXXXXXXXXXXXX>
                   torch/nn/modules/linear.py(...): forward
                     torch/nn/modules/module.py(...): __getattr__
                     torch/nn/modules/module.py(...): __getattr__
