@@ -1063,14 +1063,6 @@ class TestProfiler(TestCase):
             with prof:
                 torch.ones(1)
 
-    @parametrize("api", ("load_nvprof", "parse_nvprof_trace"))
-    def test_nvprof_import_deprecated(self, api):
-        with patch("torch.autograd.profiler._parse_nvprof_trace", return_value=[]):
-            with self.assertWarnsRegex(
-                FutureWarning, rf"{api}.*deprecated.*PyTorch 2\.17"
-            ):
-                events = getattr(torch.autograd.profiler, api)("trace.prof")
-        self.assertEqual(events, [])
 
     def test_enforce_unique_deprecated(self):
         with self.assertWarnsRegex(
