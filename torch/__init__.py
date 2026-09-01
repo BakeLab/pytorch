@@ -2382,7 +2382,6 @@ from torch.autograd import (  # usort: skip
 from torch import (  # usort: skip
     __config__ as __config__,
     __future__ as __future__,
-    _awaits as _awaits,
     accelerator as accelerator,
     autograd as autograd,
     backends as backends,
