@@ -14627,11 +14627,8 @@ class TestAdvancedIndexing(TestCaseMPS):
         self.assertEqual(out_mps.cpu(), out_cpu)
 
     def test_index_put_accumulate_with_optional_tensors(self, device="mps"):
-        # TODO: replace with a better solution.
-        # Currently, here using torchscript to put None into indices.
-        # on C++ it gives indices as a list of 2 optional tensors: first is null and
-        # the second is a valid tensor.
-        @torch.jit.script
+        # On the C++ side this gives indices as a list of two optional tensors:
+        # the first null, the second a valid tensor.
         def func(x, i, v):
             idx = [None, i]
             x.index_put_(idx, v, accumulate=True)
@@ -14741,23 +14738,28 @@ class TestAdvancedIndexing(TestCaseMPS):
 
         self.assertEqual(run(device).cpu(), run("cpu"))
 
-    def test_jit_indexing(self, device="mps"):
-        def fn1(x):
-            x[x < 50] = 1.0
-            return x
+    def test_multiple_byte_mask(self, device="mps"):
+        v = torch.randn(5, 7, 3, device=device)
+        # note: these broadcast together and are transposed to the first dim
+        mask1 = torch.ByteTensor([1, 0, 1, 1, 0]).to(device)
+        mask2 = torch.ByteTensor([1, 1, 1]).to(device)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            self.assertEqual(v[mask1, :, mask2].shape, (3, 7))
+            self.assertEqual(len(w), 2)
 
-        def fn2(x):
-            x[0:50] = 1.0
-            return x
+    def test_byte_mask2d(self, device="mps"):
+        v = torch.randn(5, 7, 3, device=device)
+        c = torch.randn(5, 7, device=device)
+        num_ones = (c > 0).sum()
+        r = v[c > 0]
+        self.assertEqual(r.shape, (num_ones, 3))
 
-        scripted_fn1 = torch.jit.script(fn1)
-        scripted_fn2 = torch.jit.script(fn2)
-        data = torch.arange(100, device=device, dtype=torch.float)
-        out = scripted_fn1(data.detach().clone())
-        ref = torch.tensor(np.concatenate((np.ones(50), np.arange(50, 100))), device=device, dtype=torch.float)
-        self.assertEqual(out, ref)
-        out = scripted_fn2(data.detach().clone())
-        self.assertEqual(out, ref)
+    def test_int_indices(self, device="mps"):
+        v = torch.randn(5, 7, 3, device=device)
+        self.assertEqual(v[[0, 4, 2]].shape, (3, 7, 3))
+        self.assertEqual(v[:, [0, 4, 2]].shape, (5, 3, 3))
+        self.assertEqual(v[:, [[0, 1], [4, 3]]].shape, (5, 2, 2, 3))
 
     def test_index_put_src_datatype(self):
         def helper(device, dtype):
