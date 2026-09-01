@@ -13852,11 +13852,8 @@ class TestAdvancedIndexing(TestCaseMPS):
 
     # tests from 'test_indexing.py'
     def test_index_put_accumulate_with_optional_tensors(self, device="mps"):
-        # TODO: replace with a better solution.
-        # Currently, here using torchscript to put None into indices.
-        # on C++ it gives indices as a list of 2 optional tensors: first is null and
-        # the second is a valid tensor.
-        @torch.jit.script
+        # On the C++ side this gives indices as a list of two optional tensors:
+        # the first null, the second a valid tensor.
         def func(x, i, v):
             idx = [None, i]
             x.index_put_(idx, v, accumulate=True)
