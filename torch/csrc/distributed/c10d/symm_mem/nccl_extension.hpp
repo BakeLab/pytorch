@@ -9,8 +9,6 @@
 
 namespace c10d::nccl_extension {
 
-TORCH_API bool is_nccl_symmem_available();
-
 TORCH_API void nccl_put(
     at::Tensor& tensor,
     const int64_t peer,
