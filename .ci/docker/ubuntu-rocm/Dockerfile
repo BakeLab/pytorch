@@ -100,10 +100,6 @@ COPY ./common/patches /opt/cache/patches
 ENV PATH /opt/cache/bin:$PATH
 RUN bash ./install_cache.sh && rm install_cache.sh
 
-# Install Open MPI for ROCm
-COPY ./common/install_openmpi.sh install_openmpi.sh
-RUN if [ -n "${CUDA_VERSION}" ]; then bash install_openmpi.sh; fi
-RUN rm install_openmpi.sh
 
 # Install rocm-origami
 COPY ./common/common_utils.sh common_utils.sh

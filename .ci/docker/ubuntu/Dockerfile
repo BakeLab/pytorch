@@ -215,10 +215,6 @@ COPY ./common/install_jni.sh install_jni.sh
 COPY ./java/jni.h jni.h
 RUN bash ./install_jni.sh && rm install_jni.sh
 
-# Install Open MPI for CUDA
-COPY ./common/install_openmpi.sh install_openmpi.sh
-RUN if [ -n "${CUDA_VERSION}" ]; then bash install_openmpi.sh; fi
-RUN rm install_openmpi.sh
 
 # Include BUILD_ENVIRONMENT environment variable in image
 ARG BUILD_ENVIRONMENT
