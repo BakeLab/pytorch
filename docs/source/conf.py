@@ -275,7 +275,7 @@ coverage_ignore_functions = [
     "read_vitals",
     "set_vital",
     "vitals_enabled",
-    # torch.hub
+    # torch._importer
     "import_module",
     # torch.jit.unsupported_tensor_ops
     "execWrapper",
@@ -283,7 +283,6 @@ coverage_ignore_functions = [
     "disable_global_flags",
     "flags_frozen",
     # torch.nn.parallel
-    "DistributedDataParallelCPU",
     # torch.utils
     "burn_in_info",
     "get_info_and_burn_skeleton",
@@ -440,7 +439,6 @@ coverage_ignore_functions = [
     "get_elapsed_time_ms",
     "prof",
     "profile",
-    "publish_metric",
     "put_metric",
     # torch.distributed.elastic.multiprocessing.api
     "get_std_cm",
@@ -620,8 +618,6 @@ coverage_ignore_functions = [
     "uniform",  # deprecated
     "xavier_normal",  # deprecated
     "xavier_uniform",  # deprecated
-    # torch.nn.modules.rnn
-    "apply_permutation",  # deprecated
     # torch.nn.parallel.comm
     "broadcast",
     "broadcast_coalesced",

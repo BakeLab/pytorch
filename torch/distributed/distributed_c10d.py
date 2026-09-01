@@ -180,7 +180,6 @@ __all__ = [
     "get_group_rank",
     "get_global_rank",
     "get_process_group_ranks",
-    "reduce_op",
     "all_gather_single",
     "all_gather_into_tensor",
     "reduce_scatter_single",
@@ -1182,33 +1181,6 @@ def _get_default_backend_type_for_backend_config(
     return _resolve_backend_type(str(device_backend_map[device]))
 
 
-class _reduce_op:
-    r"""
-    Deprecated enum-like class.
-
-    For reduction operations: ``SUM``, ``PRODUCT``, ``MIN``, and ``MAX``.
-
-    :class:`~torch.distributed.ReduceOp` is recommended to use instead.
-    """
-
-    def __init__(self) -> None:
-        # __members__ is a dict storing key-value pairs for enum classes
-        for k, v in ReduceOp.RedOpType.__members__.items():
-            setattr(self, k, v)
-        self.__members__ = ReduceOp.RedOpType.__members__
-
-    @deprecated(
-        "`torch.distributed.reduce_op` is deprecated, "
-        "please use `torch.distributed.ReduceOp` instead",
-        category=FutureWarning,
-    )
-    def __getattribute__(self, key: str) -> object:
-        return object.__getattribute__(self, key)
-
-
-reduce_op = _reduce_op()
-
-
 class P2POp:
     """
     A class to build point-to-point operations for ``batch_isend_irecv``.
@@ -1837,16 +1809,6 @@ def get_global_rank(group: ProcessGroup, group_rank: int) -> int:
 
 
 # TODO: remove this once the ecosystem moves away from it.
-@deprecated(
-    "`torch.distributed.distributed_c10d._get_global_rank` is deprecated, "
-    "please use `torch.distributed.distributed_c10d.get_global_rank` instead",
-    category=FutureWarning,
-)
-def _get_global_rank(group: ProcessGroup, rank: int) -> int:
-    """Use get_global_rank as this method is deprecated."""
-    return get_global_rank(group, rank)
-
-
 def get_process_group_ranks(group: ProcessGroup | None) -> list[int]:
     """
     Get all ranks associated with ``group``.
@@ -2386,16 +2348,6 @@ def set_timeout(timeout: timedelta, group: ProcessGroup | None = None) -> None:
     if not isinstance(group, ProcessGroup):
         raise AssertionError(f"Expected ProcessGroup, got {type(group)}")
     group.set_timeout(timeout)
-
-
-@deprecated(
-    "`torch.distributed.distributed_c10d._set_pg_timeout` is deprecated, "
-    "please use `torch.distributed.set_timeout` instead",
-    category=FutureWarning,
-)
-def _set_pg_timeout(timeout: timedelta, group: ProcessGroup | None = None) -> None:
-    """Use set_timeout as this method is deprecated."""
-    set_timeout(timeout, group)
 
 
 @_exception_logger

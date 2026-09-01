@@ -7,7 +7,6 @@ import functools
 from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import Any, cast, Literal, NoReturn, overload, TYPE_CHECKING
-from warnings import deprecated
 
 import torch
 import torch.nn as nn
@@ -852,11 +851,6 @@ class FSDPModule:
                 to wait all-gather streams on.
         """
         self._get_fsdp_state()._state_ctx.post_optim_event = event
-
-    @deprecated("Use `set_gradient_divide_factor` instead")
-    def set_reduce_scatter_divide_factor(self, factor: float) -> None:
-        """Use :py:meth:`set_gradient_divide_factor` instead"""
-        self.set_gradient_divide_factor(factor)
 
     def set_gradient_divide_factor(self, factor: float) -> None:
         """

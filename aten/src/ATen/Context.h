@@ -15,7 +15,6 @@
 #include <ATen/detail/HIPHooksInterface.h>
 #include <ATen/detail/HPUHooksInterface.h>
 #include <ATen/detail/IPUHooksInterface.h>
-#include <ATen/detail/MAIAHooksInterface.h>
 #include <ATen/detail/MPSHooksInterface.h>
 #include <ATen/detail/PrivateUse1HooksInterface.h>
 #include <ATen/detail/XLAHooksInterface.h>
@@ -218,9 +217,6 @@ class TORCH_API Context {
   }
   static bool hasLazy() {
     return c10::impl::hasDeviceGuardImpl(c10::DeviceType::Lazy);
-  }
-  static bool hasMAIA() {
-    return c10::impl::hasDeviceGuardImpl(c10::DeviceType::MAIA);
   }
   static bool hasHPU() {
     return detail::getHPUHooks().hasHPU();
@@ -588,10 +584,6 @@ inline bool hasXLA() {
 
 inline bool hasMPS() {
   return globalContext().hasMPS();
-}
-
-inline bool hasMAIA() {
-  return globalContext().hasMAIA();
 }
 
 inline bool hasXPU() {

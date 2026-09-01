@@ -531,66 +531,6 @@ def _register_namedtuple(
     )
 
 
-@deprecated(
-    "`torch.utils._pytree._register_pytree_node` is deprecated. "
-    "Please use `torch.utils._pytree.register_pytree_node` instead.",
-    category=FutureWarning,
-)
-def _register_pytree_node(
-    cls: type[Any],
-    flatten_fn: FlattenFn,
-    unflatten_fn: UnflattenFn,
-    to_str_fn: ToStrFunc | None = None,  # deprecated
-    maybe_from_str_fn: MaybeFromStrFunc | None = None,  # deprecated
-    *,
-    serialized_type_name: str | None = None,
-    to_dumpable_context: ToDumpableContextFn | None = None,
-    from_dumpable_context: FromDumpableContextFn | None = None,
-    flatten_with_keys_fn: FlattenWithKeysFn | None = None,
-) -> None:
-    """Register a container-like type as pytree node for the Python pytree only.
-
-    Args:
-        cls: the type to register
-        flatten_fn: A callable that takes a pytree and returns a flattened
-            representation of the pytree and additional context to represent the
-            flattened pytree.
-        unflatten_fn: A callable that takes a flattened version of the pytree,
-            additional context, and returns an unflattened pytree.
-        serialized_type_name: A keyword argument used to specify the fully qualified
-            name used when serializing the tree spec.
-        to_dumpable_context: An optional keyword argument to custom specify how
-            to convert the context of the pytree to a custom json dumpable
-            representation. This is used for json serialization, which is being
-            used in torch.export right now.
-        from_dumpable_context: An optional keyword argument to custom specify how
-            to convert the custom json dumpable representation of the context
-            back to the original context. This is used for json deserialization,
-            which is being used in torch.export right now.
-        flatten_with_keys_fn: An optional keyword argument to specify how to
-            access each pytree leaf's keypath when flattening and tree-mapping.
-            Like ``flatten_fn``, but in place of a List[leaf], it should return
-            a List[(keypath, leaf)].
-    """
-    if to_str_fn is not None or maybe_from_str_fn is not None:
-        warnings.warn(
-            "`to_str_fn` and `maybe_from_str_fn` is deprecated. "
-            "Please use `to_dumpable_context` and `from_dumpable_context` instead.",
-            FutureWarning,
-            stacklevel=2,
-        )
-
-    _private_register_pytree_node(
-        cls,
-        flatten_fn,
-        unflatten_fn,
-        serialized_type_name=serialized_type_name,
-        to_dumpable_context=to_dumpable_context,
-        from_dumpable_context=from_dumpable_context,
-        flatten_with_keys_fn=flatten_with_keys_fn,
-    )
-
-
 def _deregister_pytree_node(
     cls: type[Any],
 ) -> None:
@@ -1079,15 +1019,6 @@ BUILTIN_TYPES: frozenset[type] = frozenset(
 )
 
 
-@deprecated(
-    "torch.utils._pytree._is_namedtuple_instance is private and will be removed in a future release. "
-    "Please use torch.utils._pytree.is_namedtuple_instance instead.",
-    category=FutureWarning,
-)
-def _is_namedtuple_instance(tree: Any) -> bool:
-    return is_namedtuple_instance(tree)
-
-
 def _get_node_type(tree: Any) -> Any:
     node_type = type(tree)
     # All namedtuple types are implicitly registered as pytree nodes.
@@ -1122,15 +1053,6 @@ def tree_is_leaf(
     if is_leaf is not None and is_leaf(tree):
         return True
     return _get_node_type(tree) not in SUPPORTED_NODES
-
-
-@deprecated(
-    "torch.utils._pytree._is_leaf is private and will be removed in a future release. "
-    "Please use torch.utils._pytree.tree_is_leaf instead.",
-    category=FutureWarning,
-)
-def _is_leaf(tree: PyTree, is_leaf: Callable[[PyTree], bool] | None = None) -> bool:
-    return tree_is_leaf(tree, is_leaf=is_leaf)
 
 
 # A TreeSpec represents the structure of a pytree. It holds:
@@ -1216,16 +1138,6 @@ class TreeSpec:
     @property
     def context(self) -> Context:
         return self._context
-
-    @property
-    @deprecated(
-        "`treespec.children_specs` is deprecated. "
-        "Use `treespec.child(index)` to access a single child, "
-        "or `treespec.children()` to get all children.",
-        category=FutureWarning,
-    )
-    def children_specs(self) -> list[Self]:
-        return self._children
 
     def is_leaf(self) -> bool:
         """Test whether the treespec represents a leaf."""
@@ -2015,7 +1927,7 @@ def _treespec_to_json(treespec: TreeSpec) -> _TreeSpecSchema:
     if serialized_type_name == NO_SERIALIZED_TYPE_NAME_FOUND:
         raise NotImplementedError(
             f"No registered serialization name for {treespec.type} found. "
-            "Please update your _register_pytree_node call with a `serialized_type_name` kwarg."
+            "Please update your register_pytree_node call with a `serialized_type_name` kwarg."
         )
 
     if serialize_node_def.to_dumpable_context is None:
@@ -2025,7 +1937,7 @@ def _treespec_to_json(treespec: TreeSpec) -> _TreeSpecSchema:
             raise TypeError(
                 "Unable to serialize context. "
                 "Please make the context json dump-able, or register a "
-                "custom serializer using _register_pytree_node."
+                "custom serializer using register_pytree_node."
             ) from e
     else:
         serialized_context = serialize_node_def.to_dumpable_context(treespec._context)
@@ -2081,7 +1993,7 @@ def _json_to_treespec(json_schema: DumpableContext) -> TreeSpec:
             raise TypeError(
                 "Unable to deserialize context. "
                 "Please make the context json load-able, or register a "
-                "custom serializer using _register_pytree_node.",
+                "custom serializer using register_pytree_node.",
             ) from ex
     else:
         context = serialize_node_def.from_dumpable_context(json_schema["context"])
@@ -2146,23 +2058,7 @@ def treespec_pprint(treespec: TreeSpec) -> str:
 
 
 # TODO(angelayi): remove this function after OSS/internal stabilize
-@deprecated(
-    "`pytree_to_str` is deprecated. Please use `treespec_dumps` instead.",
-    category=FutureWarning,
-)
-def pytree_to_str(treespec: TreeSpec) -> str:
-    return treespec_dumps(treespec)
-
-
 # TODO(angelayi): remove this function after OSS/internal stabilize
-@deprecated(
-    "`str_to_pytree` is deprecated. Please use `treespec_loads` instead.",
-    category=FutureWarning,
-)
-def str_to_pytree(json: str) -> TreeSpec:
-    return treespec_loads(json)
-
-
 def arg_tree_leaves(*args: PyTree, **kwargs: PyTree) -> list[Any]:
     """Get a flat list of arguments to this function
 

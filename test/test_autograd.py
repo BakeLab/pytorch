@@ -3603,37 +3603,6 @@ class TestAutograd(TestCase):
         tensor[a != 0] = tensor[a != 0]
         tensor.backward(torch.zeros_like(tensor))
 
-    def test_volatile_deprecated(self):
-        v = torch.autograd.torch.randn(3, 3)
-        with warnings.catch_warnings(record=True) as w:
-            self.assertFalse(v.volatile)
-        self.assertIn("volatile", str(w[0].message))
-
-    def test_saved_variables_deprecated(self):
-        class MyFunction(Function):
-            @staticmethod
-            def forward(ctx, tensor1, tensor2):
-                ctx.save_for_backward(tensor1, tensor2)
-                return tensor1 + tensor2
-
-            @staticmethod
-            def backward(ctx, grad_output):
-                var1, var2 = ctx.saved_variables
-                return (grad_output, grad_output)
-
-        with warnings.catch_warnings(record=True) as warns:
-            warnings.simplefilter("always")
-            x = torch.randn((3, 3), requires_grad=True)
-            y = torch.randn((3, 3), requires_grad=True)
-            MyFunction.apply(x, y).sum().backward()
-
-            has_deprecated = (
-                "deprecated" in str(warn) and "saved_variables" in str(warn)
-                for warn in warns
-            )
-            has_deprecated = reduce(lambda x, y: x or y, has_deprecated)
-            self.assertTrue(has_deprecated)
-
     def test_requires_grad(self):
         x = torch.randn(5, 5)
         y = torch.randn(5, 5)
@@ -7268,88 +7237,6 @@ Done""",
         self.assertTrue(
             gradcheck(sample_func, (z,), fast_mode=False, atol=atol, rtol=rtol)
         )
-
-    def test_gradcheck_get_numerical_jacobian(self):
-        # get_numerical_jacobian is deprecated and no longer used internally by gradcheck
-        from torch.autograd.gradcheck import get_numerical_jacobian
-
-        def fn(inputs):
-            # get_numerical_jacobian requires fn to take inputs as a tuple
-            # and returns the jacobian wrt the first output
-            x = inputs[0]
-            y = inputs[1]
-            return 2 * x + y, x + 2 * y
-
-        a = torch.rand(2, 2, requires_grad=True, dtype=torch.float64)
-        b = torch.rand(2, 2, requires_grad=True, dtype=torch.float64)
-
-        with self.assertWarnsRegex(
-            FutureWarning, "`get_numerical_jacobian` was part of PyTorch's private API"
-        ):
-            jacobian = get_numerical_jacobian(fn, (a, b), target=a, eps=1e-6)
-        self.assertEqual(jacobian[0], 2 * torch.eye(4, dtype=torch.double))
-
-        with self.assertWarnsRegex(
-            FutureWarning, "`get_numerical_jacobian` was part of PyTorch's private API"
-        ):
-            jacobian = get_numerical_jacobian(fn, (a, b), eps=1e-6)
-        self.assertEqual(jacobian[0], 2 * torch.eye(4, dtype=torch.double))
-        self.assertEqual(jacobian[1], 1 * torch.eye(4, dtype=torch.double))
-
-        with self.assertRaisesRegex(ValueError, "Expected grad_out to be 1.0"):
-            jacobian = get_numerical_jacobian(fn, (a, b), eps=1e-6, grad_out=2.0)
-
-    def test_gradcheck_get_analytical_jacobian(self):
-        from torch.autograd.gradcheck import get_analytical_jacobian
-
-        def fn(x, y):
-            return 2 * x + y, x + 2 * y
-
-        a = torch.rand(2, 2, requires_grad=True, dtype=torch.float64)
-        b = torch.rand(2, 2, requires_grad=True, dtype=torch.float64)
-
-        outputs = fn(a, b)
-        with self.assertWarnsRegex(
-            FutureWarning, "`get_analytical_jacobian` was part of PyTorch's private API"
-        ):
-            (
-                jacobians,
-                reentrant,
-                correct_grad_sizes,
-                correct_grad_types,
-            ) = get_analytical_jacobian((a, b), outputs[0])
-        self.assertEqual(jacobians[0], 2 * torch.eye(4, dtype=torch.double))
-        self.assertEqual(jacobians[1], 1 * torch.eye(4, dtype=torch.double))
-        self.assertTrue(reentrant)
-
-        class NonDetFunc(Function):
-            @staticmethod
-            def forward(ctx, x, jitter=0.0):
-                ctx._jitter = jitter
-                return x
-
-            @staticmethod
-            def backward(ctx, grad_out):
-                return (
-                    NonDetFunc.apply(grad_out, ctx._jitter)
-                    * (1 + torch.rand_like(grad_out) * ctx._jitter),
-                    None,
-                )
-
-        outputs = NonDetFunc.apply(a, 1e-6)
-        with self.assertWarnsRegex(
-            FutureWarning, "`get_analytical_jacobian` was part of PyTorch's private API"
-        ):
-            (
-                jacobians,
-                reentrant,
-                correct_grad_sizes,
-                correct_grad_types,
-            ) = get_analytical_jacobian((a,), outputs)
-        self.assertFalse(reentrant)
-
-        with self.assertRaisesRegex(ValueError, "Expected grad_out to be 1.0"):
-            jacobians, _, _, _ = get_analytical_jacobian((a,), outputs, grad_out=2.0)
 
     def test_gradcheck_custom_error(self):
         from torch.autograd.gradcheck import GradcheckError
