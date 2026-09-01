@@ -57,12 +57,4 @@ void fakeDispatchTableRemove(
       [&](FakeDispatchTables& t) { setForCategory(t, category).erase(name); });
 }
 
-bool fakeDispatchTableContains(
-    FakeDispatchCategory category,
-    const c10::OperatorName& name) {
-  return fakeDispatchTables().read([&](const FakeDispatchTables& t) {
-    return setForCategory(t, category).contains(name);
-  });
-}
-
 } // namespace at::impl
