@@ -4,7 +4,6 @@
 
 #include <ATen/DeviceGuard.h>
 #include <ATen/TensorUtils.h>
-#include <ATen/TracerMode.h>
 #include <ATen/core/Generator.h>
 #include <ATen/core/Reduction.h>
 #include <ATen/core/Tensor.h>

@@ -1403,8 +1403,8 @@ static PyObject* _reinterpret_tensor(
     PyObject* const* args,
     Py_ssize_t nargs) {
   HANDLE_TH_ERRORS;
-  TORCH_CHECK(
-      nargs == 3 || nargs == 4, "expects 3 args, with 1 optional int arg");
+  static PythonArgParser parser(
+      {"_reinterpret_tensor(Tensor base, IntArrayRef sizes, IntArrayRef strides, int64_t offset_increment=0)"});
 
   TORCH_CHECK(THPVariable_CheckExact(args[0]) || THPVariable_Check(args[0]));
   const auto& self{THPVariable_Unpack(args[0])};

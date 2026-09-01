@@ -321,7 +321,6 @@
 # /aten/src/ATen/ThreadLocalPythonObjects.h
 # /aten/src/ATen/ThreadLocalState.cpp
 # /aten/src/ATen/ThreadLocalState.h
-# /aten/src/ATen/TracerMode.h
 # /aten/src/ATen/TypeDefault.h
 # /aten/src/ATen/Utils.cpp
 # /aten/src/ATen/Utils.h
@@ -334,7 +333,6 @@
 # /aten/src/ATen/accelerator/
 # /aten/src/ATen/autocast_mode.cpp
 # /aten/src/ATen/autocast_mode.h
-# /aten/src/ATen/benchmarks/
 # /aten/src/ATen/ceil_div.h
 # /aten/src/ATen/code_template.h
 # /aten/src/ATen/core/
