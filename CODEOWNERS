@@ -665,7 +665,6 @@
 # /torch/_compile.py
 # /torch/_decomp/
 # /torch/_dispatch/
-# /torch/_environment.py
 # /torch/_guards.py
 # /torch/_importer.py
 # /torch/_jit_internal.py
@@ -1077,7 +1076,6 @@
 # [nativert]
 # label: module: nativert
 # /test/cpp/nativert/
-# /test/export/test_nativert.py
 # /torch/csrc/api/include/torch/nativert/
 # /torch/nativert/
 #
