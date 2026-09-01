@@ -251,7 +251,7 @@ class TestPatternMatcher(TestCase):
         ) -> Callable:
             from torch._inductor import config
 
-            current_config = config.shallow_copy_dict()
+            current_config = config.get_config_copy()
             from torch._inductor.compile_fx import compile_fx
 
             current_config["post_grad_custom_post_pass"] = custom_pass
@@ -3174,7 +3174,7 @@ class TestPatternMatcher(TestCase):
         ) -> Callable:
             from torch._inductor import config
 
-            current_config = config.shallow_copy_dict()
+            current_config = config.get_config_copy()
             from torch._inductor.compile_fx import compile_fx
 
             current_config["post_grad_custom_post_pass"] = custom_pass
@@ -3433,7 +3433,7 @@ class TestPatternMatcher(TestCase):
         def custom_backend(graph: torch.fx.GraphModule, example_inputs):
             from torch._inductor import config
 
-            current_config = config.shallow_copy_dict()
+            current_config = config.get_config_copy()
             from torch._inductor.compile_fx import compile_fx
 
             current_config["post_grad_custom_post_pass"] = custom_pass

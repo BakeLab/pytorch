@@ -43,7 +43,7 @@ from torch.testing._internal.common_utils import (  # type: ignore[attr-defined]
     skipIfRocm, skipIfNoSciPy, TemporaryFileName, TemporaryDirectoryName,
     wrapDeterministicFlagAPITest, DeterministicGuard, CudaSyncGuard,
     bytes_to_scalar, parametrize, noncontiguous_like,
-    AlwaysWarnTypedStorageRemoval, TEST_WITH_TORCHDYNAMO, xfailIfTorchDynamo,
+    TEST_WITH_TORCHDYNAMO, xfailIfTorchDynamo,
     set_warn_always_context, decorateIf, isRocmArchAnyOf,
     IS_MACOS, HardwareClassification,
     skipIfXpu,
@@ -3724,10 +3724,6 @@ class TestTorchDeviceType(TestCase):
 
         self.assertEqual(expected, actual)
 
-        with self.assertWarnsOnceRegex(
-                UserWarning, "This overload of addcmul is deprecated"):
-            self.assertEqual(actual, torch.addcmul(a, alpha, b, c))
-
         if self.device_type == 'cuda' and dtype == torch.half:
             a = torch.tensor([60000.0], device=device, dtype=dtype)
             b = torch.tensor([60000.0], device=device, dtype=dtype)
@@ -4539,10 +4535,6 @@ class TestTorchDeviceType(TestCase):
             expected = a + (alpha * b) / c
             actual = torch.addcdiv(a, b, c, value=alpha)
             self.assertEqual(expected, actual)
-
-            with self.assertWarnsOnceRegex(
-                    UserWarning, "This overload of addcdiv is deprecated"):
-                self.assertEqual(actual, torch.addcdiv(a, alpha, b, c))
 
         if not (dtype.is_floating_point or dtype.is_complex):
             # Integer division with addcdiv is prohibited
@@ -8919,55 +8911,6 @@ class TestTorch(TestCase):
 
     # Test that public functions related to TypedStorage produce a deprecation
     # warning
-    @skipIfTorchInductor("FIXME")
-    def test_typed_storage_deprecation_warning(self):
-        s0 = torch.FloatStorage(10)
-        funcs = [
-            lambda: torch.FloatStorage(),
-            lambda: torch.FloatStorage.dtype,
-            lambda: s0.fill_(0),
-            lambda: s0.is_cuda,
-            lambda: s0.untyped(),
-            lambda: len(s0),
-            lambda: s0[0],
-        ]
-
-        # Check that each of the TypedStorage function calls produce a warning
-        # if warnings are reset between each
-        for f in funcs:
-            with AlwaysWarnTypedStorageRemoval(True):
-                with warnings.catch_warnings(record=True) as w:
-                    warnings.resetwarnings()
-                    f()
-                    self.assertEqual(len(w), 1, msg=str([str(a) for a in w]))
-                    warning = w[0].message
-                    self.assertTrue(warning, DeprecationWarning)
-                    self.assertTrue(re.search(
-                        '^TypedStorage is deprecated',
-                        str(warning)))
-
-        # Test that only the first warning is raised by default
-        torch.storage._reset_warn_typed_storage_removal()
-        with warnings.catch_warnings(record=True) as w:
-            warnings.resetwarnings()
-            torch.FloatStorage()
-            torch.randn(10).storage()
-            self.assertEqual(len(w), 1, msg=str([str(a) for a in w]))
-            warning = w[0].message
-            self.assertTrue(re.search(
-                '^TypedStorage is deprecated',
-                str(warning)))
-            # Check the line of code from the warning's stack
-            with open(w[0].filename, encoding="utf-8") as f:
-                code_line = f.readlines()[w[0].lineno - 1]
-            self.assertTrue(re.search(re.escape('torch.FloatStorage()'), code_line))
-
-        # Check that warnings are not emitted if it happened in the past
-        with warnings.catch_warnings(record=True) as w:
-            warnings.resetwarnings()
-            torch.FloatStorage()
-            torch.randn(10).storage()
-            self.assertEqual(len(w), 0, msg=str([str(a) for a in w]))
 
     def test_from_file(self):
         def assert_with_filename(filename):
