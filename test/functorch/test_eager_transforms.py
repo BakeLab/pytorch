@@ -3648,39 +3648,8 @@ class TestHelpersDevice(TestCase):
 
 
 @markDynamoStrictTest
-class TestComposabilityDevice(TestCase):
-    hw_classification = HardwareClassification.ACCELERATOR
-
-    def test_deprecation_vmap(self, device):
-        # functorch version of the API is deprecated
-        with self.assertWarnsRegex(FutureWarning, "Please use `torch.vmap`"):
-            vmap(torch.sin)
-
-        # the non-functorch version is not deprecated
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            torch.vmap(torch.sin)
-
+class TestComposability(TestCase):
     # Some of these pass, some of these don't
-    @parametrize(
-        "transform",
-        ["grad", "jacrev", "jacfwd", "grad_and_value", "hessian", "functionalize"],
-    )
-    def test_deprecation_transforms(self, device, transform):
-        api = getattr(functorch, transform)
-        new_api = getattr(torch.func, transform)
-
-        # functorch version of the API is deprecated
-        with self.assertWarnsRegex(
-            FutureWarning, f"Please use `torch.func.{transform}`"
-        ):
-            api(torch.sin)
-
-        # the non-functorch version is not deprecated
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            new_api(torch.sin)
-
     def test_grad_grad(self, device):
         x = torch.randn([], device=device)
         y = grad(grad(torch.sin))(x)

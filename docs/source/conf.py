@@ -447,7 +447,6 @@ coverage_ignore_functions = [
     "get_elapsed_time_ms",
     "prof",
     "profile",
-    "publish_metric",
     "put_metric",
     # torch.distributed.elastic.multiprocessing.api
     "get_std_cm",
