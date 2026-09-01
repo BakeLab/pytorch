@@ -4759,7 +4759,6 @@ class TestVmapOperatorsOpInfoDevice(TestCase):
                 xfail("jiterator_binary", device_type=("cuda", "xpu")),
                 xfail("jiterator_4inputs_with_extra_args", device_type=("cuda", "xpu")),
                 xfail("_segment_reduce", "lengths"),
-                xfail("lu_solve", ""),
                 xfail("special.hermite_polynomial_he"),
                 xfail("nn.functional.dropout3d", ""),
                 xfail("as_strided_scatter", ""),
