@@ -216,7 +216,6 @@ inline void rearrangeDims(detail::TensorInfo<T1, IndexType>* aInfo,
 //
 // See NOTE [ CUDA_tensor_applyN helpers ] above for how Op may look like.
 
-
 template <typename Op,
           typename scalar1,
           typename scalar2,
