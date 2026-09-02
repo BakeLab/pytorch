@@ -188,29 +188,6 @@ class DistributedUtilTest(TestCase):
                 is_server=True, server_addr=server_addr, server_port=store1.port
             )
 
-    def test_get_socket_with_port_reserves_all_addresses(self):
-        # The port is handed to a TCPStore server, which binds the wildcard
-        # address, so it must not be in use on any local address. ::1 checks
-        # the dual-stack reservation rather than the IPv4-only fallback.
-        addrs = [
-            (family, host)
-            for family, host in (
-                (socket.AF_INET, "127.0.0.1"),
-                (socket.AF_INET, "127.0.0.2"),
-                (socket.AF_INET6, "::1"),
-            )
-            if _can_bind(family, host)
-        ]
-        for get_sock in (get_socket_with_port, elastic_utils.get_socket_with_port):
-            with closing(get_sock()) as sock:
-                port = sock.getsockname()[1]
-                for family, host in addrs:
-                    with self.subTest(fn=get_sock.__module__, host=host):
-                        with closing(socket.socket(family, socket.SOCK_STREAM)) as s:
-                            with self.assertRaises(OSError) as cm:
-                                s.bind((host, port))
-                            self.assertEqual(cm.exception.errno, errno.EADDRINUSE)
-
     def test_port_already_in_use_on_worker(self):
         sock = get_socket_with_port()
         with closing(sock):

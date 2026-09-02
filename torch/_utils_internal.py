@@ -218,7 +218,17 @@ def max_clock_rate(device: int | None = None):
                 pynvml.nvmlShutdown()
     else:
         device = torch.cuda.current_device() if device is None else device
-        return torch.cuda.get_device_properties(device).clock_rate // 1000
+        gcn_arch = str(
+            torch.cuda.get_device_properties(device).gcnArchName.split(":", 1)[0]
+        )
+        if "gfx12" in gcn_arch:
+            return 1700
+        elif "gfx11" in gcn_arch:
+            return 1700
+        elif "gfx95" in gcn_arch:
+            return 1700  # TODO: placeholder, get actual value
+        else:
+            return 1100
 
 
 def get_mast_job_name_version() -> tuple[str, int] | None:
