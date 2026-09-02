@@ -765,10 +765,6 @@ coverage_ignore_functions = [
     "CPPTimer",
     "Language",
     "Timer",
-    "FunctionCount",
-    "FunctionCounts",
-    "GlobalsBridge",
-    "Serialization",
     # torch.utils.bundled_inputs
     "InflatableArg",
     # torch.utils.checkpoint
