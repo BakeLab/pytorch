@@ -859,13 +859,6 @@ static Tensor _mps_convolution_impl(const Tensor& input_t,
   }
   TensorArg output{output_t, "result", 0};
 
-  if (!is_macos_at_least(MacOSVersion::MACOS_15_1) && !is3DConv && !is1DConv) {
-    // On macOS < 15.1, MPS convolution kernel does not support output channels > 2^16
-    for (auto elem : output_t.sizes()) {
-      TORCH_CHECK_NOT_IMPLEMENTED(elem <= (1 << 16), "Output channels > 65536 not supported at the MPS device. ");
-    }
-  }
-
   convolution_shape_check(c, input, weight, output, padding, stride, dilation, groups);
 
   if (is3DConv) {
@@ -1019,13 +1012,6 @@ static Tensor mps_convolution_backward_input(IntArrayRef input_size,
   using namespace at::native::mps;
   using namespace mps;
   bool is3DConv = grad_output_t.dim() == 5;
-  if (!is_macos_at_least(MacOSVersion::MACOS_15_1)) {
-    // On macOS < 15.1, MPS convolution kernel does not support output channels > 2^16
-    for (auto elem : grad_output_t.sizes()) {
-      TORCH_CHECK_NOT_IMPLEMENTED(elem <= (1 << 16), "Output channels > 65536 not supported at the MPS device. ");
-    }
-  }
-
   TORCH_CHECK(isFloatingType(grad_output_t.scalar_type()), "Convolution is supported only for Floating types");
   CheckedFrom c = "mps_convolution_backward_input";
   TensorArg grad_output{grad_output_t, "grad_output", 1}, weight{weight_t, "weight", 2};
@@ -1058,10 +1044,10 @@ static Tensor mps_convolution_backward_input(IntArrayRef input_size,
   TensorArg grad_input{grad_input_t, "result", 0};
   convolution_shape_check(c, grad_input, weight, grad_output, padding, stride, dilation, groups);
 
-  // Contig scratch when graph emits NCDHW but grad_input is CL3d -- covers
-  // the macOS-14 fallback and the 3D NCDHW fallback on macOS 15+.
+  // Contig scratch when graph emits NCDHW but grad_input is CL3d -- the 3D
+  // NCDHW fallback.
   std::optional<Tensor> grad_input_c;
-  const bool needs_contig_scratch = is_channels_last && (is3DConv && !use_dhwio);
+  const bool needs_contig_scratch = is_channels_last && is3DConv && !use_dhwio;
   if (needs_contig_scratch) {
     grad_input_c = at::empty_like(grad_input_t, grad_input_t.options().memory_format(MemoryFormat::Contiguous));
   }

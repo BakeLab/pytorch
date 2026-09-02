@@ -11,9 +11,8 @@
 #include <ATen/mps/MPSAllocatorInterface.h>
 #include <ATen/mps/MPSProfiler.h>
 #include <ATen/mps/MPSStream.h>
-#include <ATen/native/mps/Copy.h>
-#include <ATen/native/mps/MPSGraphSequoiaOps.h>
 #include <ATen/native/mps/OperationUtils.h>
+#include <MetalPerformanceShadersGraph/MetalPerformanceShadersGraph.h>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
@@ -374,28 +373,17 @@ static void check_mps_shape(MPSShape* shape) {
   }
 }
 
-bool isTooLargeForMPSGraph(const Tensor& tensor, bool useMPSStridedAPI, bool checkLinearOffset) {
+bool isTooLargeForMPSGraph(const Tensor& tensor, bool useMPSStridedAPI) {
   if ((!tensor.is_contiguous() || tensor.storage_offset()) && useMPSStridedAPI) {
     auto storage_numel = tensor.storage().nbytes() / tensor.element_size() - tensor.storage_offset();
     if (storage_numel > std::numeric_limits<int32_t>::max()) {
       return true;
     }
   }
-  // checkLinearOffset also requires the largest linear offset
-  // sum(stride[d] * (size[d] - 1)) to fit in int32, for kernels indexing in int32.
-  const bool check_offset = checkLinearOffset && tensor.numel() > 0;
-  int64_t max_linear_offset = 0;
-  for (const auto dim : c10::irange(tensor.dim())) {
-    const auto size = tensor.size(dim);
+  for (auto size : tensor.sizes()) {
     if (size > std::numeric_limits<int32_t>::max()) {
       return true;
     }
-    if (check_offset) {
-      max_linear_offset += tensor.stride(dim) * (size - 1);
-    }
-  }
-  if (check_offset && max_linear_offset > std::numeric_limits<int32_t>::max()) {
-    return true;
   }
   return false;
 }
@@ -480,6 +468,7 @@ Placeholder::Placeholder(MPSGraphTensor* mpsGraphTensor,
   // extract the pointer to MTLBuffer from the Tensor's storage
   id<MTLBuffer> srcBuf = getMTLBufferStorage(src);
 
+  // MPS supports native strides directly in the kernels
   if (!useMPSStridedAPI) {
     if ((!src.is_contiguous() || src.storage_offset()) && gatherTensorData) {
       // Materialize the view; "_tensor" retains it for as long as other ops use it. Carrying src's
@@ -827,14 +816,11 @@ id<MTLLibrary> MetalShaderLibrary::compileLibrary(const std::string& src) {
   MTLCompileOptions* options = compile_options;
   if (!options) {
     options = [[MTLCompileOptions new] autorelease];
-    [options setLanguageVersion:static_cast<MTLLanguageVersion>(metal_language_version())];
-    if (is_macos_at_least(MacOSVersion::MACOS_15_0)) {
-      options.mathMode = fast_math ? MTLMathModeFast : MTLMathModeSafe;
-      options.mathFloatingPointFunctions =
-          fast_math ? MTLMathFloatingPointFunctionsFast : MTLMathFloatingPointFunctionsPrecise;
-    } else {
-      [options setFastMathEnabled:fast_math ? YES : NO];
-    }
+    // Metal-4.0 allows tensor template arguments
+    [options setLanguageVersion:MTLLanguageVersion4_0];
+    options.mathMode = fast_math ? MTLMathModeFast : MTLMathModeSafe;
+    options.mathFloatingPointFunctions =
+        fast_math ? MTLMathFloatingPointFunctionsFast : MTLMathFloatingPointFunctionsPrecise;
   }
 
   const auto str = [NSString stringWithCString:src.c_str() encoding:NSASCIIStringEncoding];

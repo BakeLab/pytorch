@@ -1445,7 +1445,7 @@ class TestMPS(TestCaseMPS):
         self.assertEqual(torch.sinh(a).imag, zero)
         self.assertEqual(torch.cosh(a).imag, zero)
 
-    @xfailIf(MACOS_VERSION > 15.0)
+    @unittest.expectedFailure
     def test_conv_raises_error(self, device='mps', dtype=torch.float):
         conv = nn.Conv2d(1, 65537, 3, padding=1).to('mps')
 
@@ -15955,7 +15955,6 @@ class TestMetalLibrary(TestCaseMPS):
 
     def test_metal_lambda_expressions(self):
         # Lambda expressions require Metal 3.2 (macOS 15+)
-        # Test that shaders with lambda expressions compile on macOS 15+ but fail on macOS 14
         shader_with_lambda = """
             kernel void lambda_test(device float* x, uint idx [[thread_position_in_grid]]) {
                 auto f = [](float val) { return val * 2.0; };
@@ -15964,6 +15963,7 @@ class TestMetalLibrary(TestCaseMPS):
         """
 
         lib = torch.mps.compile_shader(shader_with_lambda)
+
         x = torch.tensor([1.0, 2.0, 3.0, 4.0], device="mps")
         lib.lambda_test(x)
         expected = torch.tensor([2.0, 4.0, 6.0, 8.0], device="mps")

@@ -214,8 +214,7 @@ static void scatter_reduce_metal(const Tensor& self,
   const int64_t dispatch_total = serial ? total / index.size(dim) : total;
   // Signed int64 amin/amax needs an encode/decode bracket so signed ordering
   // maps onto the unsigned atomic_min/max Metal exposes. Requires contiguous
-  // self so we can sweep it as a flat ulong buffer. The ulong atomic_min/max
-  // intrinsic is only available at runtime on macOS 15+.
+  // self so we can sweep it as a flat ulong buffer.
   const bool needs_signbit_xor = self.scalar_type() == ScalarType::Long && (op == "amin" || op == "amax");
   if (needs_signbit_xor) {
     TORCH_CHECK(self.is_contiguous(), "scatter_reduce(amin/amax) on int64 currently requires contiguous self");
