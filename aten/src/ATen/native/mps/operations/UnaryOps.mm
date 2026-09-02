@@ -48,7 +48,14 @@ static bool is_empty_tensor(const Tensor& self) {
   return self.numel() == 0;
 }
 
-static void unary_op_noresize(const Tensor& self, const Tensor& output, std::string op_name, UnaryOpBlock unaryBlock) {
+static void unary_op_noresize(const Tensor& self, const Tensor& output_, std::string op_name, UnaryOpBlock unaryBlock) {
+  auto output = output_;
+  bool needsCopyToOutput = false;
+  if (needsGather(output)) {
+    output = at::empty(output.sizes(), output.scalar_type(), std::nullopt, kMPS, std::nullopt, std::nullopt);
+    needsCopyToOutput = true;
+  }
+
   @autoreleasepool {
     std::string key = op_name + getTensorsStringKey({self, output});
     auto cachedGraph = LookUpOrCreateCachedGraph<MPSUnaryCachedGraph>(key, [&](auto mpsGraph, auto newCachedGraph) {
@@ -61,9 +68,16 @@ static void unary_op_noresize(const Tensor& self, const Tensor& output, std::str
       newCachedGraph->outputTensor_ = unaryBlock(mpsGraph, castTensor);
     });
 
+    bool gatherTensorData = true;
+    // NS: This check is wrong and needs to be fixed, as it would produce wrong results for transposed outputs
     // See https://github.com/pytorch/pytorch/issues/100764
-    auto selfPlaceholder = Placeholder(cachedGraph->inputTensor_, self);
-    auto outputPlaceholder = Placeholder(cachedGraph->outputTensor_, output);
+
+    if (!output.is_contiguous() || output.is_view()) {
+      gatherTensorData = false;
+    }
+
+    auto selfPlaceholder = Placeholder(cachedGraph->inputTensor_, self, /*mpsShape=*/nullptr, gatherTensorData);
+    auto outputPlaceholder = Placeholder(cachedGraph->outputTensor_, output, /*mpsShape=*/nullptr, false);
     auto feeds = dictionaryFromPlaceholders(selfPlaceholder);
     runMPSGraph(getCurrentMPSStream(), cachedGraph->graph(), feeds, outputPlaceholder);
   }

@@ -97,7 +97,7 @@ static std::tuple<Tensor, Tensor> sdpa_general_mps(const Tensor& query,
           auto maskedMM = [mpsGraph matrixMultiplicationWithPrimaryTensor:qTensor secondaryTensor:kT name:nil];
 
           if ([maskedMM dataType] == MPSDataTypeFloat32) {
-            // bug in MacOS15, without this trick SDPA leaks memory, adding 0.0f gets ignored(still takes SDPA sequence
+            // Without this trick SDPA leaks memory, adding 0.0f gets ignored (still takes SDPA sequence
             // path which leaks)
             auto oneTensor = [mpsGraph constantWithScalar:1e-20f shape:getMPSShape({1}) dataType:MPSDataTypeFloat32];
             maskedMM = [mpsGraph additionWithPrimaryTensor:maskedMM secondaryTensor:oneTensor name:nil];
