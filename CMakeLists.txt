@@ -810,10 +810,7 @@ append_cxx_flag_if_supported("-Werror=braced-scalar-init" CMAKE_CXX_FLAGS)
 append_cxx_flag_if_supported("-Werror=range-loop-construct" CMAKE_CXX_FLAGS)
 append_cxx_flag_if_supported("-Werror=bool-operation" CMAKE_CXX_FLAGS)
 append_cxx_flag_if_supported("-Wnarrowing" CMAKE_CXX_FLAGS)
-append_cxx_flag_if_supported("-Wno-missing-field-initializers"
-                             CMAKE_CXX_FLAGS)
 append_cxx_flag_if_supported("-Wno-unknown-pragmas" CMAKE_CXX_FLAGS)
-append_cxx_flag_if_supported("-Wno-unused-parameter" CMAKE_CXX_FLAGS)
 append_cxx_flag_if_supported("-Wno-strict-overflow" CMAKE_CXX_FLAGS)
 append_cxx_flag_if_supported("-Wno-strict-aliasing" CMAKE_CXX_FLAGS)
 append_cxx_flag_if_supported("-Wno-stringop-overflow" CMAKE_CXX_FLAGS)
@@ -835,8 +832,6 @@ endif()
 
 append_cxx_flag_if_supported("-Wno-error=old-style-cast" CMAKE_CXX_FLAGS)
 append_cxx_flag_if_supported("-Wconstant-conversion" CMAKE_CXX_FLAGS)
-append_cxx_flag_if_supported("-Wno-aligned-allocation-unavailable"
-                             CMAKE_CXX_FLAGS)
 append_cxx_flag_if_supported("-Qunused-arguments" CMAKE_CXX_FLAGS)
 
 append_cxx_flag_if_supported("-faligned-new" CMAKE_CXX_FLAGS)
@@ -847,7 +842,6 @@ if(WERROR)
     set(WERROR FALSE)
   endif()
 endif()
-append_cxx_flag_if_supported("-Wno-maybe-uninitialized" CMAKE_CXX_FLAGS)
 append_cxx_flag_if_supported("-fstandalone-debug" CMAKE_CXX_FLAGS_DEBUG)
 string(APPEND CMAKE_CXX_FLAGS_DEBUG " -fno-omit-frame-pointer -O0")
 # aarch64 C++ stack unwinding uses frame-pointer chain walking, so frame
@@ -902,7 +896,6 @@ if(APPLE)
   append_cxx_flag_if_supported("-Wno-missing-braces" CMAKE_CXX_FLAGS)
 endif()
 
-append_cxx_flag_if_supported("-Wno-stringop-overflow" CMAKE_CXX_FLAGS)
 
 if(NOT APPLE AND UNIX)
   list(APPEND Caffe2_DEPENDENCY_LIBS dl)
