@@ -99,8 +99,9 @@ if [[ "$BUILD_ENVIRONMENT" == *rocm* ]]; then
   fi
 
   if [[ -n "$CI" && -z "$PYTORCH_ROCM_ARCH" ]]; then
-    echo "PYTORCH_ROCM_ARCH must be set for ROCm CI builds" >&2
-    exit 1
+      # Set ROCM_ARCH to gfx950 for CI builds, if user doesn't override.
+      echo "Limiting PYTORCH_ROCM_ARCH to gfx950 for CI builds"
+      export PYTORCH_ROCM_ARCH="gfx950"
   fi
 
   # hipify sources

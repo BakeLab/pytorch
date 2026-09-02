@@ -24,8 +24,8 @@ SCRIPT_DIR = Path(__file__).absolute().parent
 REPO_ROOT = SCRIPT_DIR.parent.parent
 
 
-CUDA_ARCHES = ["13.0", "13.2", "13.4"]
-CUDA_STABLE = "13.2"
+CUDA_ARCHES = ["13.4"]
+CUDA_STABLE = "13.4"
 # CUDA versions built for Linux only. 13.0 is held on nightly for vLLM's cu130
 # lane (pytorch/test-infra#8989); nothing consumes a Windows cu130 nightly.
 CUDA_ARCHES_NO_WINDOWS = ["13.0"]
@@ -58,8 +58,6 @@ CPU_AARCH64_ARCH = ["cpu-aarch64"]
 CPU_S390X_ARCH = ["cpu-s390x"]
 
 CUDA_AARCH64_ARCHES = [
-    "13.0-aarch64",
-    "13.2-aarch64",
     "13.4-aarch64",
 ]
 
@@ -473,8 +471,8 @@ def generate_wheels_matrix(
             # to install CUDA runtime libraries from PyPI.
 
             if (
-                arch_version in ["13.4", "13.2", "13.0"]
-                and os in ("linux", "windows")
+                arch_version in ["13.4"]
+                and os == "linux"
                 or arch_version in CUDA_AARCH64_ARCHES
             ):
                 desired_cuda = translate_desired_cuda(gpu_arch_type, gpu_arch_version)

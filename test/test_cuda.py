@@ -871,6 +871,11 @@ print(t.is_pinned())
     @serialTest()
     @with_limited_cuda_memory_on_integrated_device(128)
     def test_out_of_memory(self):
+        if TEST_WITH_ROCM and EXPANDABLE_SEGMENTS:
+            self.skipTest(
+                "TestCuda.test_out_of_memory: OOM tensor flag is False on ROCm "
+                "expandable segments"
+            )
         tensor = torch.zeros(1024, device="cuda")
 
         oom_regex = (
@@ -976,6 +981,12 @@ print("RECOVERED")
         IS_JETSON, "oom reporting has issues on jetson igx due to partial nvml support"
     )
     def test_set_per_process_memory_fraction(self):
+        if TEST_WITH_ROCM and EXPANDABLE_SEGMENTS:
+            self.skipTest(
+                "ROCm 7.14+ expandable segments reports OOM below the expected "
+                "per-process memory fraction limit"
+            )
+
         torch.cuda.empty_cache()
         orig = torch.cuda.get_per_process_memory_fraction(0)
         torch.cuda.reset_peak_memory_stats(0)
@@ -1196,16 +1207,19 @@ print("RECOVERED")
             else:
                 # ROCm logic is less so, it's cublaslt for some Instinct, cublas for all else
                 # Mirror CUDAHooks::getHipblasltPreferredArchs in CUDAHooks.cpp
-                archs = ["gfx90a", "gfx942"]
-                if ROCM_VERSION >= (6, 4):
-                    archs.extend(["gfx1200", "gfx1201"])
-                if ROCM_VERSION >= (7, 0):
-                    archs.append("gfx950")
-                if ROCM_VERSION >= (7, 13):
-                    archs.extend(["gfx1100", "gfx1101", "gfx1151"])
+                archs = [
+                    "gfx90a",
+                    "gfx942",
+                    "gfx1200",
+                    "gfx1201",
+                    "gfx950",
+                    "gfx1100",
+                    "gfx1101",
+                    "gfx1151",
+                    "gfx1250",
+                ]
                 if ROCM_VERSION >= (10, 3):
                     archs.extend(["gfx1170", "gfx1171"])
-                archs.append("gfx1250")
                 # blasDefaultBackend() only prefers hipblaslt when every visible
                 # device matches, so device 0 alone is not enough.
                 gcn_arch_names = [
@@ -1302,7 +1316,7 @@ print("RECOVERED")
             gcn_arch = str(
                 torch.cuda.get_device_properties(0).gcnArchName.split(":", 1)[0]
             )
-            if gcn_arch in ["gfx942", "gfx950", "gfx1250"]:
+            if gcn_arch in ["gfx950", "gfx1250"]:
                 default_workspace_size = 1024 * 128 * 1024  # :1024:128
         else:
             default_workspace_size = (
@@ -12231,6 +12245,11 @@ print(json.dumps([
           1. Default pool -- OOM recovery releases cached blocks, succeeds.
           2. use_mem_pool -- same recovery should work (the fix).
         """
+        if TEST_WITH_ROCM and EXPANDABLE_SEGMENTS:
+            self.skipTest(
+                "ROCm 7.14+ expandable segments OOMs before mempool cached "
+                "blocks can be recovered"
+            )
 
         MB = 1024 * 1024
         device = torch.device("cuda:0")
