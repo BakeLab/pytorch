@@ -2252,59 +2252,17 @@ def kpack_supported() -> bool:
 def get_default_kpack(block_k: int = 16) -> int:
     if not torch.version.hip:
         return 0
-    if rocm_gfx_arch() == "gfx942" and block_k <= 16:
-        return 1
-    if kpack_supported() and block_k >= 16:
-        return 2
-    return 1
-
-
-# K-extent (kdim) of the CDNA MFMA instruction Triton selects, keyed by
-# (element_byte_width, matrix_instr_nonkdim).
-_MFMA_KDIM_CDNA3 = {
-    # nonkdim == 16 : 16x16x{K}
-    (4, 16): 4,  # f32      -> 16x16x4
-    (2, 16): 16,  # f16/bf16 -> 16x16x16
-    (1, 16): 32,  # f8/i8    -> 16x16x32
-    # nonkdim == 32 : 32x32x{K}
-    (4, 32): 2,  # f32      -> 32x32x2
-    (2, 32): 8,  # f16/bf16 -> 32x32x8
-    (1, 32): 16,  # f8/i8    -> 32x32x16
-}
-
-# CDNA1 (gfx908) and CDNA2 (gfx90a) share this table: every (dtype_size, nonkdim)
-# entry resolves to the same K-extent on both, so they are merged.
-#   - CDNA2 is exact -- its bf16 MFMA (bf16_1k) matches f16 (16x16x16 / 32x32x8)
-#     and int8 is 16x16x16 / 32x32x8.
-#   - CDNA1 is exact for f16/int8/f32, but its bf16 MFMA is smaller (16x16x8 /
-#     32x32x4). dtype_size=2 cannot distinguish bf16 from f16, so it is keyed to
-#     the larger f16 extent: the underfill check stays conservative for CDNA1
-#     bf16 (may over-prune, never under-validate -> no packing garbage).
-# fp8 has no native instruction on either and is emulated with f16, landing on
-# the same K-extent as int8.
-_MFMA_KDIM_CDNA1_CDNA2 = {
-    # nonkdim == 16 : 16x16x{K}
-    (4, 16): 4,  # f32      -> 16x16x4
-    (2, 16): 16,  # f16/bf16 -> 16x16x16
-    (1, 16): 16,  # f8/i8    -> 16x16x16
-    # nonkdim == 32 : 32x32x{K}
-    (4, 32): 2,  # f32      -> 32x32x2
-    (2, 32): 8,  # f16/bf16 -> 32x32x8
-    (1, 32): 8,  # f8/i8    -> 32x32x8
-}
+    return 2
 
 
 def mfma_kdim(dtype_size: int, matrix_instr_nonkdim: int) -> int | None:
-    """MFMA K-extent for the current CDNA arch, None for an unknown
-    (dtype_size, nonkdim) pair. Only gfx908/gfx90a/gfx942 are distinguished since
-    kpack > 1 (the sole consumer) is limited to those archs."""
-    arch = rocm_gfx_arch()
-    if arch in ("gfx908", "gfx90a"):
-        return _MFMA_KDIM_CDNA1_CDNA2.get((dtype_size, matrix_instr_nonkdim))
-    elif arch == "gfx942":
-        return _MFMA_KDIM_CDNA3.get((dtype_size, matrix_instr_nonkdim))
-    else:
-        return None
+    """Return no MFMA K-extent for the supported ROCm target architectures.
+
+    The architecture-specific MFMA tables were removed when support below
+    gfx950 was dropped. gfx950 does not use packed MFMA configs, so the
+    underfill check has no K-extent to validate.
+    """
+    return None
 
 
 def _use_template_for_gpu(
@@ -3026,7 +2984,7 @@ def ensure_nv_universal_gemm_available() -> bool:
     """
     try:
         available = importlib.util.find_spec("cutlass.operators") is not None
-    except ImportError, ValueError:
+    except (ImportError, ValueError):
         return False
 
 

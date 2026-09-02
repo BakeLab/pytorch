@@ -51,13 +51,7 @@ c10::once_flag g_hipSparseLtSupportInitFlag;
 static bool g_hipSparseLtSupported = false;
 
 static const std::vector<std::string>& hipSparseLtSupportedArchs() {
-#if ROCM_VERSION >= 71400
-  static const std::vector<std::string> archs = {"gfx950", "gfx942", "gfx1250"};
-#elif ROCM_VERSION >= 71200
-  static const std::vector<std::string> archs = {"gfx950", "gfx942"};
-#else
-  static const std::vector<std::string> archs = {};
-#endif
+  static const std::vector<std::string> archs = {"gfx950", "gfx1250"};
   return archs;
 }
 
@@ -124,8 +118,6 @@ at::Tensor _cslt_compress(const Tensor& sparse_input) {
       type = CUDA_R_32F;
       break;
 #endif
-#if defined(CUSPARSELT_VERSION) && CUSPARSELT_VERSION >= 602 || \
-    defined(USE_ROCM)
     case at::ScalarType::Float8_e4m3fn:
       type = CUDA_R_8F_E4M3;
       break;
@@ -133,7 +125,6 @@ at::Tensor _cslt_compress(const Tensor& sparse_input) {
     case at::ScalarType::Float8_e4m3fnuz:
       type = HIP_R_8F_E4M3_FNUZ;
       break;
-#endif
 #endif
     default:
       TORCH_CHECK(
@@ -226,10 +217,6 @@ std::tuple<at::Tensor, int64_t, int64_t, int64_t, int64_t> _cslt_sparse_mm_impl(
       compute_type = CUSPARSE_COMPUTE_32I;
       break;
 
-// cuSPARSELt v0.5.2 onwards changes CUSPARSE_COMPUTE_TF32, CUSPARSE_COMPUT_16F
-// to CUSPARSE_COMPUTE_32F
-#if defined(CUSPARSELT_VERSION) && CUSPARSELT_VERSION >= 502 || \
-    defined(USE_ROCM)
     case at::ScalarType::Half:
       input_type = CUDA_R_16F;
       output_type = CUDA_R_16F;
@@ -250,9 +237,6 @@ std::tuple<at::Tensor, int64_t, int64_t, int64_t, int64_t> _cslt_sparse_mm_impl(
       compute_type = CUSPARSE_COMPUTE_32F;
       break;
 #endif
-// cuSPARSELt >= 0.6.2 or hipSparseLt: add Float8 support
-#if defined(CUSPARSELT_VERSION) && CUSPARSELT_VERSION >= 602 || \
-    defined(USE_ROCM)
     case at::ScalarType::Float8_e4m3fn:
       input_type = CUDA_R_8F_E4M3;
 #ifdef USE_ROCM
@@ -271,28 +255,6 @@ std::tuple<at::Tensor, int64_t, int64_t, int64_t, int64_t> _cslt_sparse_mm_impl(
       output_type = CUDA_R_32F;
       C_type = CUDA_R_32F;
       compute_type = CUSPARSE_COMPUTE_32F;
-      break;
-#endif
-#endif
-// cuSPARSELt <= v0.5.2 uses CUSPARSE_COMPUTE_TF32, CUSPARSE_COMPUTE_16F
-#else
-    case at::ScalarType::Half:
-      input_type = CUDA_R_16F;
-      output_type = CUDA_R_16F;
-      C_type = CUDA_R_16F;
-      compute_type = CUSPARSE_COMPUTE_16F;
-      break;
-    case at::ScalarType::BFloat16:
-      input_type = CUDA_R_16BF;
-      output_type = CUDA_R_16BF;
-      C_type = CUDA_R_16BF;
-      compute_type = CUSPARSE_COMPUTE_16F;
-      break;
-    case at::ScalarType::Float:
-      input_type = CUDA_R_32F;
-      output_type = CUDA_R_32F;
-      C_type = CUDA_R_32F;
-      compute_type = CUSPARSE_COMPUTE_TF32;
       break;
 #endif
     default:
@@ -334,9 +296,6 @@ std::tuple<at::Tensor, int64_t, int64_t, int64_t, int64_t> _cslt_sparse_mm_impl(
               "Unsupported out_dtype passed, must be one of {fp16, bf16, int32} for int8 inputs");
       }
     }
-// cslt 0.6.2+ or hipSparseLt: fp8 output dtype support
-#if defined(CUSPARSELT_VERSION) && CUSPARSELT_VERSION >= 602 || \
-    defined(USE_ROCM)
     else if (input_type == CUDA_R_8F_E4M3
 #ifdef USE_ROCM
              || input_type == HIP_R_8F_E4M3_FNUZ
@@ -371,7 +330,6 @@ std::tuple<at::Tensor, int64_t, int64_t, int64_t, int64_t> _cslt_sparse_mm_impl(
 #endif
       }
     }
-#endif
     else {
       TORCH_CHECK(
           false, "out_dtype support only available for int8/fp8 inputs");

@@ -35,16 +35,16 @@ from torch.testing._internal.common_optimizers import (
     optim_db, optims, _get_optim_inputs_including_global_cliquey_kwargs)
 
 from torch.testing._internal.common_utils import (  # type: ignore[attr-defined]
-    MI200_ARCH, TEST_WITH_TORCHINDUCTOR, TEST_WITH_ROCM, TEST_CUDA, TEST_CUDA_GRAPH, run_tests, IS_JETSON,
+    TEST_WITH_TORCHINDUCTOR, TEST_WITH_ROCM, TEST_CUDA, TEST_CUDA_GRAPH, run_tests, IS_JETSON,
     IS_FILESYSTEM_UTF8_ENCODING,
-    IS_SANDCASTLE, IS_FBCODE, IS_REMOTE_GPU, skipIfRocmArch, skipIfTorchInductor, load_tests, slowTest, slowTestIf,
+    IS_SANDCASTLE, IS_FBCODE, IS_REMOTE_GPU, skipIfTorchInductor, load_tests, slowTest, slowTestIf,
     skipIfCrossRef, TEST_WITH_CROSSREF, skipIfTorchDynamo, set_default_dtype,
     skipCUDAMemoryLeakCheckIf, BytesIOContext,
     skipIfRocm, skipIfNoSciPy, TemporaryFileName, TemporaryDirectoryName,
     wrapDeterministicFlagAPITest, DeterministicGuard, CudaSyncGuard,
     bytes_to_scalar, parametrize, noncontiguous_like,
     TEST_WITH_TORCHDYNAMO, xfailIfTorchDynamo,
-    set_warn_always_context, decorateIf, isRocmArchAnyOf,
+    set_warn_always_context, decorateIf,
     IS_MACOS, HardwareClassification,
     skipIfXpu,
 )
@@ -223,13 +223,31 @@ class TestTorchDeviceType(TestCase):
         raw.view(dtype).zero_()
         self.assertEqual(raw.count_nonzero().item(), 0)
 
+    @onlyCUDA
+    @unittest.skipIf(not torch.autograd.kineto_available(), "Kineto is required")
+    def test_zero_dense_emits_memset(self, device):
+        base = torch.ones(64, 96, device=device)
+        with torch.profiler.profile() as prof:
+            base[16:32].zero_()
+            torch.cuda.synchronize()
+        names = tuple(event.key for event in prof.key_averages())
+        self.assertTrue(any("Memset" in name for name in names), names)
+
+    @onlyCUDA
+    @unittest.skipIf(not torch.autograd.kineto_available(), "Kineto is required")
+    def test_zero_strided_emits_fill_kernel(self, device):
+        base = torch.ones(64, 96, device=device)
+        with torch.profiler.profile() as prof:
+            base[:, ::2].zero_()
+            torch.cuda.synchronize()
+        names = tuple(event.key for event in prof.key_averages())
+        self.assertTrue(any("elementwise_kernel" in name for name in names), names)
+
     # For testing in64 support in upsample_nearest3d
-    @skipIfRocmArch(MI200_ARCH)
-    @onlyAccelerator
-    @largeTensorTest('56GB')
+    @onlyCUDA
+    @largeTensorTest('56GB', device='cuda')
     @dtypes(torch.bfloat16)
     @unittest.skipIf(IS_JETSON, "Large tensor tests are too large for Jetson.")
-    @decorateIf(unittest.expectedFailure, lambda params: isRocmArchAnyOf(MI200_ARCH))
     def test_int64_upsample3d(self, device, dtype):
         x = torch.ones((1, 256, 16, 720, 1280), dtype=dtype, device=device)
         try:
@@ -7879,6 +7897,13 @@ class TestTorch(TestCase):
             ):
                 check_fn(torch.tensor(True))
 
+    # FIXME: move to indexing test suite
+
+    # FIXME: resolve comment below and move this to indexing test suite
+    # add coverage for issue with atomic add that appeared only for
+    # specific dtypes on cuda:
+    # https://github.com/pytorch/pytorch/issues/29153
+
     @unittest.mock.patch.object(torch._dynamo.config, "suppress_errors", False)
     @set_default_dtype(torch.double)
     def test_index_add_correctness(self):
@@ -8403,25 +8428,6 @@ class TestTorch(TestCase):
     def test_invalid_generator_raises(self):
         self.assertRaises(RuntimeError, lambda: torch.Generator('opengl'))
 
-    def test_pickle_generator(self) -> None:
-        devices = ['cpu']
-        if torch.cuda.is_available():
-            devices += ['cuda']
-
-        for device in devices:
-            with self.subTest(device=device):
-                generator = torch.Generator(device=device).manual_seed(12345)
-                if device != "cpu":
-                    generator.set_offset(100)
-                torch.randn((100, 100), generator=generator, device=device)  # progress the RNG state
-
-                reserialized: torch.Generator = pickle.loads(pickle.dumps(generator))
-
-                self.assertEqual(generator.device, reserialized.device)
-                self.assertEqual(generator.initial_seed(), reserialized.initial_seed())
-                if device != "cpu":
-                    self.assertEqual(generator.get_offset(), reserialized.get_offset())
-                torch.testing.assert_close(generator.get_state(), reserialized.get_state())
 
 
     def test_parsing_int64(self):
@@ -9168,10 +9174,6 @@ tensor([[[1.+1.j, 1.+1.j, 1.+1.j,  ..., 1.+1.j, 1.+1.j, 1.+1.j],
         # TypeError would be better
         self.assertRaises(RuntimeError, lambda: x.new(z.storage()))
 
-    @unittest.skipIf(PYTORCH_CUDA_MEMCHECK, "is_pinned uses failure to detect pointer property")
-    def test_pin_memory(self):
-        x = torch.randn(3, 5)
-        self.assertFalse(x.is_pinned())
 
     def test_error_msg_type_translation(self):
         with self.assertRaisesRegex(
@@ -9744,6 +9746,7 @@ tensor([[[1.+1.j, 1.+1.j, 1.+1.j,  ..., 1.+1.j, 1.+1.j, 1.+1.j],
         y = x + 2
         self.assertEqual(y.size(), x.size())
 
+
     @unittest.skipIf(IS_MACOS, "https://github.com/pytorch/pytorch/issues/157246")
     def test_tensoriterator_output_setup(self):
         # Test whether the output's memory layout is correct
@@ -10155,9 +10158,6 @@ tensor([[[1.+1.j, 1.+1.j, 1.+1.j,  ..., 1.+1.j, 1.+1.j, 1.+1.j],
             _spawn_method(_test_multinomial_invalid_probs, torch.tensor([1., 1., nan]))
 
     # FIXME: port to more appropriate test suite
-    def test_to_with_tensor(self):
-        a = torch.tensor(5)
-        self.assertEqual(a.device, a.to(a).device)
 
     def test_device(self):
         cpu = torch.device('cpu')

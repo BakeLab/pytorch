@@ -215,42 +215,12 @@ def make_gemm_gfx950_param(
             double_tile_scale_bytes = (
                 2 * min(scale_rows_a, scale_rows_b) * block_k // MXFP_SCALE_BLOCK_K
             )
-            scale_chunk_tiles = 2 * (
-                (workgroup_bytes + double_tile_scale_bytes - 1)
-                // double_tile_scale_bytes
-            )
-        else:
-            scale_chunk_tiles = 1
-        scale_block_k = block_k * scale_chunk_tiles
-        # Each allocation is one half in one scale slot; HTI has two chunk slots.
-        sa_stage_bytes = mxfp_scale_padded_bytes(
-            scale_rows_a, scale_block_k, block_threads
-        )
-        sb_stage_bytes = mxfp_scale_padded_bytes(
-            scale_rows_b, scale_block_k, block_threads
-        )
-        # HTI chunk DMA is fenced separately, so it is not part of per-tile AB waits.
-        ldg_sa_iters = (
-            0 if use_half_tile_interleaved else sa_stage_bytes // workgroup_bytes
-        )
-        ldg_sb_iters = (
-            0 if use_half_tile_interleaved else sb_stage_bytes // workgroup_bytes
-        )
-        scale_row_bytes = scale_block_k // MXFP_SCALE_BLOCK_K
-    else:
-        sa_stage_bytes = sb_stage_bytes = scale_chunk_tiles = 0
-        ldg_sa_iters = ldg_sb_iters = scale_row_bytes = 0
+    elif block_n % cshuffle_vec_size != 0:
+        raise ValueError("block_n must be divisible by the c-shuffle vector size")
 
-    scale_halves = 2 if use_half_tile_interleaved else 1
-    smem_bytes = stages * (
-        block_m + block_n
-    ) * block_k_bytes + stages * scale_halves * (sa_stage_bytes + sb_stage_bytes)
-    smem_bytes = max(
-        smem_bytes, block_m * block_n * GEMM_DTYPE_BITS[cshuffle_dtype_id] // 8
-    )
-    arch = get_rocm_arch()
-    SMEM_CAPACITY_MAP = {
-        "gfx942": 65536,
+    smem_bytes = stages * (block_m + block_n) * block_k * in_dbytes
+    smem_bytes = max(smem_bytes, block_m * block_n * out_dbytes)
+    smem_capacity = {
         "gfx950": 163840,
     }
     if arch not in SMEM_CAPACITY_MAP:
