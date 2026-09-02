@@ -495,10 +495,6 @@ DEFINE_INVERSE_TRIG_FUNCTOR(acosh);
 DEFINE_INVERSE_TRIG_FUNCTOR(atan);
 DEFINE_INVERSE_TRIG_FUNCTOR(atanh);
 
-// Bool specialization is need to workaround compiler crashes on MacOS-13
-// Otherwise attempts to invoke will fail to create state object with error
-// Error Domain=AGXMetal13_3 Code=3 "Compiler encountered an internal error"
-
 struct log_functor {
   template <typename T>
   inline enable_if_t<is_scalar_floating_point_v<T>, T> operator()(const T x) {
@@ -515,9 +511,6 @@ struct log_functor {
     auto real = ::precise::log(magnitude);
     auto imag = (x.x == 0 && x.y == 0) ? 0 : ::precise::atan2(x.y, x.x);
     return T(real, imag);
-  }
-  inline float operator()(const bool x) {
-    return x ? 0 : -INFINITY;
   }
 };
 
@@ -539,9 +532,6 @@ struct log10_functor {
         (x.x == 0 && x.y == 0) ? 0 : ::precise::atan2(x.y, x.x) * M_LOG10E_F;
     return T(real, imag);
   }
-  inline float operator()(const bool x) {
-    return x ? 0 : -INFINITY;
-  }
 };
 
 struct log1p_functor {
@@ -560,9 +550,6 @@ struct log1p_functor {
     auto real = ::precise::log(magnitude);
     auto imag = (x.x == -1 && x.y == 0) ? 0 : ::precise::atan2(x.y, 1.0 + x.x);
     return T(real, imag);
-  }
-  inline float operator()(const bool x) {
-    return x ? M_LN2_F : 0;
   }
 };
 
@@ -584,9 +571,6 @@ struct log2_functor {
         (x.x == 0 && x.y == 0) ? 0 : ::precise::atan2(x.y, x.x) * M_LOG2E_F;
     return T(real, imag);
   }
-  inline float operator()(const bool x) {
-    return x ? 0 : -INFINITY;
-  }
 };
 
 struct lgamma_functor {
@@ -597,9 +581,6 @@ struct lgamma_functor {
   template <typename T>
   inline enable_if_t<is_scalar_integral_v<T>, float> operator()(const T x) {
     return c10::metal::log_gamma(static_cast<float>(x));
-  }
-  inline float operator()(const bool x) {
-    return x ? 0 : INFINITY;
   }
 };
 
@@ -612,9 +593,6 @@ struct digamma_functor {
   inline enable_if_t<is_scalar_integral_v<T>, float> operator()(const T x) {
     return c10::metal::digamma(static_cast<float>(x));
   }
-  inline float operator()(const bool x) {
-    return c10::metal::digamma(static_cast<float>(x));
-  }
 };
 
 struct trigamma_functor {
@@ -624,9 +602,6 @@ struct trigamma_functor {
   }
   template <typename T>
   inline enable_if_t<is_scalar_integral_v<T>, float> operator()(const T x) {
-    return c10::metal::trigamma(static_cast<float>(x));
-  }
-  inline float operator()(const bool x) {
     return c10::metal::trigamma(static_cast<float>(x));
   }
 };
@@ -642,9 +617,6 @@ struct polygamma_functor {
   inline enable_if_t<is_scalar_integral_v<T>, float> operator()(
       const T x,
       const int order) {
-    return c10::metal::polygamma(order, static_cast<float>(x));
-  }
-  inline float operator()(const bool x, const int order) {
     return c10::metal::polygamma(order, static_cast<float>(x));
   }
 };
