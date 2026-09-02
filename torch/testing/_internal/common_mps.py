@@ -3,7 +3,6 @@ from collections.abc import Sequence
 
 import torch
 
-from .common_utils import MACOS_VERSION
 from .opinfo.core import DecorateInfo, OpInfo
 
 
@@ -41,6 +40,7 @@ if torch.backends.mps.is_available():
             "ormqr",
             "renorm",
             "sparse.sampled_addmm",
+            "to_sparse",
         }
 
         # Those ops are not expected to work
@@ -582,12 +582,6 @@ if torch.backends.mps.is_available():
             "nn.functional.conv3d": [torch.float32],
         }
 
-        MACOS_BEFORE_15_0_XFAILLIST_GRAD = {
-            # matrix_exp is disabled on MPS before macOS 15 (TORCH_CHECK), so the
-            # forward leg of the grad test raises for every dtype.
-            "matrix_exp": None,
-        }
-
         def addDecorator(op: OpInfo, d: DecorateInfo) -> None:
             op.decorators = op.decorators + (d,)
 
@@ -597,15 +591,6 @@ if torch.backends.mps.is_available():
                 addDecorator(
                     op,
                     DecorateInfo(unittest.expectedFailure, dtypes=XFAILLIST_GRAD[key]),
-                )
-
-            if key in MACOS_BEFORE_15_0_XFAILLIST_GRAD and MACOS_VERSION < 15.0:
-                addDecorator(
-                    op,
-                    DecorateInfo(
-                        unittest.expectedFailure,
-                        dtypes=MACOS_BEFORE_15_0_XFAILLIST_GRAD[key],
-                    ),
                 )
 
             if key in SKIPLIST_GRAD:
