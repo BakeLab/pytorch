@@ -154,8 +154,7 @@ The operator benchmarks are continuously monitored in CI to track performance re
 The [operator_benchmark.yml](../../.github/workflows/operator_benchmark.yml) workflow runs operator benchmarks on CPU devices:
 
 **Devices:**
-- x86_64: `mt-l-x86iavx512-48-384` (Intel/AMD CPUs)
-- aarch64: `mt-l-arm64g4-16-62` (ARM64 CPUs)
+- x86_64: `linux.12xlarge` (Intel/AMD CPUs)
 
 **Operators Tracked:** All operators in the `pt/` directory with tag: `short`
 

@@ -38,7 +38,6 @@ on:
         description: |
           Fetch's GitHub Issue from pytorch/test-infra
           Example: https://github.com/pytorch/test-infra/issues/5132
-
     outputs:
       label-type:
         description: Type of runners to use
