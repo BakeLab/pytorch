@@ -632,8 +632,6 @@ bool Context::ckGemmSupported() {
   // which restricts the ck_gemm build to these archs, and the runtime dispatch
   // in aten/src/ATen/native/hip/ck_gemm_{half,bfloat16}.hip.
   static const std::vector<std::string> supported_archs = {
-      "gfx90a",
-      "gfx942",
       "gfx950",
   };
   for (auto index : c10::irange(detail::getCUDAHooks().deviceCount())) {

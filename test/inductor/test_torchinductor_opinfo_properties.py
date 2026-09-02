@@ -58,8 +58,6 @@ from torch.testing._internal.common_utils import (
     HardwareClassification,
     IS_FBCODE,
     IS_WINDOWS,
-    isRocmArchAnyOf,
-    MI200_ARCH,
     parametrize,
     skipIfTorchDynamo,
     TEST_WITH_ASAN,
@@ -496,10 +494,8 @@ def sample_operates_on_batch_dim(op_name, sample_input):
 fp32, fp16, bf16, ALL = torch.float32, torch.float16, torch.bfloat16, None
 
 # A one-epsilon rtol can reject a two-ULP difference at the bottom of a binade.
-# These ROCm cases measured at most two ULP: log1p, tanh and cos on MI250X
-# (gfx90a) with ROCm 7.14; layer_norm, rms_norm, softmax and sin on gfx942 with
-# Triton 3.9 and ROCm 7.14.1 or 10.0. Keep their two-epsilon envelopes local
-# instead of weakening every comparison.
+# These ROCm cases measured at two ULP on MI250X with ROCm 7.14.
+# Keep their two-epsilon envelopes local instead of weakening every comparison.
 ROCM_NUMERICAL_TOLERANCE_OVERRIDES = {
     (
         "eager_equivalence",

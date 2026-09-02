@@ -226,27 +226,6 @@ static void apply_triangular_solve_batched(const Tensor& A, const Tensor& B, boo
 }
 
 void triangular_solve_batched_cublas(const Tensor& A, const Tensor& B, bool left, bool upper, TransposeType transpose, bool unitriangular) {
-  // Workaround the following bug on CUDA < 12.1
-  // RuntimeError: CUDA error: CUBLAS_STATUS_EXECUTION_FAILED when calling `cublasStrsmBatched`
-  // See https://github.com/pytorch/pytorch/issues/79191#issuecomment-1154222580
-#if defined(CUDA_VERSION) && CUDA_VERSION < 12010
-  constexpr auto max_batch_size = 524280;
-  if (B.size(-1) > max_batch_size) {
-    auto n_chunks = (B.size(-1) + max_batch_size - 1) / max_batch_size; // ceildiv
-    auto chunks = B.chunk(n_chunks, /*dim=*/-1);
-    for (const Tensor& b : chunks) {
-      // Each matrix in a chunk still has the layout cuBLAS expects, but
-      // get_device_pointers() infers the batch stride from the last two sizes, so
-      // it would use the chunk's number of columns instead of B's. Cloning the
-      // chunk makes that inference correct.
-      Tensor b_cm = cloneBatchedColumnMajor(b);
-      triangular_solve_batched_cublas(A, b_cm, left, upper, transpose, unitriangular);
-      // Copy solution back into the output view
-      b.copy_(b_cm);
-    }
-    return;
-  }
-#endif
   AT_DISPATCH_FLOATING_AND_COMPLEX_TYPES(A.scalar_type(), "triangular_solve_cuda", [&]{
     apply_triangular_solve_batched<scalar_t>(A, B, left, upper, transpose, unitriangular);
   });

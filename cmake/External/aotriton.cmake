@@ -49,23 +49,40 @@ if(NOT __AOTRITON_INCLUDED)
       "02370004391255af58141068d83df1b50786a1046df6ef49d0e2509b9537b61b"  # rocm7.16
       )
   set(__AOTRITON_IMAGE_LIST
-      "amd-gfx90a"
-      "amd-gfx942"
       "amd-gfx950"
-      "amd-gfx110x"
       "amd-gfx115x"
       "amd-gfx120x"
       "amd-gfx1250"
      )
   set(__AOTRITON_IMAGE_SHA256_LIST
-     "7cc293803aa73bd223554d51a77fab50fd37b0bdb9d5e874f7e2997f4390b9c5" # amd-gfx90a
-     "eae5d36c974d974f085cfbdecf77760db71324fa9814ed50d8a3fc42bfbe3e41" # amd-gfx942
-     "23716cbf855df9df1ca7d480a90e0fb29b0356bb424015c426fc0e5a973f682b" # amd-gfx950
-     "a54fecf9b4e16425681785eba475912eb9ae761e35a4df3e3579bdbd7c6fe4db" # amd-gfx110x
-     "e4bda76fd6857a733cd7b4b3eb9ccb21c0f47b565ce304777a61bbb13d12ad6e" # amd-gfx115x
-     "f173671cc5112897e134f1d209bd6f572ecd507f4d68dc84cb6f07b67e13e851" # amd-gfx120x
-     "6a354bf84a18d7689affaef953ea4a2d1f6943569da4a4ca26fd5e6b5eb67a0f" # amd-gfx1250
+     "518fd072eb05948fc0a6c25a20832591c6406df865e3b691a2aeff3fd4c5ce1d" # amd-gfx950
+     "1bc50e8aa8b6bda3410e92886ccca8fd45df3e60a6cbda9ffc58b2c541efd5c2" # amd-gfx115x
+     "6a465dbc03148bba8a2d78c4c2a3cb83155eca00f4f7f749e676402d7660968c" # amd-gfx120x
+     "4aaf71d6e510549d593757e5f88598df1e4a29cbcd91f70750ee8a76f65c027f" # amd-gfx1250
      )
+  if(USE_ASAN)
+    set(__AOTRITON_BUILD_VARIANTS "+asan")
+    set(__AOTRITON_MANYLINUX_LIST
+        "manylinux_2_28"  # rocm7.14
+        "manylinux_2_28"  # rocm7.15
+        )
+    # ASAN only supports rocm7.14
+    set(__AOTRITON_ROCM_LIST
+        "rocm7.14"
+        "rocm7.15"
+        )
+    set(__AOTRITON_SHA256_LIST
+        "3f5cfba6c42261a3e3b44022c66083ec859fcc98296faa4646b65373fead3448"  # rocm7.14+asan
+        "7a7928d881d6341fc0b8ffb3ad7077f62438a8412ec57f97fb4b4dfbc73b3e64"  # rocm7.15+asan
+        )
+    # ASAN only supports gfx950
+    set(__AOTRITON_IMAGE_LIST
+        "amd-gfx950"
+       )
+    set(__AOTRITON_IMAGE_SHA256_LIST
+       "b428dfe6eef7a1dcfac54ac2408dd136dbd622016331dc863e87ce9ea84c8054" # amd-gfx950+asan
+       )
+  endif()
   set(__AOTRITON_BASE_URL "$ENV{PYTORCH_AOTRITON_BASE_URL}")
   if(NOT __AOTRITON_BASE_URL)
     set(__AOTRITON_BASE_URL "https://github.com/ROCm/aotriton/releases/download/")  # @lint-ignore

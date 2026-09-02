@@ -773,7 +773,7 @@ void dispatch_bfloat16_gemm_wmma(CUDABLAS_GEMM_ARGTYPES(at::BFloat16)) {
 template <>
 void gemm_internal_ck<at::BFloat16>(CUDABLAS_GEMM_ARGTYPES(at::BFloat16)) {
   static const std::vector<std::string> wmma_archs = {
-    "gfx1100", "gfx1101", "gfx1102", "gfx1200", "gfx1201", "gfx1150", "gfx1151"
+    "gfx1200", "gfx1201", "gfx1151"
   };
   // Keep in sync with torch_filter_ck_gemm_arches (cmake/public/utils.cmake)
   // and at::Context::ckGemmSupported().
