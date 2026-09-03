@@ -35,7 +35,6 @@
 
 #include <torch/csrc/utils/torch_dispatch_mode.h>
 
-#include <ATen/ATen.h>
 
 #include <algorithm>
 #include <cstdint>

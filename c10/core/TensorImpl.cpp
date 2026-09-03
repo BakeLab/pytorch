@@ -1,15 +1,12 @@
 #include <c10/core/TensorImpl.h>
 
 #include <c10/core/Contiguity.h>
-#include <c10/core/CopyBytes.h>
 #include <c10/core/InferenceMode.h>
 #include <c10/core/SymIntArrayRef.h>
 #include <c10/core/impl/LocalDispatchKeySet.h>
 #include <c10/core/impl/PyInterpreter.h>
 #include <c10/core/impl/TorchDispatchModeTLS.h>
 #include <c10/util/Logging.h>
-#include <c10/util/accumulate.h>
-#include <algorithm>
 #include <optional>
 
 #include <utility>
