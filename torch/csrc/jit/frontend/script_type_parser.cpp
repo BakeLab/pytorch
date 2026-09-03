@@ -2,10 +2,26 @@
 
 #include <ATen/core/type_factory.h>
 #include <torch/csrc/jit/frontend/parser.h>
-#include <torch/csrc/jit/ir/ir.h>
 #include <torch/custom_class.h>
 
 namespace torch::jit {
+
+// These used to arrive through jit/ir/ir.h, which this file no longer needs.
+using ::c10::Argument;
+using ::c10::AwaitType;
+using ::c10::DictType;
+using ::c10::FutureType;
+using ::c10::IntType;
+using ::c10::ListType;
+using ::c10::OptionalType;
+using ::c10::RRefType;
+using ::c10::FunctionSchema;
+using ::c10::IValue;
+using ::c10::TensorType;
+using ::c10::TupleType;
+using ::c10::TypePtr;
+using ::c10::UnionType;
+
 namespace {
 
 bool isTorch(const Expr& expr) {
@@ -232,18 +248,9 @@ std::optional<std::string> ScriptTypeParser::parseBaseTypeName(
 }
 
 TypePtr ScriptTypeParser::parseTypeFromExpr(const Expr& expr) const {
-  // the resolver needs to recursively resolve the expression, so to avoid
-  // resolving all type expr subtrees we only use it for the top level
-  // expression and base type names.
   if (expr.kind() == '|') {
     auto converted = pep604union_to_union(expr);
     return parseTypeFromExpr(converted);
-  }
-  if (resolver_) {
-    if (auto typePtr =
-            resolver_->resolveType(expr.range().text().str(), expr.range())) {
-      return typePtr;
-    }
   }
   return parseTypeFromExprImpl(expr);
 }
@@ -288,24 +295,12 @@ TypePtr ScriptTypeParser::parseTypeFromExprImpl(const Expr& expr) const {
       return custom_class_type;
     }
 
-    if (resolver_) {
-      if (auto typePtr = resolver_->resolveType(type_name, expr.range())) {
-        return typePtr;
-      }
-    }
-
     throw ErrorReport(expr) << "Unknown type name '" << type_name << '\'';
   } else if (auto name = parseBaseTypeName(expr)) {
     auto itr = string_to_type_lut().find(*name);
     if (itr != string_to_type_lut().end()) {
       return itr->second;
     }
-    if (resolver_) {
-      if (auto typePtr = resolver_->resolveType(*name, expr.range())) {
-        return typePtr;
-      }
-    }
-
     if (auto custom_class_type = getCustomClass(*name)) {
       return custom_class_type;
     }
@@ -320,157 +315,6 @@ TypePtr ScriptTypeParser::parseTypeFromExprImpl(const Expr& expr) const {
 TypePtr ScriptTypeParser::parseType(const std::string& str) {
   Parser p(std::make_shared<Source>(str));
   return parseTypeFromExpr(p.parseExp());
-}
-
-std::vector<IValue> ScriptTypeParser::evaluateDefaults(
-    const SourceRange& r,
-    const std::vector<Expr>& default_types,
-    const std::vector<Expr>& default_exprs) {
-  // Default value expressions were evaluated by compiling a small graph and
-  // running it through the TorchScript interpreter, which no longer exists.
-  if (!default_exprs.empty()) {
-    throw ErrorReport(r)
-        << "Evaluating schema default value expressions is no longer supported";
-  }
-  return {};
-}
-
-std::vector<Argument> ScriptTypeParser::parseArgsFromDecl(
-    const Decl& decl,
-    bool skip_self) {
-  auto params_begin = decl.params().begin();
-  auto params_end = decl.params().end();
-  if (skip_self) {
-    ++params_begin;
-  }
-  std::vector<Argument> retval;
-
-  std::vector<Expr> default_types;
-  std::vector<Expr> default_exprs;
-  // gather any non-empty default arguments
-  for (auto it = params_begin; it != params_end; ++it) {
-    auto param = *it;
-    auto def = param.defaultValue();
-    if (def.present()) {
-      if (!param.type().present()) {
-        // We require explicit type-hints for default expressions.
-        // If param doesn't have a type, we could default to "Tensor",
-        // just like what happens in the Python frontend.
-        // However here things are a bit more complicated, because
-        // default expressions are evaluated using a custom-built
-        // graph, and error messages coming out of that in case
-        // the type doesn't match the value are quite obscure.
-        throw ErrorReport(param.range())
-            << "Keyword arguments with defaults need to be type-hinted (TorchScript C++ frontend)";
-      }
-      default_types.emplace_back(param.type().get());
-      default_exprs.emplace_back(def.get());
-    }
-  }
-
-  auto default_values =
-      evaluateDefaults(decl.range(), default_types, default_exprs);
-
-  auto defaults_it = default_values.begin();
-  for (auto it = params_begin; it != params_end; ++it) {
-    auto decl_arg = *it;
-
-    TypePtr type;
-    std::optional<int32_t> N = std::nullopt;
-    if (!decl_arg.type().present()) {
-      // If this param doesn't have a type, default to "tensor"
-      type = TensorType::getInferred();
-    } else {
-      // BroadcastList list can only appear at the argument level
-      Expr type_expr = decl_arg.type().get();
-      if (auto maybe_broad_list = parseBroadcastList(type_expr)) {
-        type = maybe_broad_list->first;
-        N = maybe_broad_list->second;
-      } else {
-        type = parseTypeFromExpr(decl_arg.type().get());
-      }
-    }
-    std::optional<IValue> default_value = std::nullopt;
-    if (decl_arg.defaultValue().present()) {
-      default_value = *defaults_it++;
-    }
-    auto arg = Argument(
-        decl_arg.ident().name(),
-        type,
-        N,
-        default_value,
-        decl_arg.kwarg_only(),
-        /*alias_info=*/std::nullopt);
-    retval.push_back(arg);
-  }
-  return retval;
-}
-
-std::vector<Argument> ScriptTypeParser::parseReturnFromDecl(const Decl& decl) {
-  // we represent no annotation on a return type as having no values in the
-  // schema's return() list
-  // in emitReturn we take the actual return value to be the value of the
-  // return statement if no one was provided here
-  if (!decl.return_type().present())
-    return {};
-
-  if (parseBroadcastList(decl.return_type().get()))
-    throw ErrorReport(decl.return_type().range())
-        << "Broadcastable lists cannot appear as a return type";
-
-  TypePtr parsed_type;
-  Expr type_expr = decl.return_type().get();
-  parsed_type = parseTypeFromExpr(type_expr);
-  return {Argument(
-      "",
-      parsed_type,
-      /*N =*/std::nullopt,
-      /*default_value =*/std::nullopt,
-      /*kwarg_only =*/false)};
-}
-FunctionSchema ScriptTypeParser::parseSchemaFromDef(
-    const Def& def,
-    bool skip_self) {
-  const auto name = def.name().name();
-  std::vector<Argument> args = parseArgsFromDecl(def.decl(), skip_self);
-  std::vector<Argument> returns = parseReturnFromDecl(def.decl());
-  return FunctionSchema(
-      name, "", std::move(args), std::move(returns), false, false);
-}
-
-c10::IValue ScriptTypeParser::parseClassConstant(const Assign& assign) {
-  if (assign.lhs().kind() != TK_VAR) {
-    throw ErrorReport(assign.range())
-        << "Expected to a variable for class constant";
-  }
-  if (!assign.type().present()) {
-    throw ErrorReport(assign.range())
-        << "Expected a type to present for class constant";
-  }
-  const auto final_type = assign.type().get();
-  auto expr = assign.rhs().get();
-  if (final_type.kind() != TK_SUBSCRIPT) {
-    throw ErrorReport(assign.range())
-        << "Expected subscripted type for class constant";
-  }
-  auto subscript = Subscript(final_type);
-  auto value_name = parseBaseTypeName(subscript.value());
-  if (!value_name) {
-    throw ErrorReport(subscript.value().range())
-        << "Subscripted type must be a type identifier";
-  }
-  if (*value_name != "Final") {
-    throw ErrorReport(subscript.range())
-        << "Base type must be Final for class constant";
-  }
-  if (subscript.subscript_exprs().size() != 1) {
-    throw ErrorReport(subscript)
-        << " expected exactly one element type but found "
-        << subscript.subscript_exprs().size();
-  }
-  auto type = *subscript.subscript_exprs().begin();
-  auto default_val = evaluateDefaults(expr.range(), {type}, {expr});
-  return *default_val.begin();
 }
 
 } // namespace torch::jit
