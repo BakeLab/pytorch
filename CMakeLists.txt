@@ -390,6 +390,9 @@ set(USE_FBGEMM ON CACHE BOOL "Use FBGEMM" FORCE)
 option(USE_KINETO "Use Kineto profiling library" ON)
 option(USE_CUPTI_SO "Use CUPTI as a shared library" ON)
 option(USE_NATIVE_ARCH "Use -march=native" OFF)
+cmake_dependent_option(USE_TBB
+    "Link oneTBB, which is what libstdc++'s C++17 parallel algorithms run on"
+    ON "CPU_INTEL" OFF)
 cmake_dependent_option(USE_MPS "Use MPS for macOS build" ON "MPS_FOUND" OFF)
 option(USE_DISTRIBUTED "Use distributed" ON)
 cmake_dependent_option(USE_NCCL "Use NCCL" ON
@@ -862,11 +865,6 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   append_cxx_flag_if_supported("-Wno-dangling-reference" CMAKE_CXX_FLAGS)
   append_cxx_flag_if_supported("-Wno-error=dangling-reference" CMAKE_CXX_FLAGS)
 endif()
-# needed for compat with newer versions of clang that use C++20 mangling rules
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  append_cxx_flag_if_supported("-fclang-abi-compat=17" CMAKE_CXX_FLAGS)
-endif()
-
 # Add code coverage flags to supported compilers
 if(USE_CPP_CODE_COVERAGE)
   if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
