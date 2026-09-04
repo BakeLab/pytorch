@@ -8,11 +8,9 @@
 #include <c10/util/env.h>
 #include <c10/util/typeid.h>
 #include <c10/util/Exception.h>
-#include <c10/util/SmallVector.h>
 #include <c10/core/Scalar.h>
 #include <c10/core/ScalarType.h>
 #define TORCH_ASSERT_ONLY_METHOD_OPERATORS
-#include <ATen/core/Tensor.h>
 #include <ATen/Dispatch.h>
 #include <ATen/ExpandUtils.h>
 #include <ATen/OpMathType.h>
@@ -20,12 +18,10 @@
 #include <ATen/cuda/CUDABlas.h>
 #include <ATen/cuda/detail/CUDAHooks.h>
 #include <ATen/native/LinearAlgebraUtils.h>
-#include <ATen/native/ScaledBlasUtils.h>
 #include <ATen/cuda/tunable/Tunable.h>
 #include <ATen/cuda/tunable/TunableGemm.h>
 #include <ATen/native/Resize.h>
 #include <c10/util/MaybeOwned.h>
-#include <ATen/native/GroupedMMUtils.h>
 #include <ATen/native/cuda/cuBlasCommonArgs.h>
 #include <ATen/native/cuda/Gfx942Tf32Rounding.h>
 

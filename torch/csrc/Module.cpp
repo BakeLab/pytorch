@@ -1,11 +1,8 @@
 #include <ATen/DeviceAccelerator.h>
 #include <fmt/core.h>
-#include <sys/types.h>
-#include <torch/csrc/python_headers.h>
 #include <csignal>
 #include <optional>
 
-#include <sys/socket.h>
 
 #include <ATen/ATen.h>
 #include <ATen/BlasBackend.h>
@@ -36,7 +33,6 @@
 #include <pybind11/options.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <torch/csrc/utils/pybind.h>
 #include <cstdlib>
 #include <iostream>
 #include <unordered_map>
@@ -109,7 +105,6 @@
 
 #ifdef USE_CUDA
 #include <ATen/ROCmFABackend.h>
-#include <ATen/cuda/CUDABlas.h>
 #include <ATen/native/transformers/cuda/sdp_utils.h>
 #include <torch/csrc/inductor/static_launcher/cuda.h>
 #ifdef __HIP_PLATFORM_AMD__
