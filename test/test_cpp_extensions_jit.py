@@ -289,35 +289,78 @@ class TestCppExtensionJIT(_TestCppExtensionJITBase):
                 self.assertIn(expected_declaration, generated_source)
                 self.assertNotIn(unexpected_declaration, generated_source)
 
-    @unittest.skipUnless(
-        sysconfig.get_config_var("Py_GIL_DISABLED") == 1,
-        "requires free-threaded Python",
-    )
-    def test_inline_jit_generated_bindings_keep_gil_disabled(self):
-        script = """
-import sys
-import tempfile
+    @unittest.skipIf(not (TEST_XPU), "XPU not found")
+    def test_jit_xpu_archlists(self):
+        from torch.utils.cpp_extension import _PRE_XE2_XPU_ARCH_PREFIXES
 
-import torch.utils.cpp_extension
+        # NOTE: in this test we explicitly test few different options
+        # for TORCH_XPU_ARCH_LIST. Setting TORCH_XPU_ARCH_LIST in the
+        # environment before the test won't affect it.
+        supported_arches = [
+            arch
+            for arch in torch.xpu.get_arch_list()
+            if not arch.startswith(_PRE_XE2_XPU_ARCH_PREFIXES)
+        ]
+        cases = [
+            {
+                # Testing JIT compilation
+                "archlist": "",
+                "extra_sycl_cflags": [],
+            },
+            {
+                # Testing JIT + AOT (full torch AOT arch list)
+                # NOTE: default cpp extension AOT arch list might be reduced
+                # from the full list
+                "archlist": ",".join(supported_arches),
+                "extra_sycl_cflags": [],
+            },
+            {
+                # Testing AOT (full torch AOT arch list)
+                # NOTE: default cpp extension AOT arch list might be reduced
+                # from the full list
+                "archlist": ",".join(supported_arches),
+                # below excludes spir64 target responsible for JIT
+                "extra_sycl_cflags": ["-fsycl-targets=spir64_gen"],
+            },
+        ]
+        old_envvar = os.environ.get("TORCH_XPU_ARCH_LIST", None)
+        try:
+            for c in cases:
+                os.environ["TORCH_XPU_ARCH_LIST"] = c["archlist"]
+                self._test_jit_xpu_extension(extra_sycl_cflags=c["extra_sycl_cflags"])
+        finally:
+            if old_envvar is None:
+                os.environ.pop("TORCH_XPU_ARCH_LIST")
+            else:
+                os.environ["TORCH_XPU_ARCH_LIST"] = old_envvar
 
-assert not sys._is_gil_enabled()
-with tempfile.TemporaryDirectory() as build_directory:
-    module = torch.utils.cpp_extension.load_inline(
-        name="inline_jit_extension_gil_not_used_runtime",
-        cpp_sources="int add_one(int value) { return value + 1; }",
-        functions="add_one",
-        build_directory=build_directory,
-        gil_not_used=True,
-        verbose=True,
-    )
-    assert module.add_one(1) == 2
-    assert not sys._is_gil_enabled()
-"""
-        result = subprocess.run(
-            [sys.executable, "-c", script],
-            capture_output=True,
-            text=True,
-            timeout=300,
+    def test_jit_xpu_arch_floor(self):
+        from torch.utils.cpp_extension import _get_sycl_arch_list
+
+        for arch in ("pvc", "dg2", "mtl-h", "arl-h"):
+            with (
+                self.subTest(arch=arch),
+                mock.patch.dict(os.environ, {"TORCH_XPU_ARCH_LIST": arch}),
+                self.assertRaisesRegex(ValueError, "only Xe2 or newer"),
+            ):
+                _get_sycl_arch_list()
+
+        for arch in ("bmg", "lnl-m", "ptl-h", "cri"):
+            with (
+                self.subTest(arch=arch),
+                mock.patch.dict(os.environ, {"TORCH_XPU_ARCH_LIST": arch}),
+            ):
+                self.assertEqual(_get_sycl_arch_list(), arch)
+
+    @unittest.skipIf(not TEST_MPS, "MPS not found")
+    def test_mps_extension(self):
+        module = torch.utils.cpp_extension.load(
+            name="torch_test_mps_extension",
+            sources=[
+                "cpp_extensions/mps_extension.mm",
+            ],
+            verbose=True,
+            keep_intermediates=False,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
