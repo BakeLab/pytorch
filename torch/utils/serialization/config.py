@@ -14,12 +14,13 @@ class load:
     # MAP_PRIVATE = 2
     mmap_flags: int | None = 2
     calculate_storage_offsets: bool = False
+    use_gds: bool = False
 
 
 class save:
     compute_crc32: bool = True
     use_pinned_memory_for_d2h: bool = False
-    storage_alignment: int = 64
+    storage_alignment: int = 4096
 
 
 _install_config_module(sys.modules[__name__])

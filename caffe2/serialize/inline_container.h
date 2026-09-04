@@ -44,7 +44,7 @@ typedef struct mz_zip_archive mz_zip_archive;
 // The PyTorchStreamWriter also ensures additional useful properties for these
 // files
 // 1. All files are stored uncompressed.
-// 2. All files in the archive are aligned to 64 byte boundaries such that
+// 2. All files in the archive are aligned to 4096 byte boundaries such that
 //    it is possible to mmap the entire file and get an aligned pointer to
 //    tensor data.
 // 3. We universally write in ZIP64 format for consistency.
@@ -55,7 +55,9 @@ typedef struct mz_zip_archive mz_zip_archive;
 //    the reader can still read files that were compressed.
 // 2. It provides a getRecordOffset function which returns the offset into the
 //    raw file where file data lives. If the file was written with
-//    PyTorchStreamWriter it is guaranteed to be 64 byte aligned.
+//    PyTorchStreamWriter it is guaranteed to be aligned to the writer's
+//    alignment, 4096 bytes by default, which is what cuFile wants for a
+//    direct read into device memory.
 
 // PyTorchReader/Writer handle checking the version number on the archive format
 // and ensure that all files are written to a archive_name directory so they
@@ -135,22 +137,8 @@ class TORCH_API PyTorchStreamReader final {
   std::tuple<at::DataPtr, size_t> getRecord(
       const std::string& name,
       std::optional<at::Allocator*> allocator = std::nullopt);
-  // multi-thread getRecord
-  std::tuple<at::DataPtr, size_t> getRecord(
-      const std::string& name,
-      std::vector<std::shared_ptr<ReadAdapterInterface>>& additionalReaders,
-      std::optional<at::Allocator*> allocator = std::nullopt);
   // inplace memory writing
   size_t getRecord(const std::string& name, void* dst, size_t n);
-  // inplace memory writing, multi-threads.
-  // When additionalReaders is empty, the default behavior is call
-  // getRecord(name, dst, n) with default reader This approach can be used for
-  // reading large tensors.
-  size_t getRecord(
-      const std::string& name,
-      void* dst,
-      size_t n,
-      std::vector<std::shared_ptr<ReadAdapterInterface>>& additionalReaders);
   size_t getRecord(
       const std::string& name,
       void* dst,
@@ -159,22 +147,6 @@ class TORCH_API PyTorchStreamReader final {
       void* buf,
       const std::function<void(void*, const void*, size_t)>& memcpy_func =
           nullptr);
-
-  // Concurrent reading records with multiple readers.
-  // additionalReaders are additional clients to access the underlying record at
-  // different offsets and write to different trunks of buffers. If the overall
-  // size of the tensor is 10, and size of additionalReader is 2. The default
-  // thread will read [0,4), the additional reader will read [4,8). The default
-  // reader will read [8,10). The default reader will write to buffer[0,4), the
-  // additional reader will write to buffer[4,8), the additional reader will
-  // write to buffer[8,10). When additionalReaders is empty, the default
-  // behavior is call getRecord(name) with default reader This approach can be
-  // used for reading large tensors.
-  size_t getRecordMultiReaders(
-      const std::string& name,
-      std::vector<std::shared_ptr<ReadAdapterInterface>>& additionalReaders,
-      void* dst,
-      size_t n);
 
   size_t getRecordSize(const std::string& name);
   size_t getRecordHeaderOffset(const std::string& name);
@@ -203,9 +175,6 @@ class TORCH_API PyTorchStreamReader final {
   void setShouldLoadDebugSymbol(bool should_load_debug_symbol) {
     load_debug_symbol_ = should_load_debug_symbol;
   }
-  void setAdditionalReaderSizeThreshold(const size_t& size) {
-    additional_reader_size_threshold_ = size;
-  }
 
  private:
   void init();
@@ -223,7 +192,6 @@ class TORCH_API PyTorchStreamReader final {
   std::mutex reader_lock_;
   bool load_debug_symbol_ = true;
   std::string serialization_id_;
-  size_t additional_reader_size_threshold_;
 };
 
 class TORCH_API PyTorchStreamWriter final {
@@ -231,11 +199,11 @@ class TORCH_API PyTorchStreamWriter final {
   explicit PyTorchStreamWriter(
       const std::string& archive_name,
       bool compute_crc32 = true,
-      uint64_t alignment = 64);
+      uint64_t alignment = 4096);
   explicit PyTorchStreamWriter(
       const std::function<size_t(const void*, size_t)> writer_func,
       bool compute_crc32 = true,
-      uint64_t alignment = 64);
+      uint64_t alignment = 4096);
 
   void setMinVersion(const uint64_t version);
 
