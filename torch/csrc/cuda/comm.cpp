@@ -6,7 +6,6 @@
 #include <torch/csrc/cuda/nccl.h>
 #endif
 
-#include <ATen/ATen.h>
 #include <ATen/WrapDimUtils.h>
 #include <c10/cuda/CUDAGuard.h>
 #include <c10/util/irange.h>
