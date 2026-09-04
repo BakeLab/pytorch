@@ -1,5 +1,4 @@
 #define TORCH_ASSERT_ONLY_METHOD_OPERATORS
-#include <ATen/core/Tensor.h>
 
 #include <ATen/ops/_pack_padded_sequence_backward_native.h>
 #include <ATen/ops/_pack_padded_sequence_native.h>
