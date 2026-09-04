@@ -75,7 +75,7 @@ CUDA_BUILD_ENV_DEFAULTS: dict[str, str] = {
 # .github/scripts/generate_binary_build_matrix.py.
 TORCH_CUDA_ARCH_LIST_TABLE: dict[str, dict[str, set[int]]] = {
     "13.4": {
-        "x86_64": {75, 80, 86, 90, 100, 120},
+        "x86_64": {89, 90, 100, 120},
         "aarch64": {80, 90, 100, 110, 120},
     },
 }
@@ -107,8 +107,8 @@ def _ptx_arches() -> set[int]:
 def torch_cuda_arch_list(cuda_version: str, arch: str) -> str:
     """Format TORCH_CUDA_ARCH_LIST for the wheel build (";"-separated).
 
-    Returns e.g. "8.0;9.0;10.0;11.0;12.0+PTX" for cuda 13.x aarch64 on
-    nightly builds; release/RC builds omit the +PTX suffix (see _ptx_arches()).
+    Returns e.g. "8.9;9.0;10.0;12.0+PTX" for cuda 13.x on nightly
+    builds; release/RC builds omit the +PTX suffix (see _ptx_arches()).
 
     CUDA 13.x dropped sm_50/60/70, so we must NOT leave this empty --
     CMake's defaults still include compute_50 which nvcc 13 rejects with
