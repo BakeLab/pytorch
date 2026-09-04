@@ -754,7 +754,6 @@ include_patterns = [
 ]
 exclude_patterns = [
     'cmake/Modules/**',
-    'cmake/Modules_CUDA_fix/**',
     'cmake/Caffe2Config.cmake.in',
     'aten/src/ATen/ATenConfig.cmake.in',
     'cmake/TorchConfig.cmake.in',
@@ -1673,7 +1672,6 @@ include_patterns = [
 ]
 exclude_patterns = [
     'cmake/Modules/**',
-    'cmake/Modules_CUDA_fix/**',
     'cmake/Caffe2Config.cmake.in',
     'aten/src/ATen/ATenConfig.cmake.in',
     'cmake/TorchConfig.cmake.in',
