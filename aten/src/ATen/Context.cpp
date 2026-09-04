@@ -21,7 +21,7 @@
 // existed. An empty list here would make ckSDPASupported() return false and
 // silently reroute a CK preference to AOTriton, which internal builds stub
 // out with a runtime error.
-#define AT_ROCM_CK_SDPA_ARCHS "gfx942,gfx950"
+#define AT_ROCM_CK_SDPA_ARCHS "gfx950"
 #endif
 
 #if defined(USE_ROCM) && defined(__has_include) && \
