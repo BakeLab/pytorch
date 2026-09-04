@@ -825,6 +825,9 @@ def _get_build_args_of_chosen_isa(vec_isa: VecISA) -> tuple[list[str], list[str]
         macros.extend(copy.deepcopy(x) for x in vec_isa.build_macro())
 
         build_flags = [vec_isa.build_arch_flags()]
+        if "CPU_CAPABILITY_AVX2" in macros:
+            # -march=native may enable AVX512 and select 512-bit ATen vectors.
+            build_flags.append("-mno-avx512f")
 
     return macros, build_flags
 
