@@ -101,7 +101,8 @@ endif()
 
 enable_language(HIP)
 if("X${CMAKE_HIP_STANDARD}" STREQUAL "X")
-  set(CMAKE_HIP_STANDARD ${CMAKE_CXX_STANDARD})
+  # ROCm Clang's HIP wrappers conflict with libstdc++ placement delete in C++26.
+  set(CMAKE_HIP_STANDARD 23)
 endif()
 set(CMAKE_HIP_STANDARD_REQUIRED ON)
 message(STATUS "HIP language enabled with compiler: ${CMAKE_HIP_COMPILER}")
@@ -134,64 +135,26 @@ if(NOT APPLE AND TARGET hip::amdhip64)
     INTERFACE_LINK_OPTIONS "$<BUILD_INTERFACE:LINKER:-rpath-link,${ROCM_PATH}/lib>")
 endif()
 
-# Map lowercase hip_VERSION vars (from CONFIG mode) to uppercase HIP_VERSION
-# vars that the rest of PyTorch's build expects (previously set by FindHIP MODULE).
-if(hip_VERSION AND NOT HIP_VERSION)
-  set(HIP_VERSION "${hip_VERSION}")
-  set(HIP_VERSION_MAJOR "${hip_VERSION_MAJOR}")
-  set(HIP_VERSION_MINOR "${hip_VERSION_MINOR}")
-  set(HIP_VERSION_PATCH "${hip_VERSION_PATCH}")
-endif()
-
 if(PYTORCH_FOUND_HIP)
-  if(HIP_VERSION)
-    # Check if HIP_VERSION contains a dash (e.g., "7.1.25421-32f9fa6ca5")
+  if(hip_VERSION)
+    # Check if hip_VERSION contains a dash (e.g., "7.1.25421-32f9fa6ca5")
     # and strip everything after it to get clean numeric version
-    string(FIND "${HIP_VERSION}" "-" DASH_POS)
+    string(FIND "${hip_VERSION}" "-" DASH_POS)
     if(NOT DASH_POS EQUAL -1)
-      string(SUBSTRING "${HIP_VERSION}" 0 ${DASH_POS} HIP_VERSION_CLEAN)
-      set(HIP_VERSION "${HIP_VERSION_CLEAN}")
+      string(SUBSTRING "${hip_VERSION}" 0 ${DASH_POS} hip_VERSION_CLEAN)
     else()
-      set(HIP_VERSION_CLEAN "${HIP_VERSION}")
+      set(hip_VERSION_CLEAN "${hip_VERSION}")
     endif()
-    message("HIP version: ${HIP_VERSION}")
+    message("HIP version: ${hip_VERSION_CLEAN}")
   else()
-    set(HIP_VERSION_CLEAN "")
+    message(FATAL_ERROR "The HIP package did not provide a version.")
   endif()
 
-# The rocm-core package was only introduced in ROCm 6.4, so we make it optional.
-  find_package(rocm-core CONFIG)
-
-  # Some old consumer HIP SDKs do not distribute rocm_version.h, so we allow
-  # falling back to the hip version, which everyone should have.
-  # rocm_version.h lives in the rocm-core package and hip_version.h lives in the
-  # hip (lower-case) package. Both are probed above and will be in
-  # ROCM_INCLUDE_DIRS if available.
-  find_file(ROCM_VERSION_HEADER_PATH
-    NAMES rocm-core/rocm_version.h hip/hip_version.h
-    NO_DEFAULT_PATH
-    PATHS ${ROCM_INCLUDE_DIRS}
-  )
-  if(ROCM_VERSION_HEADER_PATH MATCHES "rocm-core/rocm_version.h$")
-    set(ROCM_LIB_NAME "ROCM")
-  else()
-    set(ROCM_LIB_NAME "HIP")
-  endif()
-
-  if(NOT ROCM_VERSION_HEADER_PATH)
-    message(FATAL_ERROR "Could not find hip/hip_version.h or rocm-core/rocm_version.h in ${ROCM_INCLUDE_DIRS}")
-  endif()
-  get_filename_component(ROCM_HEADER_NAME ${ROCM_VERSION_HEADER_PATH} NAME)
-
-  if(EXISTS ${ROCM_VERSION_HEADER_PATH})
-    set(ROCM_HEADER_FILE ${ROCM_VERSION_HEADER_PATH})
-  else()
-    message(FATAL_ERROR "********************* ${ROCM_HEADER_NAME} could not be found ******************\n")
-  endif()
+  find_package(rocm-core 10.0 REQUIRED CONFIG)
+  set(ROCM_HEADER_FILE "${rocm_core_INCLUDE_DIR}/rocm-core/rocm_version.h")
 
   # Read the ROCM headerfile into a variable
   message(STATUS "Reading ROCM version from: ${ROCM_HEADER_FILE}")
-  message(STATUS "Content: ${ROCM_HEADER_CONTENT}")
   file(READ "${ROCM_HEADER_FILE}" ROCM_HEADER_CONTENT)
 
   # Below we use a RegEx to find ROCM version numbers.
@@ -203,34 +166,34 @@ if(PYTORCH_FOUND_HIP)
   # 2. Strip the non-numerical part of the string
   # 3. Strip leading and trailing spaces
 
-  string(REGEX MATCH "${ROCM_LIB_NAME}_VERSION_MAJOR[ ]+[0-9]+" TEMP1 ${ROCM_HEADER_CONTENT})
-  string(REPLACE "${ROCM_LIB_NAME}_VERSION_MAJOR" "" TEMP2 ${TEMP1})
+  string(REGEX MATCH "ROCM_VERSION_MAJOR[ ]+[0-9]+" TEMP1 ${ROCM_HEADER_CONTENT})
+  string(REPLACE "ROCM_VERSION_MAJOR" "" TEMP2 ${TEMP1})
   string(STRIP ${TEMP2} ROCM_VERSION_DEV_MAJOR)
-  string(REGEX MATCH "${ROCM_LIB_NAME}_VERSION_MINOR[ ]+[0-9]+" TEMP1 ${ROCM_HEADER_CONTENT})
-  string(REPLACE "${ROCM_LIB_NAME}_VERSION_MINOR" "" TEMP2 ${TEMP1})
+  string(REGEX MATCH "ROCM_VERSION_MINOR[ ]+[0-9]+" TEMP1 ${ROCM_HEADER_CONTENT})
+  string(REPLACE "ROCM_VERSION_MINOR" "" TEMP2 ${TEMP1})
   string(STRIP ${TEMP2} ROCM_VERSION_DEV_MINOR)
-  string(REGEX MATCH "${ROCM_LIB_NAME}_VERSION_PATCH[ ]+[0-9]+" TEMP1 ${ROCM_HEADER_CONTENT})
-  string(REPLACE "${ROCM_LIB_NAME}_VERSION_PATCH" "" TEMP2 ${TEMP1})
+  string(REGEX MATCH "ROCM_VERSION_PATCH[ ]+[0-9]+" TEMP1 ${ROCM_HEADER_CONTENT})
+  string(REPLACE "ROCM_VERSION_PATCH" "" TEMP2 ${TEMP1})
   string(STRIP ${TEMP2} ROCM_VERSION_DEV_PATCH)
 
   # Create ROCM_VERSION_DEV_INT which is later used as a preprocessor macros
   set(ROCM_VERSION_DEV "${ROCM_VERSION_DEV_MAJOR}.${ROCM_VERSION_DEV_MINOR}.${ROCM_VERSION_DEV_PATCH}")
   math(EXPR ROCM_VERSION_DEV_INT "(${ROCM_VERSION_DEV_MAJOR}*10000) + (${ROCM_VERSION_DEV_MINOR}*100) + ${ROCM_VERSION_DEV_PATCH}")
 
-  message("\n***** ROCm version from ${ROCM_HEADER_NAME} ****\n")
+  message("\n***** ROCm version from rocm_version.h ****\n")
   message("ROCM_VERSION_DEV: ${ROCM_VERSION_DEV}")
   message("ROCM_VERSION_DEV_MAJOR: ${ROCM_VERSION_DEV_MAJOR}")
   message("ROCM_VERSION_DEV_MINOR: ${ROCM_VERSION_DEV_MINOR}")
   message("ROCM_VERSION_DEV_PATCH: ${ROCM_VERSION_DEV_PATCH}")
   message("ROCM_VERSION_DEV_INT:   ${ROCM_VERSION_DEV_INT}")
 
-  if(ROCM_VERSION_DEV_INT LESS 71400)
-    message(FATAL_ERROR "PyTorch needs ROCm 7.14 or above, but found ${ROCM_VERSION_DEV}.")
+  if(ROCM_VERSION_DEV_INT LESS 100000)
+    message(FATAL_ERROR "PyTorch needs ROCm 10.0 or above, but found ${ROCM_VERSION_DEV}.")
   endif()
 
-  math(EXPR TORCH_HIP_VERSION "(${HIP_VERSION_MAJOR} * 100) + ${HIP_VERSION_MINOR}")
-  message("HIP_VERSION_MAJOR: ${HIP_VERSION_MAJOR}")
-  message("HIP_VERSION_MINOR: ${HIP_VERSION_MINOR}")
+  math(EXPR TORCH_HIP_VERSION "(${hip_VERSION_MAJOR} * 100) + ${hip_VERSION_MINOR}")
+  message("hip_VERSION_MAJOR: ${hip_VERSION_MAJOR}")
+  message("hip_VERSION_MINOR: ${hip_VERSION_MINOR}")
   message("TORCH_HIP_VERSION: ${TORCH_HIP_VERSION}")
 
   # Find ROCM components using Config mode
@@ -268,19 +231,28 @@ if(PYTORCH_FOUND_HIP)
   if(UNIX)
     find_package_and_print_version(rccl)
     find_package_and_print_version(hsa-runtime64)
-    # hipFile and amd_smi are Linux-only dependencies and ship with
-    # ROCm 7.14 and later, where they are required.
-    if(ROCM_VERSION_DEV VERSION_GREATER_EQUAL "7.14.0")
-      find_package_and_print_version(hipfile REQUIRED)
-      find_package_and_print_version(amd_smi REQUIRED)
-    endif()
+    find_package_and_print_version(hipfile REQUIRED)
+    find_package_and_print_version(amd_smi REQUIRED)
   endif()
 
   # Optional components.
   find_package_and_print_version(hipsparselt)  # Will be required when ready.
-  # ROCm 8.0 and later requires libhipcxx! This should be marked as
-  # 'REQUIRED' once minimal ROCm version is bumped to 8.0 or later.
-  find_package_and_print_version(libhipcxx)
+
+  find_package(libhipcxx QUIET CONFIG)
+  if(NOT libhipcxx_FOUND AND ROCM_VERSION_DEV_MAJOR EQUAL 10)
+    include(FetchContent)
+    set(libhipcxx_ENABLE_INSTALL_RULES OFF CACHE BOOL "" FORCE)
+    FetchContent_Declare(
+      libhipcxx
+      URL https://codeload.github.com/ROCm/libhipcxx/tar.gz/8e336919711e1eb7fece0678a3d9e92bccfe6673
+      URL_HASH SHA256=41e8daa3624bd6404638b1841b206fd57661346e7f7cd16c729dab06c3ef65b3
+      DOWNLOAD_EXTRACT_TIMESTAMP FALSE)
+    FetchContent_MakeAvailable(libhipcxx)
+  endif()
+  if(NOT TARGET libhipcxx::libhipcxx)
+    message(FATAL_ERROR "ROCm ${ROCM_VERSION_DEV} requires libhipcxx.")
+  endif()
+  message("libhipcxx VERSION: ${libhipcxx_VERSION}")
 
   list(REMOVE_DUPLICATES ROCM_INCLUDE_DIRS)
 
@@ -297,12 +269,19 @@ if(PYTORCH_FOUND_HIP)
       "#include <hipblaslt/hipblaslt.h>\n"
       "int main() {\n"
       "    hipblasLtMatmulMatrixScale_t attr = HIPBLASLT_MATMUL_MATRIX_SCALE_OUTER_VEC_32F;\n"
+      "    (void)attr;\n"
       "    return 0;\n"
       "}\n"
       )
+    set(_hipblaslt_probe_flags
+      -D__HIP_PLATFORM_AMD__
+      -Wno-error=newline-eof
+      -Wno-error=unused-but-set-variable)
     try_compile(hipblaslt_compile_result_outer_vec ${PROJECT_RANDOM_BINARY_DIR} ${file}
-      CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${ROCM_INCLUDE_DIRS}"
-      COMPILE_DEFINITIONS -D__HIP_PLATFORM_AMD__ -D__HIP_PLATFORM_HCC__
+      CMAKE_FLAGS
+        "-DINCLUDE_DIRECTORIES=${ROCM_INCLUDE_DIRS}"
+        "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} --gcc-install-dir=${PYTORCH_HIP_GCC_INSTALL_DIR}"
+      COMPILE_DEFINITIONS ${_hipblaslt_probe_flags}
       OUTPUT_VARIABLE hipblaslt_compile_output_outer_vec)
 
     # check whether hipblaslt provides HIPBLASLT_MATMUL_DESC_A_SCALE_POINTER_VEC_EXT
@@ -312,13 +291,17 @@ if(PYTORCH_FOUND_HIP)
       "#include <hipblaslt/hipblaslt.h>\n"
       "int main() {\n"
       "    hipblasLtMatmulDescAttributes_t attr = HIPBLASLT_MATMUL_DESC_A_SCALE_POINTER_VEC_EXT;\n"
+      "    (void)attr;\n"
       "    return 0;\n"
       "}\n"
       )
     try_compile(hipblaslt_compile_result_vec_ext ${PROJECT_RANDOM_BINARY_DIR} ${file}
-      CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${ROCM_INCLUDE_DIRS}"
-      COMPILE_DEFINITIONS -D__HIP_PLATFORM_AMD__ -D__HIP_PLATFORM_HCC__
+      CMAKE_FLAGS
+        "-DINCLUDE_DIRECTORIES=${ROCM_INCLUDE_DIRS}"
+        "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} --gcc-install-dir=${PYTORCH_HIP_GCC_INSTALL_DIR}"
+      COMPILE_DEFINITIONS ${_hipblaslt_probe_flags}
       OUTPUT_VARIABLE hipblaslt_compile_output_vec_ext)
+    unset(_hipblaslt_probe_flags)
 
     if(hipblaslt_compile_result_outer_vec)
       set(HIPBLASLT_OUTER_VEC ON)

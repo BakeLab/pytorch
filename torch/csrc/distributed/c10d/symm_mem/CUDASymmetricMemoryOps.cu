@@ -66,7 +66,7 @@ namespace {
 using namespace c10d::symmetric_memory;
 
 size_t get_and_verify_alignment(const at::Tensor& input, const char* op_name) {
-  const size_t min_alignment = std::max(4l, input.element_size());
+  const size_t min_alignment = ::max(4l, input.element_size());
   // Only check the offset since the multicast address is always at least
   // 128-bit aligned
   const size_t ptr_alignment = at::native::memory::get_alignment(
@@ -90,7 +90,7 @@ size_t get_and_verify_alignment(const at::Tensor& input, const char* op_name) {
       ">: input size must be at least ",
       min_alignment,
       "-byte aligned.");
-  return std::min(ptr_alignment, size_alignment);
+  return ::min(ptr_alignment, size_alignment);
 }
 
 void init_elementwise_launch_config(
@@ -116,7 +116,7 @@ void init_elementwise_launch_config(
     num_threads = max(num_threads, world_size);
     num_threads = at::round_up(num_threads, at::cuda::warp_size());
   } else {
-    num_blocks = std::min(
+    num_blocks = ::min(
         at::ceil_div(numel_per_split, max_num_threads * numel_per_thread),
         max_num_blocks);
     num_threads = max_num_threads;
