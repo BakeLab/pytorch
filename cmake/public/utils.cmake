@@ -151,6 +151,8 @@ endmacro()
 macro(torch_hip_get_arch_list store_var)
   if(DEFINED ENV{PYTORCH_ROCM_ARCH})
     set(_TMP $ENV{PYTORCH_ROCM_ARCH})
+  elseif(DEFINED PYTORCH_ROCM_ARCH)
+    set(_TMP ${PYTORCH_ROCM_ARCH})
   else()
     # Use arch of installed GPUs as default
     execute_process(COMMAND "rocm_agent_enumerator" COMMAND bash "-c" "grep -v gfx000 | sort -u | xargs | tr -d '\n'"
@@ -663,4 +665,49 @@ function(torch_optimize_layout_if_enabled tgt)
     set_property(TARGET bolt_profile_quality_summary APPEND PROPERTY
         SCRIPT_ARGS "--profile" "${_bolt_profile}" "${_logfile}")
   endif()
+endfunction()
+
+##############################################################################
+# Install the SONAME and provide the unversioned linker name as a GNU ld script
+# so wheel archives do not materialize the shared library twice.
+function(torch_install_shared_library LINK_PATH DESTINATION)
+  get_filename_component(_link_name "${LINK_PATH}" NAME)
+  install(CODE "
+    set(_link_path \"${LINK_PATH}\")
+    if(IS_SYMLINK \"\${_link_path}\")
+      file(READ_SYMLINK \"\${_link_path}\" _soname)
+      get_filename_component(_soname \"\${_soname}\" NAME)
+      file(REAL_PATH \"\${_link_path}\" _real_path)
+    else()
+      file(SHA256 \"\${_link_path}\" _link_hash)
+      file(GLOB _candidates \"\${_link_path}.*\")
+      set(_soname \"\")
+      set(_soname_length 0)
+      foreach(_candidate IN LISTS _candidates)
+        if(NOT IS_DIRECTORY \"\${_candidate}\")
+          file(SHA256 \"\${_candidate}\" _candidate_hash)
+          if(_candidate_hash STREQUAL _link_hash)
+            get_filename_component(_candidate_name \"\${_candidate}\" NAME)
+            string(LENGTH \"\${_candidate_name}\" _candidate_length)
+            if(_soname STREQUAL \"\" OR
+                _candidate_length LESS _soname_length)
+              set(_soname \"\${_candidate_name}\")
+              set(_soname_length \"\${_candidate_length}\")
+            endif()
+          endif()
+        endif()
+      endforeach()
+      set(_real_path \"\${_link_path}\")
+    endif()
+    if(_soname STREQUAL \"\")
+      message(FATAL_ERROR \"Could not determine SONAME for \${_link_path}\")
+    endif()
+    file(INSTALL DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${DESTINATION}\"
+      TYPE FILE FILES \"\${_real_path}\" RENAME \"\${_soname}\")
+    if(NOT \"${_link_name}\" STREQUAL \"\${_soname}\")
+      file(WRITE
+        \"\${CMAKE_INSTALL_PREFIX}/${DESTINATION}/${_link_name}\"
+        \"INPUT ( \${_soname} )\\n\")
+    endif()
+  ")
 endfunction()

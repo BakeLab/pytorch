@@ -37,7 +37,14 @@ namespace c10d::nvshmem_extension {
 constexpr int MAX_N_TEAMS = 128;
 
 // A pool of teams for each group. These are duplicate teams.
-using TeamPool = std::vector<nvshmem_team_t>;
+#if defined(USE_ROCM)
+using TeamHandle = rocshmem::rocshmem_team_t;
+constexpr TeamHandle INVALID_TEAM = rocshmem::ROCSHMEM_TEAM_INVALID;
+#else
+using TeamHandle = nvshmem_team_t;
+constexpr TeamHandle INVALID_TEAM = NVSHMEM_TEAM_INVALID;
+#endif
+using TeamPool = std::vector<TeamHandle>;
 
 // Manage all the team business. Singleton.
 class TeamManager {
@@ -53,7 +60,7 @@ class TeamManager {
   static void release_group_if_initialized(const std::string& group_name);
 
   // Get a team for a group.
-  nvshmem_team_t get_team(
+  TeamHandle get_team(
       const std::string& group_name,
       const std::vector<int>& global_ranks) {
     auto [group_state, pool_updated] =
@@ -66,7 +73,7 @@ class TeamManager {
   // The first element of the returned pair is the team pool on host side.
   // The second element of the returned pair is the team pool on device side.
   // This API must be called with a device guard.
-  std::pair<const TeamPool&, nvshmem_team_t*> get_n_teams(
+  std::pair<const TeamPool&, TeamHandle*> get_n_teams(
       const std::string& group_name,
       const std::vector<int>& global_ranks,
       const int need_n) {
@@ -77,10 +84,10 @@ class TeamManager {
         get_group_state(group_name, global_ranks, need_n);
     auto& team_pool = group_state.team_pool;
     // Check if the pool already exists in device memory
-    constexpr auto pool_bytes = sizeof(nvshmem_team_t) * MAX_N_TEAMS;
+    constexpr auto pool_bytes = sizeof(TeamHandle) * MAX_N_TEAMS;
     if (group_state.team_pool_dev == nullptr) {
       // If not, allocate a new pool in device memory
-      group_state.team_pool_dev = reinterpret_cast<nvshmem_team_t*>(
+      group_state.team_pool_dev = reinterpret_cast<TeamHandle*>(
           c10::cuda::CUDACachingAllocator::raw_alloc(pool_bytes));
       // Rendezvous may already have populated or reused the host pool.
       pool_updated = true;
@@ -159,12 +166,12 @@ class TeamManager {
 
   struct LiveGroupState {
     explicit LiveGroupState(const std::vector<int>& ranks)
-        : team_pool(MAX_N_TEAMS, NVSHMEM_TEAM_INVALID), global_ranks(ranks) {}
+        : team_pool(MAX_N_TEAMS, INVALID_TEAM), global_ranks(ranks) {}
 
     TeamPool team_pool;
     std::vector<int> global_ranks;
     uint64_t pool_id{0};
-    nvshmem_team_t* team_pool_dev{nullptr};
+    TeamHandle* team_pool_dev{nullptr};
   };
 
   MembershipState& membership_state(const std::vector<int>& global_ranks) {
@@ -173,7 +180,7 @@ class TeamManager {
         membership_states_.end(),
         [&](const auto& state) { return state.global_ranks == global_ranks; });
     if (it == membership_states_.end()) {
-      membership_states_.push_back(MembershipState{global_ranks});
+      membership_states_.push_back(MembershipState{global_ranks, 0, {}});
       return membership_states_.back();
     }
     return *it;
@@ -245,7 +252,7 @@ class TeamManager {
     // Create new teams if what's requested is more than what we have
     int stride = 0; // stride in globe, uninitialized
     for (const auto i : c10::irange(need_n)) {
-      if (team_pool[i] != NVSHMEM_TEAM_INVALID) {
+      if (team_pool[i] != INVALID_TEAM) {
         continue;
       }
       // Some checks before we create new teams
@@ -256,7 +263,7 @@ class TeamManager {
           TORCH_CHECK(global_ranks[r] - global_ranks[r - 1] == stride);
         }
       }
-      nvshmem_team_t team = NVSHMEM_TEAM_INVALID;
+      TeamHandle team = INVALID_TEAM;
       nvshmem_team_split_strided(
           NVSHMEM_TEAM_WORLD,
           global_ranks[0],
@@ -265,7 +272,7 @@ class TeamManager {
           nullptr,
           0,
           &team);
-      TORCH_CHECK(team != NVSHMEM_TEAM_INVALID, "Failed to create a new team");
+      TORCH_CHECK(team != INVALID_TEAM, "Failed to create a new team");
       team_pool[i] = team;
       pool_updated = true;
     }

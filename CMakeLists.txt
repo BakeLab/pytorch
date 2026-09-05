@@ -370,15 +370,15 @@ cmake_dependent_option(
   BUILD_LAZY_CUDA_LINALG "Build cuda linalg ops as separate library" ON
   "USE_CUDA AND LINUX AND BUILD_PYTHON" OFF)
 cmake_dependent_option(USE_ROCM "Use ROCm" ON "LINUX" OFF)
-cmake_dependent_option(USE_ROCM_CK_GEMM "Use ROCm Composable Kernel for GEMMs" ON "USE_ROCM" OFF)
+cmake_dependent_option(USE_ROCM_CK_GEMM "Use ROCm Composable Kernel for GEMMs" OFF "USE_ROCM" OFF)
 # Single source of truth for the GPU archs Composable Kernel GEMM supports. It
 # drives both the ck_gemm build arch filter (torch_filter_ck_gemm_arches in
 # cmake/public/utils.cmake) and the runtime support check / dispatch, which read
 # it through the generated ATen/ROCmCKGEMMConfig.h. Add a WMMA arch (e.g.
 # gfx1200) here to opt it back in without patching source.
-set(TORCH_CK_GEMM_ARCH_LIST "gfx90a;gfx942;gfx950" CACHE STRING
+set(TORCH_CK_GEMM_ARCH_LIST "gfx950" CACHE STRING
     "Semicolon-separated GPU archs Composable Kernel GEMM is built and enabled for")
-cmake_dependent_option(USE_ROCM_CK_SDPA "Use ROCm Composable Kernel for SDPA" ON "USE_ROCM" OFF)
+cmake_dependent_option(USE_ROCM_CK_SDPA "Use ROCm Composable Kernel for SDPA" OFF "USE_ROCM" OFF)
 # Off by default because enabling gfx12 adds CK SDPA code generation and compile
 # cost to ROCm builds that already target gfx1200/gfx1201.
 cmake_dependent_option(USE_ROCM_CK_SDPA_GFX12 "Also build ROCm Composable Kernel SDPA for gfx12 (RDNA4)" OFF "USE_ROCM_CK_SDPA" OFF)
@@ -497,13 +497,13 @@ if(USE_CCACHE)
   # torch-xpu-ops consumes CMAKE_SYCL_COMPILER_LAUNCHER directly; this does not
   # require CMake to provide native SYCL language support.
   if(CCACHE_PROGRAM)
-    foreach(LANG CXX C CUDA SYCL)
+    foreach(LANG CXX C CUDA HIP SYCL)
       set(CMAKE_${LANG}_COMPILER_LAUNCHER
           "${CCACHE_PROGRAM}"
           CACHE STRING "${LANG} compiler launcher")
     endforeach()
   elseif(SCCACHE_EXECUTABLE)
-    foreach(LANG CXX C CUDA SYCL)
+    foreach(LANG CXX C CUDA HIP SYCL)
       set(CMAKE_${LANG}_COMPILER_LAUNCHER
           "${SCCACHE_EXECUTABLE}"
           CACHE STRING "${LANG} compiler launcher")
@@ -561,6 +561,8 @@ string(APPEND CMAKE_CUDA_FLAGS " -compress-mode=size")
 # nvcc's host pass needs the section flags forwarded; see the CXX ones below.
 string(APPEND CMAKE_CUDA_FLAGS " -Xcompiler=-ffunction-sections")
 string(APPEND CMAKE_CUDA_FLAGS " -Xcompiler=-fdata-sections")
+string(APPEND CMAKE_HIP_FLAGS " -ffunction-sections")
+string(APPEND CMAKE_HIP_FLAGS " -fdata-sections")
 
 # Let nvcc split device codegen across threads. Two keeps the product with
 # MAX_JOBS within the core count on the machines this fork is built on.
@@ -611,6 +613,7 @@ if(NOT DEFINED CMAKE_LINKER_TYPE AND NOT APPLE)
     # address-significance table clang emits, that a folded function's address
     # is never compared.
     add_link_options("LINKER:--icf=safe")
+    add_link_options("LINKER:--gc-sections")
   endif()
 endif()
 
@@ -768,6 +771,7 @@ endif()
 # aotriton build decision later.
 
 include(cmake/Dependencies.cmake)
+include(cmake/Hipify.cmake)
 
 # oneAPI libraries such as libpti_view have indirect dependencies on the Intel
 # compiler runtime. DT_RUNPATH is not transitive, so XPU builds must retain the
@@ -981,16 +985,21 @@ if(NOT APPLE AND UNIX)
   list(APPEND Caffe2_DEPENDENCY_LIBS dl)
 endif()
 
-# Prefix path to Caffe2 headers. If a directory containing installed Caffe2
-# headers was inadvertently added to the list of include directories, prefixing
-# PROJECT_SOURCE_DIR means this source tree always takes precedence.
+# Prefix path to Caffe2 headers. ROCm then overlays hipified headers from the
+# generated tree without changing the checkout.
 include_directories(BEFORE ${PROJECT_SOURCE_DIR})
+if(USE_ROCM)
+  include_directories(BEFORE ${PYTORCH_HIPIFY_DIR})
+endif()
 
 # Prefix path to generated Caffe2 headers. These need to take precedence over
 # their empty counterparts located in PROJECT_SOURCE_DIR.
 include_directories(BEFORE ${PROJECT_BINARY_DIR})
 
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/aten/src/)
+if(USE_ROCM)
+  include_directories(BEFORE ${PYTORCH_HIPIFY_DIR}/aten/src)
+endif()
 include_directories(BEFORE ${CMAKE_BINARY_DIR}/aten/src/)
 
 if(USE_MIMALLOC)

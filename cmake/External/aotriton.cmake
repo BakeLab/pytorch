@@ -203,7 +203,7 @@ if(NOT __AOTRITON_INCLUDED)
     add_dependencies(__caffe2_aotriton aotriton_external)
     message(STATUS "Using AOTriton compiled from source directory ${__AOTRITON_EXTERN_PREFIX}")
   else()
-    set(__AOTRITON_SYSTEM_ROCM "${HIP_VERSION_MAJOR}.${HIP_VERSION_MINOR}")
+    set(__AOTRITON_SYSTEM_ROCM "${hip_VERSION_MAJOR}.${hip_VERSION_MINOR}")
     list(FIND __AOTRITON_ROCM_LIST "rocm${__AOTRITON_SYSTEM_ROCM}" __AOTRITON_RUNTIME_INDEX)
     if(${__AOTRITON_RUNTIME_INDEX} LESS 0)
       message(STATUS "Cannot find AOTriton runtime for ROCM ${__AOTRITON_SYSTEM_ROCM}. \
@@ -237,10 +237,8 @@ if(NOT __AOTRITON_INCLUDED)
   # (${PROJECT_SOURCE_DIR}/torch/lib/) without a cmake install() rule, so it
   # is absent from the installed wheel and causes link failures in downstream
   # cmake builds (e.g., custom op builds) that link against installed torch.
-  install(DIRECTORY "${__AOTRITON_INSTALL_DIR}/lib/"
-    DESTINATION "lib"
-    FILES_MATCHING PATTERN "libaotriton_v2*.so*"
-  )
+  torch_install_shared_library(
+    "${__AOTRITON_INSTALL_DIR}/${__AOTRITON_LIB}" lib)
   # Install aotriton GPU kernel images (compressed ISA blobs) into the wheel.
   install(DIRECTORY "${__AOTRITON_INSTALL_DIR}/lib/aotriton.images"
     DESTINATION "lib"

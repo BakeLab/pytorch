@@ -508,7 +508,7 @@ void NCCLSymmetricMemory::barrier(int channel, size_t timeout_ms) {
   GroupStreamGuard stream_guard(pai_->group_name_);
   barrier_kernel<<<
       1,
-      std::max(at::cuda::warp_size(), world_size_),
+      ::max(at::cuda::warp_size(), world_size_),
       0,
       at::cuda::getCurrentCUDAStream()>>>(
       reinterpret_cast<uint32_t**>(pai_->signal_pads_dev_),

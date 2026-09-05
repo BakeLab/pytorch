@@ -598,6 +598,13 @@ target_include_directories(torch::nvtx3 INTERFACE "${nvtx3_dir}")
 
 # ---[ HIP
 if(USE_ROCM)
+  set(PYTORCH_HIP_GCC_INSTALL_DIR "/usr/lib/gcc/x86_64-pc-linux-gnu/15.3.0")
+  if(NOT IS_DIRECTORY "${PYTORCH_HIP_GCC_INSTALL_DIR}")
+    message(FATAL_ERROR "HIP compilation requires GCC 15 at ${PYTORCH_HIP_GCC_INSTALL_DIR}")
+  endif()
+  string(APPEND CMAKE_HIP_FLAGS " --gcc-install-dir=${PYTORCH_HIP_GCC_INSTALL_DIR}")
+  message(STATUS "HIP compilation uses libstdc++ from ${PYTORCH_HIP_GCC_INSTALL_DIR}")
+
   include(${CMAKE_CURRENT_LIST_DIR}/public/LoadHIP.cmake)
   if(PYTORCH_FOUND_HIP)
     message(INFO "Compiling with HIP for AMD.")
@@ -611,6 +618,7 @@ if(USE_ROCM)
     # HIP_CXX_FLAGS: applied to targets via target_compile_options (definitions, warnings).
     # These are used for both HIP device code and C++ code that needs HIP defines.
     string(APPEND CMAKE_HIP_FLAGS " -fPIC")
+    list(APPEND HIP_CXX_FLAGS "--gcc-install-dir=${PYTORCH_HIP_GCC_INSTALL_DIR}")
     list(APPEND HIP_CXX_FLAGS -D__HIP_PLATFORM_AMD__=1)
     list(APPEND HIP_CXX_FLAGS -DCUDA_HAS_FP16=1)
     list(APPEND HIP_CXX_FLAGS -DUSE_ROCM)
@@ -660,7 +668,7 @@ if(USE_ROCM)
     endif()
     # CMAKE_HIP_FLAGS: flags passed to the HIP compiler for device code.
     # Architecture is handled by CMAKE_HIP_ARCHITECTURES (set in LoadHIP.cmake).
-    string(APPEND CMAKE_HIP_FLAGS " --offload-compress -std=c++26")
+    string(APPEND CMAKE_HIP_FLAGS " --offload-compress")
     # Pass device library path for theRock nightly builds
     if(DEFINED ENV{HIP_DEVICE_LIB_PATH})
       file(TO_CMAKE_PATH "$ENV{HIP_DEVICE_LIB_PATH}" _hip_device_lib_path)
@@ -699,7 +707,9 @@ if(USE_ROCM)
        $<INSTALL_INTERFACE:include> ${Caffe2_HIP_INCLUDE})
 
     set(Caffe2_PUBLIC_HIP_DEPENDENCY_LIBS
-      hip::host MIOpen hiprtc::hiprtc)
+      hip::host libhipcxx::libhipcxx)
+    list(APPEND Caffe2_HIP_DEPENDENCY_LIBS
+      MIOpen roc::rocblas roc::hipblaslt)
 
     # intra_node_comm.cpp is the only consumer, and -Wl,--no-as-needed would
     # stamp the DT_NEEDED on even when it is not built.
@@ -709,9 +719,9 @@ if(USE_ROCM)
 
     # Math libraries
     list(APPEND Caffe2_PUBLIC_HIP_DEPENDENCY_LIBS
-      roc::hipblas roc::rocblas hip::hipfft hip::hiprand roc::hipsparse roc::hipsolver roc::hipblaslt roc::rocsolver)
+      roc::hipblas hip::hipfft roc::hipsparse roc::hipsolver roc::rocsolver)
     # hipsparselt is an optional component that will eventually be enabled by default.
-    if(hipsparselt_FOUND)
+    if(hipsparselt_FOUND AND USE_HIPSPARSELT)
       list(APPEND Caffe2_PUBLIC_HIP_DEPENDENCY_LIBS
         roc::hipsparselt
       )
@@ -1219,6 +1229,10 @@ if(USE_KINETO)
     add_subdirectory("${CAFFE2_THIRD_PARTY_ROOT}/nlohmann"
                      "${CMAKE_BINARY_DIR}/third_party/nlohmann")
   endif()
+  apply_third_party_patches(
+      "${CAFFE2_THIRD_PARTY_ROOT}/kineto_patches"
+      "${CAFFE2_THIRD_PARTY_ROOT}/kineto"
+      Kineto)
 
   message(STATUS "Configuring Kineto dependency:")
   message(STATUS "  KINETO_SOURCE_DIR = ${KINETO_SOURCE_DIR}")
@@ -1251,6 +1265,13 @@ if(USE_KINETO)
     unset(_kineto_saved_discovery_mode)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${_kineto_saved_runtime_output_dir}")
     unset(_kineto_saved_runtime_output_dir)
+    if(KINETO_BACKEND STREQUAL "rocm" AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      foreach(_kineto_target kineto_base kineto_api)
+        target_compile_options(
+          ${_kineto_target} PRIVATE
+          "--gcc-install-dir=${PYTORCH_HIP_GCC_INSTALL_DIR}")
+      endforeach()
+    endif()
     set_property(TARGET kineto PROPERTY POSITION_INDEPENDENT_CODE ON)
   endif()
   list(APPEND Caffe2_DEPENDENCY_LIBS kineto)
