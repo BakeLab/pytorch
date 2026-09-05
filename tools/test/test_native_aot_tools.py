@@ -2459,7 +2459,7 @@ class TestCubinLauncher(unittest.TestCase):
 
     def test_the_cubin_is_embedded_and_loaded_once_per_device(self):
         self.assertIn("const unsigned char fakemm_f32_cubin[]", self.SRC)
-        self.assertIn("c10::call_once(fakemm_f32_once[device]", self.SRC)
+        self.assertIn("std::call_once(fakemm_f32_once[device]", self.SRC)
         self.assertIn(
             'nvrtc.cuModuleGetFunction(&fakemm_f32_fn[device], mod, "_fakemm_kernel")',
             self.SRC,
