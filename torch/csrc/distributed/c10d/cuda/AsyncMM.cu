@@ -1,9 +1,9 @@
 #define TORCH_ASSERT_ONLY_METHOD_OPERATORS
 #include <ATen/Dispatch.h>
 #include <ATen/core/Tensor.h>
-#include <ATen/hip/HIPContext.h>
-#include <ATen/hip/nvrtc_stub/ATenNVRTC.h>
-#include <c10/hip/HIPGuard.h>
+#include <ATen/cuda/CUDAContext.h>
+#include <ATen/cuda/nvrtc_stub/ATenNVRTC.h>
+#include <c10/cuda/CUDAGuard.h>
 
 // Two warnings in Cutlass included header files
 

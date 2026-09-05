@@ -8,9 +8,9 @@
 #include <torch/csrc/distributed/c10d/symm_mem/nvshmem_team_manager.hpp>
 
 #include <ATen/ceil_div.h>
-#include <ATen/hip/HIPContext.h>
-#include <c10/hip/HIPCachingAllocator.h>
-#include <c10/hip/HIPGuard.h>
+#include <ATen/cuda/CUDAContext.h>
+#include <c10/cuda/CUDACachingAllocator.h>
+#include <c10/cuda/CUDAGuard.h>
 #include <c10/util/error.h>
 #include <c10/util/flat_hash_map.h>
 
@@ -132,11 +132,11 @@ class NVSHMEMPeerAllocInfo : public c10::intrusive_ptr_target {
       auto rank_to_global_rank_dev =
           reinterpret_cast<int*>(c10::cuda::CUDACachingAllocator::raw_alloc(
               sizeof(int) * world_size_));
-      AT_CUDA_CHECK(hipMemcpy(
+      AT_CUDA_CHECK(cudaMemcpy(
           rank_to_global_rank_dev,
           rank_to_global_rank.data(),
           sizeof(int) * world_size_,
-          hipMemcpyHostToDevice));
+          cudaMemcpyHostToDevice));
       rank_to_global_rank_dev_map[group_name] = rank_to_global_rank_dev;
     }
     auto& rank_to_global_rank = it->second;
@@ -168,13 +168,13 @@ class NVSHMEMPeerAllocInfo : public c10::intrusive_ptr_target {
     signal_pads_dev_ = reinterpret_cast<void**>(
         c10::cuda::CUDACachingAllocator::raw_alloc(arr_size));
 
-    AT_CUDA_CHECK(hipMemcpy(
-        buffers_dev_, buffers_.data(), arr_size, hipMemcpyHostToDevice));
-    AT_CUDA_CHECK(hipMemcpy(
+    AT_CUDA_CHECK(cudaMemcpy(
+        buffers_dev_, buffers_.data(), arr_size, cudaMemcpyHostToDevice));
+    AT_CUDA_CHECK(cudaMemcpy(
         signal_pads_dev_,
         signal_pads_.data(),
         arr_size,
-        hipMemcpyHostToDevice));
+        cudaMemcpyHostToDevice));
 
 #if !defined(USE_ROCM) // Multi-cast is not supported on ROCm yet
     // Initialize multicast address
@@ -399,7 +399,7 @@ static void initialize_nvshmem_with_store(
   c10::cuda::CUDAGuard guard(device_idx);
   maybe_initialize_env_vars();
   // Make sure the CUDA runtime is initialized.
-  hipFree(nullptr);
+  cudaFree(nullptr);
 
   rocshmem::rocshmem_uniqueid_t unique_id;
   NVSHMEM_CHECK(
@@ -458,7 +458,7 @@ class NVSHMEMSymmetricMemoryAllocator : public SymmetricMemoryAllocator {
     TORCH_CHECK(alloc_base != nullptr, "rocshmem::rocshmem_malloc failed");
     // Zero the signal pad (at the front, [0, buffer_offset)) for the signaling
     // protocol.
-    AT_CUDA_CHECK(hipMemset(alloc_base, 0, buffer_offset));
+    AT_CUDA_CHECK(cudaMemset(alloc_base, 0, buffer_offset));
     // Hand back the data buffer pointer, not alloc_base; the signal pad stays
     // hidden in front. Returning the data ptr is safe for free(): the whole
     // block is owned by the NVSHMEMAllocation keyed below, which rocshmem::rocshmem_free's

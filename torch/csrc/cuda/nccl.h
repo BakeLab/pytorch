@@ -1,7 +1,7 @@
 #pragma once
 
 #include <ATen/ATen.h>
-#include <ATen/hip/HIPContext.h>
+#include <ATen/cuda/CUDAContext.h>
 
 #include <cstddef>
 #include <optional>

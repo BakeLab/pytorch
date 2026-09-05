@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <unordered_set>
 
-#include <c10/hip/HIPGuard.h>
+#include <c10/cuda/CUDAGuard.h>
 
 namespace c10d::nccl2 {
 

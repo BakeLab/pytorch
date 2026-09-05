@@ -253,7 +253,7 @@ AOTI_TORCH_EXPORT AOTITorchError
 torch_delete_stable_ivalue(StableIValue* value);
 
 /// Retrieves the underlying Stream's backend-specific non-owning stream handle
-/// (e.g. `hipStream_t` for CUDA). Returns a void* that can be `static_cast`ed
+/// (e.g. `cudaStream_t` for CUDA). Returns a void* that can be `static_cast`ed
 /// accordingly.
 AOTI_TORCH_EXPORT AOTITorchError
 torch_stream_native_handle(StreamHandle stream, void** ret_native_handle);

@@ -1,7 +1,7 @@
 #ifndef THCP_EVENT_INC
 #define THCP_EVENT_INC
 
-#include <ATen/hip/HIPEvent.h>
+#include <ATen/cuda/CUDAEvent.h>
 #include <torch/csrc/Event.h>
 #include <torch/csrc/python_headers.h>
 

@@ -726,7 +726,7 @@ class AOTInductorModelBase {
         model->const_run_impl(stream, proxy_executor, initialization);
 
     // const_run_impl returns owning raw AtenTensorHandles in the map. The
-    // fallible calls below (hipEventRecord / XPU barrier /
+    // fallible calls below (cudaEventRecord / XPU barrier /
     // wait_for_completion) can throw; without cleanup the map's destructor
     // drops those raw handles without freeing the underlying tensors, leaking
     // folded-constant GPU memory (the container catches and keeps serving, so

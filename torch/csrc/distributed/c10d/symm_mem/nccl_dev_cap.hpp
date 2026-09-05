@@ -2,7 +2,7 @@
 
 #if USE_NCCL
 
-#include <rccl/rccl.h>
+#include <nccl.h>
 
 #if defined(__noinline__)
 #undef __noinline__

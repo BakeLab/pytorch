@@ -1,7 +1,6 @@
-#include <hip/hip_runtime.h>
-#include <c10/hip/HIPGuard.h>
+#include <c10/cuda/CUDAGuard.h>
 #include <ATen/Dispatch.h>
-#include <ATen/hip/HIPContext.h>
+#include <ATen/cuda/CUDAContext.h>
 #include <torch/csrc/distributed/c10d/NCCLUtils.hpp>
 #include <torch/csrc/distributed/c10d/symm_mem/macros.hpp>
 #include <torch/csrc/distributed/c10d/symm_mem/nccl_dev_cap.hpp>

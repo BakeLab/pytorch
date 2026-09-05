@@ -1,7 +1,6 @@
-#include <hip/hip_runtime.h>
 #include <dlfcn.h>
 #include <ATen/ceil_div.h>
-#include <c10/hip/HIPGuard.h>
+#include <c10/cuda/CUDAGuard.h>
 
 #include <torch/csrc/distributed/c10d/symm_mem/env.hpp>
 #include <torch/csrc/distributed/c10d/symm_mem/macros.hpp>
@@ -12,8 +11,8 @@
 #include <torch/csrc/distributed/c10d/symm_mem/SymmetricMemory.hpp>
 #include <torch/custom_class.h>
 
-// Use torch's cub wrapper instead of CUDA's <hipcub/hipcub.hpp>, see #55292
-#include <ATen/hip/cub.cuh>
+// Use torch's cub wrapper instead of CUDA's <cub/cub.cuh>, see #55292
+#include <ATen/cuda/cub.cuh>
 
 // NVSHMEM minimum SM arch
 #define _NVSHMEM_MIN_SM_ARCH 700
@@ -70,10 +69,10 @@ bool is_nvshmem_available() {
   return is_available == 1;
 }
 
-// Initializes the device state in hipModule_t so that it’s able to perform NVSHMEM
+// Initializes the device state in CUmodule so that it’s able to perform NVSHMEM
 // operations.
 void nvshmemx_cumodule_init(uintptr_t module) {
-  auto cumodule = reinterpret_cast<hipModule_t>(module);
+  auto cumodule = reinterpret_cast<CUmodule>(module);
   NVSHMEM_CHECK(
     ::nvshmemx_cumodule_init(cumodule),
     "nvshmemx_cumodule_init failed");

@@ -1,6 +1,7 @@
-#include <ATen/hip/HIPContextLight.h>
-#include <c10/hip/HIPException.h>
-#include <c10/hip/HIPStream.h>
+#include <ATen/cuda/CUDAContextLight.h>
+#include <ATen/cuda/CUDABlasHandle.h>
+#include <c10/cuda/CUDAException.h>
+#include <c10/cuda/CUDAStream.h>
 #include <c10/util/Exception.h>
 #include <torch/csrc/inductor/aoti_torch/utils.h>
 #include <torch/csrc/stable/c/shim.h>
@@ -27,7 +28,7 @@ AOTITorchError torch_get_current_cuda_blas_handle(void** ret_handle) {
   AOTI_TORCH_CONVERT_EXCEPTION_TO_ERROR_CODE({
     // Internal ATen operations restore the handle's default workspace before
     // releasing their eager workspace allocations.
-    *(hipblasHandle_t*)(ret_handle) = at::cuda::getCurrentCUDABlasHandle();
+    *(cublasHandle_t*)(ret_handle) = at::cuda::getCurrentCUDABlasHandle();
   });
 }
 
@@ -36,7 +37,7 @@ AOTITorchError torch_set_current_cuda_stream(
     int32_t device_index) {
   AOTI_TORCH_CONVERT_EXCEPTION_TO_ERROR_CODE({
     at::cuda::setCurrentCUDAStream(at::cuda::getStreamFromExternal(
-        static_cast<hipStream_t>(stream), device_index));
+        static_cast<cudaStream_t>(stream), device_index));
   });
 }
 
@@ -45,7 +46,7 @@ AOTITorchError torch_get_cuda_stream_from_pool(
     int32_t device_index,
     void** ret_stream) {
   AOTI_TORCH_CONVERT_EXCEPTION_TO_ERROR_CODE({
-    *(hipStream_t*)(ret_stream) =
+    *(cudaStream_t*)(ret_stream) =
         at::cuda::getStreamFromPool(isHighPriority, device_index);
   });
 }
@@ -55,7 +56,7 @@ AOTITorchError torch_cuda_stream_synchronize(
     int32_t device_index) {
   AOTI_TORCH_CONVERT_EXCEPTION_TO_ERROR_CODE({
     at::cuda::getStreamFromExternal(
-        static_cast<hipStream_t>(stream), device_index)
+        static_cast<cudaStream_t>(stream), device_index)
         .synchronize();
   });
 }

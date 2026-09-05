@@ -2,7 +2,7 @@
 #include <torch/csrc/distributed/c10d/symm_mem/NVSHMEMSymmetricMemoryKernels.hpp>
 #include <torch/csrc/distributed/c10d/symm_mem/SymmetricMemory.hpp>
 
-#include <ATen/hip/HIPContext.h>
+#include <ATen/cuda/CUDAContext.h>
 
 #include <algorithm>
 

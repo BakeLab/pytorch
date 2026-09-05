@@ -7,8 +7,8 @@
 #include <optional>
 #include <vector>
 
-#include <hip/hip_runtime.h>
-#include <rccl/rccl.h>
+#include <cuda_runtime.h>
+#include <nccl.h>
 
 #if defined(__noinline__)
 #undef __noinline__

@@ -18,7 +18,7 @@ namespace torch::autograd {
 // capture. Autograd nodes snapshot the current stream at construction time.
 // If a node was created on a non-capturing stream (e.g. during warmup) but
 // backward runs under capture on a different stream, the engine would issue
-// hipStreamWaitEvent on the stale stream, pulling it into the capture.
+// cudaStreamWaitEvent on the stale stream, pulling it into the capture.
 //
 // Three possible outcomes, depending on global state:
 //   1. If overrideStaleCaptureStream() is true, returns capturing_stream

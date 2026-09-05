@@ -1,8 +1,8 @@
 #pragma once
 
-#include <c10/hip/HIPCachingAllocator.h>
-#include <c10/hip/HIPException.h>
-#include <c10/hip/HIPGuard.h>
+#include <c10/cuda/CUDACachingAllocator.h>
+#include <c10/cuda/CUDAException.h>
+#include <c10/cuda/CUDAGuard.h>
 #include <c10/util/Exception.h>
 #include <string>
 #include <unordered_map>
@@ -82,11 +82,11 @@ class TeamManager {
     if (pool_updated) {
       TORCH_INTERNAL_ASSERT(team_pool.size() == MAX_N_TEAMS);
       auto stream = at::cuda::getCurrentCUDAStream();
-      C10_CUDA_CHECK(hipMemcpyAsync(
+      C10_CUDA_CHECK(cudaMemcpyAsync(
           team_pool_dev,
           team_pool.data(),
           pool_bytes,
-          hipMemcpyHostToDevice,
+          cudaMemcpyHostToDevice,
           stream));
     }
     return std::make_pair(std::cref(team_pool), team_pool_dev);
@@ -97,9 +97,9 @@ class TeamManager {
     // Note that we do it in a best effort manner because the team pool is
     // managed by a static TeamManager and the destruction order of static
     // objects is undetermined. If the destructor is called after the CUDA
-    // context is destroyed, hipFree would fail.
+    // context is destroyed, cudaFree would fail.
     try {
-      // hipFree generally implies a device synchronization, meaning it will
+      // cudaFree generally implies a device synchronization, meaning it will
       // block until all preceding CUDA operations on the device have completed
       // before freeing the memory. Thus we don't need to worry about freeing
       // the memory before CUDA kernels complete.
@@ -155,7 +155,9 @@ class TeamManager {
           nullptr,
           0,
           &team);
-      TORCH_CHECK(team != rocshmem::ROCSHMEM_TEAM_INVALID, "Failed to create a new team");
+      TORCH_CHECK(
+          team != rocshmem::ROCSHMEM_TEAM_INVALID,
+          "Failed to create a new team");
       team_pool[i] = team;
       pool_updated = true;
     }
@@ -168,7 +170,8 @@ class TeamManager {
   // A map from group name to team pool for that group.
   std::unordered_map<std::string, TeamPool> group_name_to_team_pool_;
   // A map from group name to team pool array in device memory.
-  std::unordered_map<std::string, rocshmem::rocshmem_team_t*> team_pool_devptrs_;
+  std::unordered_map<std::string, rocshmem::rocshmem_team_t*>
+      team_pool_devptrs_;
 };
 
 } // namespace c10d::nvshmem_extension

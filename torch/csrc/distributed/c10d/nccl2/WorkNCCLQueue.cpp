@@ -115,7 +115,7 @@ WorkNCCL::WorkStatus WorkNCCLQueue::finalize() {
 
 void WorkNCCLQueue::enqueueWork(
     const c10::intrusive_ptr<WorkNCCL>& work,
-    hipStream_t stream) {
+    cudaStream_t stream) {
   std::queue<std::shared_ptr<WorkNCCL::InputTensorShelf>> completedInputTensors;
   {
     std::lock_guard<std::mutex> lock(work_queues_mutex_);

@@ -13,7 +13,7 @@
 #include <ATen/ATen.h>
 #include <torch/csrc/distributed/c10d/Store.hpp>
 
-#include <rccl/rccl.h>
+#include <nccl.h>
 #include <torch/csrc/distributed/c10d/nccl2/NcclApi.hpp>
 
 namespace c10d::nccl2 {

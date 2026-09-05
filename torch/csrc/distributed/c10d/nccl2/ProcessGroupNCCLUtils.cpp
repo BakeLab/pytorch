@@ -5,8 +5,8 @@
 #include <algorithm>
 #include <torch/csrc/distributed/c10d/nccl2/ProcessGroupNCCL.hpp>
 
-#include <c10/hip/HIPGraphsC10Utils.h>
-#include <rccl/rccl.h>
+#include <c10/cuda/CUDAGraphsC10Utils.h>
+#include <nccl.h>
 #include <torch/csrc/distributed/c10d/nccl2/Logging.hpp>
 #include <torch/csrc/distributed/c10d/nccl2/NCCLCachingAllocatorHook.hpp>
 #include <algorithm>
@@ -269,7 +269,7 @@ void ProcessGroupNCCL::timeoutWatchdog() noexcept {
   // abort paths that can throw; swallow here so nothing escapes this thread.
   try {
     c10::cuda::CUDAStreamCaptureModeGuard capture_mode_guard(
-        hipStreamCaptureModeThreadLocal);
+        cudaStreamCaptureModeThreadLocal);
     while (!shutdown_) {
       {
         std::unique_lock<std::mutex> lock(timeout_mutex_);
@@ -406,7 +406,7 @@ bool ProcessGroupNCCL::getGraphCaptureMode() {
 }
 
 c10::intrusive_ptr<WorkNCCL> ProcessGroupNCCL::createWork(
-    hipStream_t stream,
+    cudaStream_t stream,
     std::chrono::milliseconds timeout,
     const std::vector<at::Tensor>& inputTensors) {
   // Only create the work object without enqueuing it
@@ -419,7 +419,7 @@ c10::intrusive_ptr<WorkNCCL> ProcessGroupNCCL::createWork(
 }
 
 c10::intrusive_ptr<WorkNCCL> ProcessGroupNCCL::createWork(
-    hipStream_t stream,
+    cudaStream_t stream,
     std::chrono::milliseconds timeout,
     const at::Tensor& inputTensor) {
   // Single-tensor overload to avoid vector allocation
@@ -455,7 +455,7 @@ void ProcessGroupNCCL::addEphemeralTimeout(
 
 void ProcessGroupNCCL::enqueueWork(
     const c10::intrusive_ptr<WorkNCCL>& work,
-    hipStream_t stream) {
+    cudaStream_t stream) {
   // In graph capture mode, keep the completion state and events alive until
   // the graph gets destroyed, organized per graph.
   if (getGraphCaptureMode()) {
@@ -499,7 +499,7 @@ void ProcessGroupNCCL::graphCleanupCallback(void* userData) {
   delete cleanup_data;
 }
 
-hipStream_t ProcessGroupNCCL::getOperationStream(bool async_op) {
+cudaStream_t ProcessGroupNCCL::getOperationStream(bool async_op) {
   c10::cuda::CUDAGuard gpuGuard(device_);
   if (async_op) {
     auto current_stream = at::cuda::getCurrentCUDAStream(device_.index());
