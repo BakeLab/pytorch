@@ -1,0 +1,20 @@
+diff --git a/src/ATen/native/xpu/sycl/RreluWithNoiseKernels.cpp b/src/ATen/native/xpu/sycl/RreluWithNoiseKernels.cpp
+index d7815436..869038d9 100644
+--- a/src/ATen/native/xpu/sycl/RreluWithNoiseKernels.cpp
++++ b/src/ATen/native/xpu/sycl/RreluWithNoiseKernels.cpp
+@@ -11,6 +11,7 @@
+ #include <ATen/Dispatch.h>
+ #include <ATen/native/Math.h>
+ #include <ATen/native/Resize.h>
++#include <ATen/native/RreluUtils.h>
+ #include <ATen/native/TensorIterator.h>
+ #include <ATen/native/xpu/sycl/DistributionTemplates.h>
+ #include <ATen/xpu/XPUGeneratorImpl.h>
+@@ -170,6 +171,7 @@ Tensor& rrelu_with_noise_kernel(
+     bool training,
+     std::optional<Generator> generator,
+     Tensor& output) {
++  check_rrelu_with_noise_inputs(self, noise, training);
+   at::native::resize_output(output, self.sizes());
+ 
+   if (self.numel() == 0) {
