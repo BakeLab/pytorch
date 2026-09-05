@@ -3,6 +3,7 @@
 #include <ATen/cuda/CUDAGeneratorImpl.h>
 #include <ATen/native/cuda/DistributionTemplates.h>
 #include <ATen/native/Resize.h>
+#include <ATen/native/RreluUtils.h>
 
 #include <ATen/ops/empty_like.h>
 #include <ATen/ops/leaky_relu.h>
@@ -137,6 +138,7 @@ Tensor& rrelu_with_noise_out_cuda(const Tensor& self,
     bool training,
     std::optional<Generator> generator,
     Tensor& output) {
+  check_rrelu_with_noise_inputs(self, noise, training);
   at::native::resize_output(output, self.sizes());
 
   if (self.numel() == 0) {
