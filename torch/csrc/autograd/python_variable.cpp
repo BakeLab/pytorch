@@ -1632,7 +1632,6 @@ py::object dispatchDTensorOp(
   const bool is_out_variant_op = !is_inplace_op &&
       std::ranges::any_of(
           schema_arguments,
-
           [](const c10::Argument& argument) { return argument.is_out(); });
 
   // Fast path for default or view ops.
@@ -2518,7 +2517,6 @@ create_native_op_schema(
             op.schema().arguments()[underlying_index].name();
         if (std::ranges::find(
                 static_kwarg_names,
-
                 kwarg_name) == static_kwarg_names.end()) {
           continue;
         }
