@@ -1,10 +1,13 @@
 #include <ATen/core/Dict.h>
 #include <ATen/core/jit_type.h>
 #include <c10/macros/Macros.h>
-#include <c10/util/irange.h>
+#include <algorithm>
 #include <ostream>
 #include <sstream>
 #include <utility>
+
+#include <ATen/core/functional.h>
+#include <ranges>
 
 namespace c10 {
 
@@ -25,12 +28,10 @@ ListTypePtr ListType::ofOptionalTensors() {
 namespace {
 
 std::optional<TypePtr> subtractTypeSetFrom(std::vector<TypePtr>& to_subtract, ArrayRef<TypePtr> from) {
-  std::vector<TypePtr> types;
-
   // Given a TypePtr `lhs`, this function says whether or not `lhs` (or
   // one of its parent types) is in the `to_subtract` vector
   auto should_subtract = [&](const TypePtr& lhs) -> bool {
-    return std::any_of(to_subtract.begin(), to_subtract.end(),
+    return std::ranges::any_of(to_subtract,
                         [&](const TypePtr& rhs) {
                           return lhs->isSubtypeOf(*rhs);
                         });
@@ -38,12 +39,7 @@ std::optional<TypePtr> subtractTypeSetFrom(std::vector<TypePtr>& to_subtract, Ar
 
   // Copy all the elements that should NOT be subtracted to the `types`
   // vector
-  types.reserve(from.size());
-  std::copy_if(from.begin(), from.end(),
-              std::back_inserter(types),
-              [&](const TypePtr& t) {
-                return !should_subtract(t);
-              });
+  auto types = c10::filter(from, [&](const TypePtr& t) { return !should_subtract(t); });
 
   if (types.empty()) {
     return std::nullopt;
@@ -137,7 +133,7 @@ static void sortUnion(std::vector<TypePtr>* types) {
   // UnionType objects for equality in the future. Note that this order
   // is guaranteed to be stable since we've already coalesced any
   // possible types
-  std::sort(types->begin(), types->end(),
+  std::ranges::sort(*types,
           [](const TypePtr& a, const TypePtr& b) -> bool {
             if (a->kind() != b->kind()) {
               return a->kind() < b->kind();
@@ -198,8 +194,8 @@ UnionType::UnionType(std::vector<TypePtr> reference, TypeKind kind) : SharedType
     std::stringstream msg;
     msg << "After type unification was performed, the Union with the "
         << "original types {";
-    for (const auto i : c10::irange(reference.size())) {
-      msg << reference[i]->repr_str();
+    for (auto&& [i, reference_elem] : std::views::enumerate(reference)) {
+      msg << reference_elem->repr_str();
       if (i > 0) {
         msg << ',';
       }
@@ -298,14 +294,11 @@ bool UnionType::equals(const Type& rhs) const {
     }
     // Check that all the types in `this->types_` are also in
     // `union_rhs->types_`
-    return std::all_of(this->containedTypes().begin(), this->containedTypes().end(),
-                       [&](TypePtr lhs_type) {
-                         return std::any_of(union_rhs->containedTypes().begin(),
-                                            union_rhs->containedTypes().end(),
-                                            [&](const TypePtr& rhs_type) {
-                                              return *lhs_type == *rhs_type;
-                                            });
-                       });
+    return std::ranges::all_of(containedTypes(), [&](const TypePtr& lhs_type) {
+      return std::ranges::any_of(
+          union_rhs->containedTypes(),
+          [&](const TypePtr& rhs_type) { return *lhs_type == *rhs_type; });
+    });
   } else if (auto optional_rhs = rhs.cast<OptionalType>()) {
     if (optional_rhs->getElementType() == NumberType::get()) {
       return this->containedTypes().size() == 4
@@ -335,23 +328,20 @@ bool UnionType::isSubtypeOfExt(const Type& rhs, std::ostream* why_not) const {
     rhs_types.push_back(NoneType::get().get());
     if (optional_rhs->getElementType() == NumberType::get()) {
       std::array<const Type*, 3> number_types{IntType::get().get(), FloatType::get().get(), ComplexType::get().get()};
-      rhs_types.insert(rhs_types.end(), number_types.begin(), number_types.end());
+      rhs_types.append_range(number_types);
     } else {
       rhs_types.push_back(optional_rhs->getElementType().get());
     }
   } else if (const auto number_rhs = rhs.cast<NumberType>()) {
     std::array<const Type*, 3> number_types{IntType::get().get(), FloatType::get().get(), ComplexType::get().get()};
-    rhs_types.insert(rhs_types.end(), number_types.begin(), number_types.end());
+    rhs_types.append_range(number_types);
   } else {
     rhs_types.push_back(&rhs);
   }
-  return std::all_of(this->containedTypes().begin(), this->containedTypes().end(),
-                     [&](const TypePtr& lhs_type) -> bool {
-                      return std::any_of(rhs_types.begin(),
-                                         rhs_types.end(),
-                                         [&](const Type* rhs_type) -> bool {
-                                           return lhs_type->isSubtypeOfExt(*rhs_type, why_not);
-                                         });
+  return std::ranges::all_of(containedTypes(), [&](const TypePtr& lhs_type) {
+    return std::ranges::any_of(rhs_types, [&](const Type* rhs_type) {
+      return lhs_type->isSubtypeOfExt(*rhs_type, why_not);
+    });
   });
 }
 
@@ -418,10 +408,8 @@ bool UnionType::canHoldType(const Type& type) const {
            && canHoldType(*FloatType::get())
            && canHoldType(*ComplexType::get());
   } else {
-    return std::any_of(this->containedTypes().begin(), this->containedTypes().end(),
-                    [&](const TypePtr& inner) {
-                      return type.isSubtypeOf(*inner);
-                    });
+    return std::ranges::any_of(
+        containedTypes(), [&](const TypePtr& inner) { return type.isSubtypeOf(*inner); });
   }
 }
 

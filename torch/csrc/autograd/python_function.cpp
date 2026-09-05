@@ -36,6 +36,8 @@
 #include <utility>
 #include <vector>
 
+#include <ranges>
+
 using namespace torch;
 using namespace torch::autograd;
 using at::Tensor;
@@ -83,11 +85,11 @@ PyObject* materialize_needs_input_grad(THPFunction* self) {
   if (!result) {
     return nullptr;
   }
-  for (const auto i : c10::irange(needs_input_grad_bits.size())) {
+  for (auto&& [i, needs_input_grad_bit] : std::views::enumerate(needs_input_grad_bits)) {
     PyTuple_SET_ITEM(
         result.get(),
         static_cast<Py_ssize_t>(i),
-        Py_NewRef(needs_input_grad_bits[i] ? Py_True : Py_False));
+        Py_NewRef(needs_input_grad_bit ? Py_True : Py_False));
   }
   self->needs_input_grad = result.release();
   self->needs_input_grad_bits.reset();
@@ -858,8 +860,7 @@ static void _wrap_outputs(
         const auto& raw_output_var = raw_output_vars[i];
         TORCH_INTERNAL_ASSERT(raw_output_var.has_value());
         bool is_differentiable =
-            non_differentiable.count(raw_output_var->unsafeGetTensorImpl()) ==
-                0 &&
+            !non_differentiable.contains(raw_output_var->unsafeGetTensorImpl()) &&
             isDifferentiableType(raw_output_var->scalar_type());
         bool use_zeros_like =
             is_differentiable && num_outputs > 1 && wrapped_output->is_nested();
@@ -968,7 +969,7 @@ static void _save_variables(
       self->saved_variables.emplace_back();
     } else {
       bool is_output =
-          output_impls.count(opt_tensor.value().unsafeGetTensorImpl()) > 0;
+          output_impls.contains(opt_tensor.value().unsafeGetTensorImpl());
       self->saved_variables.emplace_back(opt_tensor.value(), is_output);
     }
   }

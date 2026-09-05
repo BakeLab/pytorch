@@ -851,7 +851,6 @@ std::vector<c10::cuda::CUDACachingAllocator::SegmentInfo> poolSegments(
   auto snapshot = c10::cuda::CUDACachingAllocator::snapshot(id);
   std::ranges::sort(
       snapshot.segments,
-
       [](const auto& a, const auto& b) {
         return a.registration_counter < b.registration_counter;
       });
@@ -918,7 +917,7 @@ void ProcessGroupNCCL::registerMemPool(at::cuda::MemPool* pool, bool symm) {
       // The allocator hook normally registered this segment already; only the
       // ones it could not reach (allocated while the comm was down, or
       // deregistered by an earlier deregisterMemPool) are left to do here.
-      if (!memoryRegistrationHandles_.count(addr)) {
+      if (!memoryRegistrationHandles_.contains(addr)) {
         registerAddressLocked(addr, segment.total_size);
       }
     }

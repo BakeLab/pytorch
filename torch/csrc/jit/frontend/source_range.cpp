@@ -1,5 +1,6 @@
 #include <c10/util/irange.h>
 #include <torch/csrc/jit/frontend/source_range.h>
+#include <algorithm>
 #include <functional>
 #include <iostream>
 #include <regex>
@@ -72,7 +73,7 @@ size_t StringCordView::find_regex(const std::string& tok, size_t start) const {
 
 StringCordView StringCordView::substr(size_t start, size_t size) const {
   std::vector<std::string_view> pieces;
-  std::vector<std::shared_ptr<std::string>> ownerships;
+  auto ownerships = owned_strings_;
   if (start >= this->size()) {
     // out of bounds
     return StringCordView();
@@ -103,10 +104,6 @@ StringCordView StringCordView::substr(size_t start, size_t size) const {
   }
 
   // share ownership
-  std::copy(
-      owned_strings_.begin(),
-      owned_strings_.end(),
-      std::back_inserter(ownerships));
 
   return StringCordView(std::move(pieces), std::move(ownerships));
 }
@@ -115,18 +112,18 @@ bool StringCordView::operator==(const std::string& rhs) const {
   if (size() != rhs.size()) {
     return false;
   }
-  auto res = std::mismatch(begin(), end(), rhs.begin(), rhs.end());
+  auto res = std::ranges::mismatch(*this, rhs);
   // both need to exhaust
-  return res.first == end() && res.second == rhs.end();
+  return res.in1 == end() && res.in2 == rhs.end();
 }
 
 bool StringCordView::operator==(const StringCordView& rhs) const {
   if (size() != rhs.size()) {
     return false;
   }
-  auto res = std::mismatch(begin(), end(), rhs.begin(), rhs.end());
+  auto res = std::ranges::mismatch(*this, rhs);
   // both need to exhaust
-  return res.first == end() && res.second == rhs.end();
+  return res.in1 == end() && res.in2 == rhs.end();
 }
 
 StringCordView::Iterator StringCordView::iter_for_pos(size_t pos) const {
@@ -162,9 +159,8 @@ StringCordView::IteratorImpl& StringCordView::IteratorImpl::operator+=(
     *this = str_->end_impl();
     return *this;
   }
-  auto upper = std::upper_bound(
-      str_->accumulated_sizes_.begin(),
-      str_->accumulated_sizes_.end(),
+  auto upper = std::ranges::upper_bound(
+      str_->accumulated_sizes_,
       target_abs_pos);
   if (upper == str_->accumulated_sizes_.end()) {
     *this = str_->end_impl();

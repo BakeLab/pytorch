@@ -197,7 +197,7 @@ struct OperatorRegistry {
     std::shared_lock<std::shared_mutex> reader(lock);
     std::vector<std::shared_ptr<Operator>> values;
     for (const auto& kv : operators) {
-      values.insert(values.end(), kv.second.begin(), kv.second.end());
+      values.append_range(kv.second);
     }
     return values;
   }
@@ -414,12 +414,10 @@ std::vector<std::shared_ptr<Operator>> getAllSortedOperatorsFor(Symbol name) {
   sortedOps.reserve(unsortedOps.size());
   std::ranges::copy_if(
       unsortedOps,
-
       std::back_inserter(sortedOps),
       [](const std::shared_ptr<Operator>& op) { return op->isC10Op(); });
   std::ranges::copy_if(
       unsortedOps,
-
       std::back_inserter(sortedOps),
       [](const std::shared_ptr<Operator>& op) { return !op->isC10Op(); });
   return sortedOps;

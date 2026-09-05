@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ATen/ATen.h>
+#include <ATen/core/functional.h>
 #include <c10/util/Exception.h>
 #include <c10/util/accumulate.h>
 #include <c10/util/env.h>
@@ -21,6 +22,8 @@
 #include <functional>
 #include <string>
 #include <vector>
+
+#include <ranges>
 
 namespace c10d {
 
@@ -43,11 +46,11 @@ TORCH_API size_t getTensorsNumel(const std::vector<at::Tensor>& tensors);
 inline std::string toString(at::IntArrayRef l) {
   std::stringstream ss;
   ss << '(';
-  for (const auto i : c10::irange(l.size())) {
+  for (auto&& [i, l_elem] : std::views::enumerate(l)) {
     if (i > 0) {
       ss << ", ";
     }
-    ss << l[i];
+    ss << l_elem;
   }
   ss << ')';
   return std::move(ss).str();
@@ -455,18 +458,6 @@ inline void assertTypeAndSizesMatch(
   assertTypeAndSizesMatch(fn, tensors.slice(1), options, sizes);
 }
 
-// Copied from ATen/core/functional.h.
-template <typename F, typename T>
-inline auto fmap(T& inputs, const F& fn)
-    -> std::vector<decltype(fn(*inputs.begin()))> {
-  std::vector<decltype(fn(*inputs.begin()))> r;
-  r.reserve(inputs.size());
-  for (auto& input : inputs) {
-    r.push_back(fn(input));
-  }
-  return r;
-}
-
 // Copied from torch/csrc/utils/tensor_flatten.h.
 inline at::Tensor flattenDenseTensors(at::TensorList tensors) {
   static const auto flatten = [](const at::Tensor& t) {
@@ -475,7 +466,7 @@ inline at::Tensor flattenDenseTensors(at::TensorList tensors) {
   if (tensors.size() == 1) {
     return flatten(tensors[0]);
   }
-  return at::cat(::c10d::fmap(tensors, flatten));
+  return at::cat(c10::fmap(tensors, flatten));
 }
 
 inline at::Tensor newLikeFlat(

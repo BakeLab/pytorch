@@ -34,6 +34,8 @@
 #include <torch/csrc/distributed/c10d/symm_mem/nccl_devcomm_manager.hpp>
 #include <optional>
 
+#include <ranges>
+
 namespace c10d {
 
 constexpr const char* const kNCCLAbortedCommStoreKey = "NCCLABORTEDCOMM";
@@ -451,7 +453,7 @@ std::ostream& operator<<(
 
 void TensorShelf::stash(std::vector<at::Tensor>& tensors) {
   std::lock_guard<std::mutex> lock(mutex_);
-  tVector_.insert(tVector_.end(), tensors.begin(), tensors.end());
+  tVector_.append_range(tensors);
 }
 
 void TensorShelf::stash(TensorShelf& other) {
@@ -1113,7 +1115,6 @@ void ProcessGroupNCCL::registerMemPool(at::cuda::MemPool* pool, bool symm) {
   auto snapshot = c10::cuda::CUDACachingAllocator::snapshot(pool->id());
   std::ranges::sort(
       snapshot.segments,
-
       [](const SegmentInfo& a, const SegmentInfo& b) {
         return a.registration_counter < b.registration_counter;
       });
@@ -1145,8 +1146,7 @@ void ProcessGroupNCCL::deregisterMemPool(at::cuda::MemPool* pool) {
         DistBackendError,
         "NCCL communicator has not been initialized before mem pool creation. You can pass `device_id` to init_process_group -- one way of eager initialization -- to work around this issue");
   }
-  bool symm;
-  {
+  const bool symm = [&] {
     std::lock_guard<std::mutex> lock(ncclCommMemPoolMapMutex);
     auto iter = ncclCommMemPoolMap.find(ncclComm);
     auto mempool_it = std::find_if(
@@ -1156,9 +1156,10 @@ void ProcessGroupNCCL::deregisterMemPool(at::cuda::MemPool* pool) {
     TORCH_CHECK(
         mempool_it != iter->second.end(),
         "Trying to unregister not previously registered pool");
-    symm = std::get<1>(*mempool_it);
+    const bool is_symm = std::get<1>(*mempool_it);
     iter->second.erase(mempool_it);
-  }
+    return is_symm;
+  }();
   auto snapshot = c10::cuda::CUDACachingAllocator::snapshot(pool->id());
   for (const auto& segmentInfo : snapshot.segments) {
     TORCH_INTERNAL_ASSERT(
@@ -1265,14 +1266,12 @@ c10::intrusive_ptr<Backend> ProcessGroupNCCL::split(
       " has no device is bound to this rank.");
   auto device = at::Device(at::DeviceType::CUDA, deviceIdx);
   auto it = std::ranges::find(ranks, rank_);
-  int groupRank;
   if (it == ranks.end()) {
     // This rank is not in the new group, so no_color split should be called
     performNocolorSplit(device);
     return nullptr;
-  } else {
-    groupRank = std::distance(ranks.begin(), it);
   }
+  const auto groupRank = static_cast<int>(std::distance(ranks.begin(), it));
 
   auto ncclOpts = c10::dynamic_intrusive_pointer_cast<Options>(opts);
   TORCH_CHECK(ncclOpts != nullptr, "opts not a ProcessGroupNCCL::Options.");
@@ -2114,8 +2113,7 @@ void ProcessGroupNCCL::Watchdog::run() {
     // This condition is triggered when any routine in watchdog gets an
     // exception
     pg_->dumpExtraDebuggingInfo();
-    if (std::string(e.what()).find("driver shutting down") !=
-        std::string::npos) {
+    if (std::string(e.what()).contains("driver shutting down")) {
       VLOG(2)
           << pg_->logPrefix()
           << "main process destroyed cuda before watchdog loop exited, terminating watchdog."
@@ -2729,8 +2727,7 @@ void ProcessGroupNCCL::runHookLoop() {
         it = completedWorkList_.erase(it);
       }
     } catch (std::exception& e) {
-      if (std::string(e.what()).find("driver shutting down") !=
-          std::string::npos) {
+      if (std::string(e.what()).contains("driver shutting down")) {
         LOG(INFO)
             << logPrefix()
             << "main process destroyed cuda before runHookLoop exited, terminating runHookLoop."
@@ -2950,7 +2947,7 @@ void ProcessGroupNCCL::allgatherUniqueNCCLIDs(
 
 void ProcessGroupNCCL::destroyNCCLComms(const std::string& devNCCLCommMapKey) {
   std::lock_guard<std::mutex> lock(mutex_);
-  if (devNCCLCommMap_.find(devNCCLCommMapKey) == devNCCLCommMap_.end()) {
+  if (!devNCCLCommMap_.contains(devNCCLCommMapKey)) {
     TORCH_INTERNAL_ASSERT(
         false,
         "Expected to find key ",
@@ -3297,7 +3294,7 @@ int64_t ProcessGroupNCCL::getCommPtr() {
 std::shared_ptr<NCCLComm> ProcessGroupNCCL::getNCCLComm(
     const std::string& deviceKey) {
   std::lock_guard<std::mutex> lock(mutex_);
-  if (devNCCLCommMap_.find(deviceKey) != devNCCLCommMap_.end()) {
+  if (devNCCLCommMap_.contains(deviceKey)) {
     // Reuse the cached communicator if there is one.
     return devNCCLCommMap_[deviceKey];
   }
@@ -4916,9 +4913,9 @@ c10::intrusive_ptr<Work> ProcessGroupNCCL::allgather(
           }
           // Copy the flattened output tensors to the outputs.
           at::cuda::CUDAStreamGuard guard(ncclStream);
-          for (const auto j : c10::irange(outputTensors_.size())) {
+          for (auto&& [j, outputTensor] : std::views::enumerate(outputTensors_)) {
             // See [We actually don't need to stash anything here].
-            outputTensors_[j].copy_(
+            outputTensor.copy_(
                 outputFlattened[static_cast<int64_t>(j)], true);
           }
         },
@@ -5076,9 +5073,9 @@ c10::intrusive_ptr<Work> ProcessGroupNCCL::reduce_scatter(
           }
           // Copy the input tensors to the flattened inputs.
           at::cuda::CUDAStreamGuard guard(ncclStream);
-          for (const auto j : c10::irange(inputTensors_.size())) {
+          for (auto&& [j, inputTensor] : std::views::enumerate(inputTensors_)) {
             inputFlattened[static_cast<int64_t>(j)].copy_(
-                inputTensors_[j], true);
+                inputTensor, true);
           }
         },
         [&](at::cuda::CUDAStream&,

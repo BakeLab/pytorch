@@ -20,6 +20,7 @@
 #include <ATen/VmapGeneratedPlumbing.h>
 
 #include <c10/util/irange.h>
+#include <algorithm>
 #include <utility>
 
 // This file contains helper functions for batching rules.
@@ -53,7 +54,7 @@ inline Tensor ensure_has_bdim(const Tensor& tensor, bool has_bdim, c10::SymInt b
   SymDimVector expanded_shape;
   expanded_shape.reserve(sizes.size());
   expanded_shape.emplace_back(std::move(batch_size));
-  expanded_shape.insert(expanded_shape.end(), sizes.begin(), sizes.end());
+  expanded_shape.append_range(sizes);
   return tensor.expand_symint(expanded_shape);
 }
 
@@ -134,7 +135,7 @@ void boxed_tensor_inputs_batch_rule(const c10::OperatorHandle& op, torch::jit::S
   int64_t cur_level = maybe_layer->layerId();
 
   auto orig_arguments = torch::jit::last(*stack, num_arguments);
-  if (std::none_of(orig_arguments.begin(), orig_arguments.end(), ivalueParticipatesInCurrentLevel)) {
+  if (std::ranges::none_of(orig_arguments, ivalueParticipatesInCurrentLevel)) {
     op.callBoxed(stack);
     return;
   }
@@ -250,7 +251,7 @@ inline void boxed_existing_bdim_all_batch_rule(
   vmap_check_escaped(maybe_layer, "boxed_existing_bdim_all_batch_rule");
 
   const auto arguments = torch::jit::last(stack, num_arguments);
-  if (std::none_of(arguments.begin(), arguments.end(), ivalueParticipatesInCurrentLevel)) {
+  if (std::ranges::none_of(arguments, ivalueParticipatesInCurrentLevel)) {
     op.callBoxed(stack);
     return;
   }
@@ -304,7 +305,7 @@ inline void boxed_all_tensors_have_optional_bdim(
   int64_t cur_level = maybe_layer->layerId();
 
   const auto arguments = torch::jit::last(stack, num_arguments);
-  if (std::none_of(arguments.begin(), arguments.end(), ivalueParticipatesInCurrentLevel)) {
+  if (std::ranges::none_of(arguments, ivalueParticipatesInCurrentLevel)) {
     op.callBoxed(stack);
     return;
   }

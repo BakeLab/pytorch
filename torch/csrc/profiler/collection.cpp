@@ -27,6 +27,8 @@
 #include <torch/csrc/profiler/data_flow.h>
 #include <torch/csrc/profiler/kineto_shim.h>
 
+#include <ranges>
+
 namespace torch::profiler::impl {
 using result_ptr_t = std::shared_ptr<Result>;
 using trace_ptr_t =
@@ -939,7 +941,6 @@ void generateForwardBackwardLinks(
   // So we sort them by end_time_ns_ before processing.
   std::ranges::sort(
       torch_events,
-
       [](const result_activity_t& left, const result_activity_t& right) {
         auto left_end_time =
             std::get<ExtraFields<EventType::TorchOp>>(left.first->extra_fields_)
@@ -973,8 +974,8 @@ void passEventsToKineto(
       static_cast<int64_t>(start_time_ns), "PyTorch Profiler");
 
   // Generate Kineto events for each event recorded by the PyTorch profiler.
-  for (const auto i : c10::irange(results.size())) {
-    const auto& e = results[i];
+  for (auto&& [i, result] : std::views::enumerate(results)) {
+    const auto& e = result;
     // Here we are essentially setting the duration to -1 if the event never
     // ends. This way Kineto will extend the event to the end of the trace. This
     // is useful so that we can still have 0 duration events if necessary
@@ -1656,7 +1657,7 @@ RecordQueue::getRecords(
       torch::profiler::impl::kineto::stopTrace();
       throw;
     }
-    out.insert(out.end(), ev.begin(), ev.end());
+    out.append_range(ev | std::views::as_rvalue);
     python_tracer_.reset();
   }
 

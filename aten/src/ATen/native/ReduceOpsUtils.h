@@ -1,6 +1,7 @@
 #pragma once
 
 #include <limits>
+#include <numeric>
 #include <ATen/core/Tensor.h>
 #include <ATen/native/Resize.h>
 #include <ATen/native/TensorIterator.h>
@@ -38,9 +39,7 @@ inline Tensor restride_dim(
 
 inline void _dimreduce_setup(const Tensor &result, const Tensor &self,
                                 int64_t dim) {
-  IntArrayRef self_sizes = self.sizes();
-  std::vector<int64_t> result_sizes;
-  result_sizes.insert(result_sizes.end(), self_sizes.begin(), self_sizes.end());
+  auto result_sizes = self.sizes().vec();
   result_sizes[dim] = 1;
   result.resize_(result_sizes);
 }
@@ -111,9 +110,9 @@ inline DimVector make_dim_vector(OptionalIntArrayRef opt_dims, int64_t ndim) {
   if (opt_dims.has_value()) {
     return DimVector(opt_dims.value());
   } else {
-    std::vector<int64_t> all_dims(ndim);
-    std::iota(all_dims.begin(), all_dims.end(), 0);
-    return DimVector(all_dims);
+    DimVector all_dims(ndim);
+    std::ranges::iota(all_dims, 0);
+    return all_dims;
   }
 }
 

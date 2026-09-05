@@ -11,6 +11,7 @@
 
 #include <ATen/ops/result_type_native.h>
 
+#include <algorithm>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -19,14 +20,13 @@ namespace at::native {
 namespace {
 // Check if tensor list has either a boolean tensor or a integer tensor
 inline bool has_integral_tensor(TensorList tensors, const bool includeBool) {
-  return std::any_of(
-      tensors.begin(), tensors.end(), [includeBool](const auto& t) {
-        return at::isIntegralType(t.scalar_type(), includeBool);
-      });
+  return std::ranges::any_of(tensors, [includeBool](const auto& t) {
+    return at::isIntegralType(t.scalar_type(), includeBool);
+  });
 }
 // check if tensor list has bool tensors
 inline bool has_bool_tensor(TensorList tensors) {
-  return std::any_of(tensors.begin(), tensors.end(), [](const auto& t) -> bool {
+  return std::ranges::any_of(tensors, [](const auto& t) -> bool {
     return t.scalar_type() == ScalarType::Bool;
   });
 }
@@ -95,24 +95,19 @@ inline bool _check_tensors_share_device_and_dtype(
   const auto expected_dtype = tensorLists[0][0].dtype();
   const auto expected_device = tensorLists[0][0].device();
 
-  return std::all_of(
-      tensorLists.cbegin(),
-      tensorLists.cend(),
-      [&](const TensorList& tensorList) {
-        if (tensorList.empty()) {
-          return true;
-        }
-        const auto list_dtype = tensorList[0].dtype();
-        return std::all_of(
-            tensorList.cbegin(), tensorList.cend(), [&](const Tensor& tensor) {
-              return tensor.device() == expected_device &&
-                  tensor.layout() == at::kStrided &&
-                  tensor.is_non_overlapping_and_dense() &&
-                  tensor.dtype() == list_dtype &&
-                  (skip_cross_list_dtype_check ||
-                   tensor.dtype() == expected_dtype);
-            });
-      });
+  return std::ranges::all_of(tensorLists, [&](const TensorList& tensorList) {
+    if (tensorList.empty()) {
+      return true;
+    }
+    const auto list_dtype = tensorList[0].dtype();
+    return std::ranges::all_of(tensorList, [&](const Tensor& tensor) {
+      return tensor.device() == expected_device &&
+          tensor.layout() == at::kStrided &&
+          tensor.is_non_overlapping_and_dense() &&
+          tensor.dtype() == list_dtype &&
+          (skip_cross_list_dtype_check || tensor.dtype() == expected_dtype);
+    });
+  });
 }
 
 // Helper function called in check_fast_path_restrictions to check if
@@ -285,10 +280,8 @@ inline FlatMap _group_tensors_by_first_tensors_device_and_dtype(
   const auto num_lists = nested_tensorlist.size();
   const auto num_tensors = nested_tensorlist[0].size();
 
-  TORCH_CHECK(std::all_of(
-      nested_tensorlist.cbegin(),
-      nested_tensorlist.cend(),
-      [&](const auto& tensorlist) -> bool {
+  TORCH_CHECK(std::ranges::all_of(
+      nested_tensorlist, [&](const auto& tensorlist) -> bool {
         // note(crcrpar): Allow empty tensorlists following
         // ref:
         // https://github.com/pytorch/pytorch/blob/85885301fd3c6adb8b9dc3cf7afadf6945566684/torch/utils/_foreach_utils.py#L21-L24
@@ -307,9 +300,8 @@ inline FlatMap _group_tensors_by_first_tensors_device_and_dtype(
       return {t->device(), t->scalar_type()};
     }();
     TORCH_CHECK(
-        std::all_of(
-            nested_tensorlist.cbegin(),
-            nested_tensorlist.cend(),
+        std::ranges::all_of(
+            nested_tensorlist,
             [&](const auto& tensorlist) -> bool {
               if (tensorlist.size() == 0) {
                 return true;
