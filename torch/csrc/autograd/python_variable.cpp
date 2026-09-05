@@ -42,6 +42,8 @@
 #include <utility>
 #include <vector>
 
+#include <ranges>
+
 using namespace at;
 using namespace torch;
 using namespace torch::autograd;
@@ -1630,7 +1632,6 @@ py::object dispatchDTensorOp(
   const bool is_out_variant_op = !is_inplace_op &&
       std::ranges::any_of(
           schema_arguments,
-
           [](const c10::Argument& argument) { return argument.is_out(); });
 
   // Fast path for default or view ops.
@@ -1984,10 +1985,10 @@ static PyObject* DTensor_compute_global_tensor_info_impl(
       tensor_shape[shard_dim] *= mesh_dim_size;
       // recover tensor stride by modifying the strides that are
       // larger than the current stride on the shard_dim.
-      for (const auto i : c10::irange(tensor_strides.size())) {
+      for (auto&& [i, tensor_stride] : std::views::enumerate(tensor_strides)) {
         if (static_cast<int64_t>(i) != shard_dim &&
-            tensor_strides[i] >= tensor_strides[shard_dim]) {
-          tensor_strides[i] *= mesh_dim_size;
+            tensor_stride >= tensor_strides[shard_dim]) {
+          tensor_stride *= mesh_dim_size;
         }
       }
     } else if (!cpp_placement.is_replicate() && !cpp_placement.is_partial()) {
@@ -2515,7 +2516,6 @@ create_native_op_schema(
             op.schema().arguments()[underlying_index].name();
         if (std::ranges::find(
                 static_kwarg_names,
-
                 kwarg_name) == static_kwarg_names.end()) {
           continue;
         }

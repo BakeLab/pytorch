@@ -2,6 +2,8 @@
 #include <c10/core/GradMode.h>
 
 #include <c10/util/irange.h>
+#include <numeric>
+#include <ranges>
 #include <utility>
 
 namespace c10 {
@@ -14,7 +16,7 @@ namespace {
 bool possible_cross_dimension_overlap(c10::IntArrayRef sizes, c10::IntArrayRef strides) {
   int n_dim = static_cast<int>(sizes.size());
   std::vector<size_t> stride_indices(n_dim);
-  std::iota(stride_indices.rbegin(), stride_indices.rend(), 0);
+  std::ranges::iota(std::views::reverse(stride_indices), 0);
 
   // sort indices going with ascending strides
   for (const auto i : c10::irange(1, n_dim)) {
@@ -180,9 +182,9 @@ VaryingShape<Stride> TensorType::computeStrideProps(
     stride_indices[n_dim - 1] = 0;
   } else if (is_contiguous_strides(sizes, strides)) {
     // case 1.b. short cut contiguous
-    std::iota(stride_indices.rbegin(), stride_indices.rend(), 0);
+    std::ranges::iota(std::views::reverse(stride_indices), 0);
   } else {
-    std::iota(stride_indices.rbegin(), stride_indices.rend(), 0);
+    std::ranges::iota(std::views::reverse(stride_indices), 0);
     // case 2.
     //
     // For broadcasted dimension where stride is 0, we have to stick to
