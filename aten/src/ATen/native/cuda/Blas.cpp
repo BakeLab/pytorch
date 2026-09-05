@@ -1,10 +1,11 @@
+#include <ATen/cuda/CUDABlasHandle.h>
 #include <array>
 #include <cstdint>
 #include <string>
 #include <utility>
 #include <vector>
 #include <c10/cuda/CUDAMacros.h>
-#include <c10/util/CallOnce.h>
+#include <mutex>
 #include <c10/util/env.h>
 #include <c10/util/typeid.h>
 #include <c10/util/Exception.h>
@@ -99,9 +100,9 @@ bool is_gfx942_device(const DeviceIndex device_index) {
   TORCH_INTERNAL_ASSERT(
       device_index >= 0 && device_index < C10_COMPILE_TIME_MAX_GPUS);
 
-  static std::array<c10::once_flag, C10_COMPILE_TIME_MAX_GPUS> once_flags;
+  static std::array<std::once_flag, C10_COMPILE_TIME_MAX_GPUS> once_flags;
   static std::array<bool, C10_COMPILE_TIME_MAX_GPUS> results{};
-  c10::call_once(once_flags[device_index], [device_index] {
+  std::call_once(once_flags[device_index], [device_index] {
     static const std::vector<std::string> gfx942_archs{"gfx942"};
     results[device_index] =
         at::detail::getCUDAHooks().isGPUArch(gfx942_archs, device_index);

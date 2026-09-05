@@ -1,3 +1,4 @@
+#include <mutex>
 //  Copyright © 2022 Apple Inc.
 
 #include <ATen/mps/MPSAllocatorInterface.h>
@@ -418,7 +419,7 @@ MPSStream* getStreamByID(int64_t stream_id) {
     return at::mps::getDefaultMPSStream();
   }
   TORCH_CHECK(stream_id >= 1 && stream_id <= kMPSStreamsPerPool, "stream_id=", stream_id, " not found");
-  c10::call_once(stream_pool_flag, initStreamPool);
+  std::call_once(stream_pool_flag, initStreamPool);
   return stream_pool[stream_id - 1];
 }
 

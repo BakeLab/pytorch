@@ -566,12 +566,12 @@ namespace {{
 // {prefix}: raw cubin ({cubin_len} bytes), embedded, loaded per device on first use.
 const unsigned char {prefix}_cubin[] = {{{cubin_bytes}}};
 CUfunction {prefix}_fn[C10_COMPILE_TIME_MAX_GPUS] = {{}};
-c10::once_flag {prefix}_once[C10_COMPILE_TIME_MAX_GPUS];
+std::once_flag {prefix}_once[C10_COMPILE_TIME_MAX_GPUS];
 
 CUfunction {prefix}_get(int device) {{
   TORCH_CHECK(
       device >= 0 && device < C10_COMPILE_TIME_MAX_GPUS, "device index ", device);
-  c10::call_once({prefix}_once[device], [&] {{
+  std::call_once({prefix}_once[device], [&] {{
     // Via ATen's NVRTC table: a CUDA build must run on a machine with no libcuda.
     const auto& nvrtc = at::globalContext().getNVRTC();
     CUmodule mod = nullptr;
