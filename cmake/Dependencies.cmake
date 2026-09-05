@@ -373,6 +373,37 @@ if(USE_FBGEMM)
     set(FBGEMM_BUILD_TESTS OFF CACHE BOOL "")
     set(FBGEMM_BUILD_BENCHMARKS OFF CACHE BOOL "")
     set(FBGEMM_LIBRARY_TYPE "static" CACHE STRING "")
+
+    file(GLOB FBGEMM_PATCHES
+         "${CAFFE2_THIRD_PARTY_ROOT}/fbgemm_patches/*.patch")
+    list(SORT FBGEMM_PATCHES)
+    foreach(_patch ${FBGEMM_PATCHES})
+      execute_process(
+        COMMAND git apply --check --unidiff-zero ${_patch}
+        WORKING_DIRECTORY ${FBGEMM_SOURCE_DIR}
+        RESULT_VARIABLE _applies
+        ERROR_QUIET)
+      if(_applies EQUAL 0)
+        execute_process(
+          COMMAND git apply --unidiff-zero ${_patch}
+          WORKING_DIRECTORY ${FBGEMM_SOURCE_DIR}
+          RESULT_VARIABLE _exitcode)
+        if(NOT _exitcode EQUAL 0)
+          message(FATAL_ERROR "Fail to apply ${_patch} to FBGEMM")
+        endif()
+      else()
+        execute_process(
+          COMMAND git apply --reverse --check --unidiff-zero ${_patch}
+          WORKING_DIRECTORY ${FBGEMM_SOURCE_DIR}
+          RESULT_VARIABLE _already_applied
+          ERROR_QUIET)
+        if(NOT _already_applied EQUAL 0)
+          message(FATAL_ERROR
+            "${_patch} neither applies nor is already applied to FBGEMM")
+        endif()
+      endif()
+    endforeach()
+
     add_subdirectory("${FBGEMM_SOURCE_DIR}")
 
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -1036,6 +1067,9 @@ if(USE_UBSAN)
     caffe2_update_option(USE_UBSAN OFF)
   elseif(TARGET Sanitizer::undefined)
     list(APPEND Caffe2_DEPENDENCY_LIBS Sanitizer::undefined)
+    # Every executable that consumes an instrumented shared library must also
+    # link the UBSan runtime, even if its own sources are not instrumented.
+    link_libraries(Sanitizer::undefined_runtime)
   endif()
 endif()
 
