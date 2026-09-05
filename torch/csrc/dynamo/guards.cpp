@@ -25,7 +25,7 @@
 #include <torch/csrc/utils/python_symnode.h>
 #include <torch/csrc/utils/tensor_memoryformats.h>
 #include <torch/extension.h>
-#include <array>
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 
@@ -1663,7 +1663,7 @@ bool check_overlapping(
   // `overlapping` tensors were in the beginning of `tensors` list.
   auto range = c10::irange(overlapping.size());
   return indices.size() == overlapping.size() &&
-      std::all_of(range.begin(), range.end(), [&](int64_t i) {
+      std::ranges::all_of(range, [&](int64_t i) {
            return indices.count(i) == 1;
          });
 }
@@ -4090,7 +4090,7 @@ class GuardManager {
         auto& managers = map[dict_pointer];
 
         // (1) Always: remove this manager from the per-dict list.
-        auto it = std::find(managers.begin(), managers.end(), this);
+        auto it = std::ranges::find(managers, this);
         if (it != managers.end()) {
           managers.erase(it);
         }
@@ -5104,7 +5104,7 @@ class DictGuardManager : public GuardManager {
     }
     _indices.push_back(index);
     // Always keep the _indices array sorted
-    std::sort(_indices.begin(), _indices.end());
+    std::ranges::sort(_indices);
     _key_value_managers[index] = std::make_pair(nullptr, nullptr);
     return _key_value_managers[index];
   }
