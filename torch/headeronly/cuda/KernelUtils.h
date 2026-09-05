@@ -7,7 +7,7 @@
 #endif
 
 #if defined(USE_ROCM)
-#include <hip/device_functions.h>
+#include <device_functions.h>
 #include <hip/hip_bf16.h>
 #include <hip/hip_fp16.h>
 
