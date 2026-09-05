@@ -216,7 +216,7 @@ static void NCCL_CHECK_TIMEOUT(
   }
 }
 
-static void NCCL_CHECK_TIMEOUT(
+[[maybe_unused]] static void NCCL_CHECK_TIMEOUT(
     ncclResult_t result,
     std::vector<ncclComm_t>& comms) {
   NCCL_CHECK_TIMEOUT(from_nccl_result(result), comms);
@@ -764,7 +764,8 @@ void all2all_single_equal_split(
   const auto* sendbuff = reinterpret_cast<const char*>(input.const_data_ptr());
   auto* recvbuff = reinterpret_cast<char*>(output.mutable_data_ptr());
   auto comm = to_nccl_comm(_comm);
-#if NCCL_VERSION_CODE >= NCCL_VERSION(2, 28, 0)
+#if defined(NCCL_ALLTOALL_SUPPORTED) || \
+    NCCL_VERSION_CODE >= NCCL_VERSION(2, 28, 0)
   // Using the collective rather than a send/recv loop lets NCCL differentiate
   // send/recv operations issued as part of the collective (e.g. alltoall) vs
   // those inside traditional p2p operations.
@@ -812,7 +813,7 @@ void all2all_single_unequal_split(
   // NCCL_ALLTOALLV_SUPPORTED is used so NCCL can differentiate send/recv
   // operations issued as a part of the collective (e.g. alltoallv) vs those
   // inside traditional p2p operations.
-  NCCL_CHECK(ncclAllToAllv(
+  NCCL_CHECK(ncclAlltoAllv(
       sendbuff,
       sendcounts,
       senddispls,
