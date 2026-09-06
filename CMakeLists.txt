@@ -301,23 +301,9 @@ endif()
 
 set(CPU_AARCH64 OFF)
 set(CPU_INTEL OFF)
-set(CPU_HOST_HAS_AVX512 OFF)
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "(AMD64|x86_64)")
   set(CPU_INTEL ON)
-  # Ask what this CPU can actually run, not who made it: AMD ships both parts
-  # with AVX-512 (Zen 4 on) and without (Zen 3 and older), and Intel fuses it
-  # off on its consumer line. Only meaningful when the machine we build on is
-  # the machine we build for. The x86-64-v4 feature set is what is checked.
-  if(NOT CMAKE_CROSSCOMPILING AND EXISTS "/proc/cpuinfo")
-    file(STRINGS "/proc/cpuinfo" _cpu_flags REGEX "^flags" LIMIT_COUNT 1)
-    if(_cpu_flags MATCHES " avx512f " AND _cpu_flags MATCHES " avx512bw "
-       AND _cpu_flags MATCHES " avx512cd " AND _cpu_flags MATCHES " avx512dq "
-       AND _cpu_flags MATCHES " avx512vl ")
-      set(CPU_HOST_HAS_AVX512 ON)
-    endif()
-    unset(_cpu_flags)
-  endif()
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)")
   # Linux reports "aarch64", macOS "arm64", and native Windows on Arm "ARM64".
   # CMake MATCHES is case-sensitive, so accept each spelling.

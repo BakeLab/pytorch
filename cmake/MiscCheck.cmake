@@ -40,22 +40,11 @@ if(USE_NATIVE_ARCH)
   endif()
 endif()
 
-# ---[ x86 baseline. Every x86 CPU released from 2020 on satisfies x86-64-v3
-# (AVX2, FMA, BMI1/2, F16C), including the AVX-512-less AMD Zen 3 and the
-# consumer Intel parts that fuse AVX-512 off, so v3 is the default. Raise it to
-# x86-64-v4 for a build that only ever runs on AVX-512 hardware; note that the
-# ATen kernels dispatch to an AVX-512 slice at run time either way, so this only
-# affects the code outside those slices. -march=native, when asked for, is more
-# specific and wins.
-# A host that can run AVX-512 itself gets x86-64-v4. Note this makes the default
-# depend on the build machine, so a binary built on such a host will not run on
-# one without AVX-512; set TORCH_X86_BASELINE explicitly for a portable build.
-if(CPU_HOST_HAS_AVX512)
-  set(_torch_x86_baseline_default "x86-64-v4")
-else()
-  set(_torch_x86_baseline_default "x86-64-v3")
-endif()
-set(TORCH_X86_BASELINE "${_torch_x86_baseline_default}" CACHE STRING "-march baseline for x86 builds")
+# ---[ x86 baseline. x86-64-v3 covers post-2020 mainstream x86 CPUs, including
+# AMD Zen 3 and Intel consumer parts without AVX-512. ATen still dispatches to
+# AVX-512 kernels when available. Use x86-64-v4 explicitly for AVX-512-only
+# deployments, or USE_NATIVE_ARCH for a machine-specific build.
+set(TORCH_X86_BASELINE "x86-64-v3" CACHE STRING "-march baseline for x86 builds")
 if(CPU_INTEL AND NOT USE_NATIVE_ARCH)
   check_cxx_compiler_flag("-march=${TORCH_X86_BASELINE}" COMPILER_SUPPORTS_X86_BASELINE)
   if(COMPILER_SUPPORTS_X86_BASELINE)
