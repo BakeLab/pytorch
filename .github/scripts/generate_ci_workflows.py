@@ -67,6 +67,7 @@ class BinaryBuildWorkflow:
     libtorch_extraction_configs: list[dict[str, str]] = field(default_factory=list)
     # Owner labels emitted as the "# Owner(s):" header; see WORKFLOWOWNERS lint.
     owners: list[str] = field(default_factory=list)
+    enable_upload: bool = True
 
     def __post_init__(self) -> None:
         if self.build_environment == "":
@@ -124,7 +125,13 @@ class OperatingSystem:
 
 
 _LINUX_WHEEL_CONFIGS = generate_binary_build_matrix.generate_wheels_matrix(
-    OperatingSystem.LINUX
+    OperatingSystem.LINUX,
+    arches=(
+        generate_binary_build_matrix.CUDA_ARCHES
+        + generate_binary_build_matrix.ROCM_ARCHES
+        + generate_binary_build_matrix.XPU_ARCHES
+    ),
+    python_versions=generate_binary_build_matrix.RELEASE_PYTHON_VERSIONS,
 )
 
 LINUX_BINARY_BUILD_WORFKLOWS = [
@@ -140,10 +147,8 @@ LINUX_BINARY_BUILD_WORFKLOWS = [
             },
             isolated_workflow=True,
         ),
-        libtorch_extraction_configs=generate_binary_build_matrix.generate_libtorch_extraction_configs(
-            OperatingSystem.LINUX,
-            _LINUX_WHEEL_CONFIGS,
-        ),
+        libtorch_extraction_configs=[],
+        enable_upload=False,
     ),
 ]
 
@@ -194,7 +199,8 @@ WINDOWS_BINARY_BUILD_WORKFLOWS = [
 ]
 
 _MACOS_ARM64_WHEEL_CONFIGS = generate_binary_build_matrix.generate_wheels_matrix(
-    OperatingSystem.MACOS_ARM64
+    OperatingSystem.MACOS_ARM64,
+    python_versions=generate_binary_build_matrix.RELEASE_PYTHON_VERSIONS,
 )
 
 MACOS_BINARY_BUILD_WORKFLOWS = [
@@ -211,10 +217,8 @@ MACOS_BINARY_BUILD_WORKFLOWS = [
             },
             isolated_workflow=True,
         ),
-        libtorch_extraction_configs=generate_binary_build_matrix.generate_libtorch_extraction_configs(
-            OperatingSystem.MACOS_ARM64,
-            _MACOS_ARM64_WHEEL_CONFIGS,
-        ),
+        libtorch_extraction_configs=[],
+        enable_upload=False,
     ),
 ]
 

@@ -52,6 +52,10 @@ CUDA_ARCHES_CUDNN_VERSION = {
 ROCM_ARCHES = ["10.0", "10.1"]
 
 XPU_ARCHES = ["xpu"]
+RELEASE_PYTHON_VERSIONS = [
+    "3.14",
+    "3.15",
+]
 
 CPU_AARCH64_ARCH = ["cpu-aarch64"]
 
@@ -111,28 +115,19 @@ PYTORCH_EXTRA_INSTALL_REQUIREMENTS = {
     "10.0": ("rocm[libraries,device-all]==10.0.*"),
     "10.1": ("rocm[libraries,device-all]==10.1.*"),
     "xpu": (
-        "intel-cmplr-lib-rt==2026.1.2 | "
-        "intel-cmplr-lib-ur==2026.1.2 | "
-        "intel-cmplr-lic-rt==2026.1.2 | "
-        "intel-sycl-rt==2026.1.2 | "
-        "oneccl-devel==2022.1.2; platform_system == 'Linux' and platform_machine == 'x86_64' | "
-        "oneccl==2022.1.2; platform_system == 'Linux' and platform_machine == 'x86_64' | "
-        "impi-rt==2021.18.1; platform_system == 'Linux' and platform_machine == 'x86_64' | "
-        "onemkl-license==2026.1.0 | "
+        "intel-cmplr-lib-rt==2026.1.0 | "
+        "intel-cmplr-lib-ur==2026.1.0 | "
+        "intel-sycl-rt==2026.1.0 | "
+        "oneccl==2022.1.1; platform_system == 'Linux' and platform_machine == 'x86_64' | "
         "onemkl-sycl-blas==2026.1.0 | "
         "onemkl-sycl-dft==2026.1.0 | "
         "onemkl-sycl-lapack==2026.1.0 | "
-        "onemkl-sycl-rng==2026.1.0 | "
-        "onemkl-sycl-sparse==2026.1.0 | "
-        "dpcpp-cpp-rt==2026.1.2 | "
-        "intel-opencl-rt==2026.1.2 | "
         "mkl==2026.1.0 | "
         "intel-openmp==2026.1.2 | "
         "tbb==2023.1.0 | "
         "tcmlib==1.5.0 | "
         "umf==1.1.0 | "
-        "intel-pti==1.1.0 | "
-        "pyzes==0.1.3; platform_system == 'Linux' and platform_machine == 'x86_64'"
+        "intel-pti==1.1.0"
     ),
 }
 
@@ -364,6 +359,20 @@ def list_without(in_list: list[str], without: list[str]) -> list[str]:
     return [item for item in in_list if item not in without]
 
 
+def package_build_variant(
+    os: str, gpu_arch_type: str, gpu_arch_version: str
+) -> str:
+    if os == "macos-arm64":
+        return "mps-apple-silicon"
+    if gpu_arch_type == "xpu":
+        return "xpu-bmg"
+    if gpu_arch_type == "rocm":
+        return f"rocm{gpu_arch_version}-mi300x"
+    if gpu_arch_type == "cuda":
+        return f"cuda{gpu_arch_version}"
+    return gpu_arch_type
+
+
 def generate_libtorch_matrix(
     os: str,
     release_type: str,
@@ -450,6 +459,9 @@ def generate_wheels_matrix(
                 or arch_version == "xpu"
                 else arch_version
             )
+            build_variant = package_build_variant(
+                os, gpu_arch_type, gpu_arch_version
+            )
 
             # TODO: Enable python 3.14 for rest
             if os not in [
@@ -499,12 +511,7 @@ def generate_wheels_matrix(
                                 os if os == "windows" else "linux"
                             ]
                         ),
-                        "build_name": (
-                            f"{package_type}-py{python_version}-{gpu_arch_type}"
-                            f"{'-' if 'aarch64' in gpu_arch_type else ''}{gpu_arch_version.replace('-aarch64', '')}".replace(
-                                ".", "_"
-                            )
-                        ),  # include special case for aarch64 build, remove the -aarch64 postfix
+                        "build_name": f"{package_type}-py{python_version}-{build_variant}".replace(".", "_"),
                     }
                 )
             else:
@@ -523,7 +530,7 @@ def generate_wheels_matrix(
                             arch_version
                         ].split(":")[1],
                         "package_type": package_type,
-                        "build_name": f"{package_type}-py{python_version}-{gpu_arch_type}{gpu_arch_version}".replace(
+                        "build_name": f"{package_type}-py{python_version}-{build_variant}".replace(
                             ".", "_"
                         ),
                         "pytorch_extra_install_requirements": (
@@ -533,10 +540,6 @@ def generate_wheels_matrix(
                                 gpu_arch_version, ""
                             )
                             if gpu_arch_type == "rocm"
-                            else PYTORCH_EXTRA_INSTALL_REQUIREMENTS[CUDA_STABLE][
-                                "linux"
-                            ]
-                            if gpu_arch_type == "cpu" and os == "macos-arm64"
                             else ""
                         ),
                     }
