@@ -20,8 +20,6 @@ if(NOT TORCH_INSTALL_LIB_DIR)
   set(TORCH_INSTALL_LIB_DIR lib)
 endif()
 
-
-
 # Generate files
 set(TOOLS_PATH "${TORCH_ROOT}/tools")
 
@@ -62,7 +60,6 @@ set(TORCH_PYTHON_INCLUDE_DIRECTORIES
     ${TORCH_SRC_DIR}/standalone
     )
 
-
 set(TORCH_PYTHON_LINK_LIBRARIES
     Python::Module
     pybind::pybind11
@@ -102,6 +99,7 @@ if(USE_CUDA)
     include(${TORCH_ROOT}/cmake/public/cuda.cmake)
     append_filelist("libtorch_python_cuda_core_sources" TORCH_PYTHON_SRCS)
 
+    list(APPEND TORCH_PYTHON_LINK_LIBRARIES ${TORCH_CUDA_LIB})
     list(APPEND TORCH_PYTHON_COMPILE_DEFINITIONS USE_CUDA)
     if(USE_CUDNN)
         list(APPEND TORCH_PYTHON_LINK_LIBRARIES torch::cudnn)
@@ -122,6 +120,7 @@ endif()
 if(USE_ROCM)
     append_filelist("libtorch_python_cuda_core_sources" TORCH_PYTHON_SRCS)
 
+    list(APPEND TORCH_PYTHON_LINK_LIBRARIES ${TORCH_HIP_LIB})
     list(APPEND TORCH_PYTHON_COMPILE_DEFINITIONS
       USE_ROCM
       __HIP_PLATFORM_AMD__
@@ -327,7 +326,7 @@ endif()
 
 target_compile_definitions(torch_python PRIVATE THP_BUILD_MAIN_LIB)
 
-target_link_libraries(torch_python PRIVATE ${TORCH_LIB} ${TORCH_PYTHON_LINK_LIBRARIES})
+target_link_libraries(torch_python PRIVATE ${TORCH_CPU_LIB} ${TORCH_PYTHON_LINK_LIBRARIES})
 
 target_compile_definitions(torch_python PRIVATE ${TORCH_PYTHON_COMPILE_DEFINITIONS})
 
