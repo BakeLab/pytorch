@@ -6422,6 +6422,8 @@ class InliningGeneratorInstructionTranslator(InliningInstructionTranslator):
     def YIELD_VALUE(self, inst: Instruction) -> None:
         top = self.pop()
         self.generated_items.append(top)
+        # This handler is only reached through the dispatch table, which is
+        # keyed on dis.opmap, so inst is always YIELD_VALUE.
         prev = self.instructions[self.indexof[inst] - 1].opname
         if prev == "SEND":
             self.frame_state = FrameState.FRAME_SUSPENDED_YIELD_FROM
