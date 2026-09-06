@@ -314,7 +314,7 @@ PyObject* RecordFunctionFast_enter(
     }
     auto it = kwargs.find("scope");
     if (it != kwargs.end()) {
-      auto value = it->second;
+      const auto& value = it->second;
       if (value.isString()) {
         const auto& value_str = value.toStringRef();
         if (value_str == "user_scope") {
