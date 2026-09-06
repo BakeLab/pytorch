@@ -618,6 +618,7 @@ if(USE_ROCM)
     # HIP_CXX_FLAGS: applied to targets via target_compile_options (definitions, warnings).
     # These are used for both HIP device code and C++ code that needs HIP defines.
     string(APPEND CMAKE_HIP_FLAGS " -fPIC")
+    list(APPEND HIP_CXX_FLAGS "--gcc-install-dir=${PYTORCH_HIP_GCC_INSTALL_DIR}")
     list(APPEND HIP_CXX_FLAGS -D__HIP_PLATFORM_AMD__=1)
     list(APPEND HIP_CXX_FLAGS -DCUDA_HAS_FP16=1)
     list(APPEND HIP_CXX_FLAGS -DUSE_ROCM)
@@ -706,7 +707,9 @@ if(USE_ROCM)
        $<INSTALL_INTERFACE:include> ${Caffe2_HIP_INCLUDE})
 
     set(Caffe2_PUBLIC_HIP_DEPENDENCY_LIBS
-      hip::host MIOpen hiprtc::hiprtc libhipcxx::libhipcxx)
+      hip::host libhipcxx::libhipcxx)
+    list(APPEND Caffe2_HIP_DEPENDENCY_LIBS
+      MIOpen roc::rocblas roc::hipblaslt)
 
     # intra_node_comm.cpp is the only consumer, and -Wl,--no-as-needed would
     # stamp the DT_NEEDED on even when it is not built.
@@ -716,7 +719,7 @@ if(USE_ROCM)
 
     # Math libraries
     list(APPEND Caffe2_PUBLIC_HIP_DEPENDENCY_LIBS
-      roc::hipblas roc::rocblas hip::hipfft hip::hiprand roc::hipsparse roc::hipsolver roc::hipblaslt roc::rocsolver)
+      roc::hipblas hip::hipfft roc::hipsparse roc::hipsolver roc::rocsolver)
     # hipsparselt is an optional component that will eventually be enabled by default.
     if(hipsparselt_FOUND AND USE_HIPSPARSELT)
       list(APPEND Caffe2_PUBLIC_HIP_DEPENDENCY_LIBS
@@ -1226,6 +1229,10 @@ if(USE_KINETO)
     add_subdirectory("${CAFFE2_THIRD_PARTY_ROOT}/nlohmann"
                      "${CMAKE_BINARY_DIR}/third_party/nlohmann")
   endif()
+  apply_third_party_patches(
+      "${CAFFE2_THIRD_PARTY_ROOT}/kineto_patches"
+      "${CAFFE2_THIRD_PARTY_ROOT}/kineto"
+      Kineto)
 
   message(STATUS "Configuring Kineto dependency:")
   message(STATUS "  KINETO_SOURCE_DIR = ${KINETO_SOURCE_DIR}")
