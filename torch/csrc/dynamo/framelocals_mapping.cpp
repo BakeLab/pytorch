@@ -60,7 +60,7 @@ FrameLocalsMapping::FrameLocalsMapping(FrameLocalsFrameType* frame)
 #else
   for (const auto i : c10::irange(offset)) {
     update_framelocals(
-        i, THP_PyStackRef_AsPyObjectBorrow(&frame->localsplus[i]));
+        i, PyStackRef_AsPyObjectBorrow(frame->localsplus[i]));
   }
 #endif
 
