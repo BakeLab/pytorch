@@ -100,7 +100,6 @@ COPY ./common/patches /opt/cache/patches
 ENV PATH /opt/cache/bin:$PATH
 RUN bash ./install_cache.sh && rm install_cache.sh
 
-
 # Install rocm-origami
 COPY ./common/common_utils.sh common_utils.sh
 COPY ci_commit_pins/rocm-origami.txt rocm-origami.txt
