@@ -43,12 +43,6 @@ case ${image} in
         DOCKER_GPU_BUILD_ARG=" --build-arg DEVTOOLSET_VERSION=13"
         MANY_LINUX_VERSION="2_28_aarch64"
         ;;
-    manylinuxs390x-builder:cpu-s390x)
-        TARGET=final
-        GPU_IMAGE=s390x/almalinux:8
-        DOCKER_GPU_BUILD_ARG=""
-        MANY_LINUX_VERSION="s390x"
-        ;;
     manylinux2_28-builder:cuda11*)
         TARGET=cuda_final
         GPU_IMAGE=amd64/almalinux:8
@@ -103,7 +97,7 @@ if [[ -n ${MANY_LINUX_VERSION} && -z ${DOCKERFILE_SUFFIX} ]]; then
     DOCKERFILE_SUFFIX=_${MANY_LINUX_VERSION}
 fi
 # Remote BuildKit (OSDC) pushes straight to the registry on WITH_PUSH; the local
-# path (s390x) loads the built image so its workflow can tag and push it.
+# path loads the built image so its workflow can tag and push it.
 if [[ -n "${REMOTE_BUILDKIT:-}" && "${WITH_PUSH:-false}" == "true" ]]; then
     output_flag="--push"
 elif [[ -z "${REMOTE_BUILDKIT:-}" ]]; then
