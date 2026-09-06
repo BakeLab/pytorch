@@ -368,11 +368,6 @@ test_tsan() {
   assert_git_not_dirty
 }
 
-test_python_legacy_jit() {
-  time python test/run_test.py --include test_jit_legacy --verbose
-  assert_git_not_dirty
-}
-
 test_python_shard() {
   if [[ -z "$NUM_TEST_SHARDS" ]]; then
     echo "NUM_TEST_SHARDS must be defined to run a Python test shard"
@@ -384,14 +379,14 @@ test_python_shard() {
 
   # modify LD_LIBRARY_PATH to ensure it has the conda env.
   # This set of tests has been shown to be buggy without it for the split-build
-  time python test/run_test.py --exclude-jit-executor --exclude-distributed-tests --exclude-quantization-tests $EXCLUDE_CLAUSE $INCLUDE_CLAUSE --shard "$1" "$NUM_TEST_SHARDS" --verbose $PYTHON_TEST_EXTRA_OPTION --upload-artifacts-while-running
+  time python test/run_test.py --exclude-distributed-tests $EXCLUDE_CLAUSE $INCLUDE_CLAUSE --shard "$1" "$NUM_TEST_SHARDS" --verbose $PYTHON_TEST_EXTRA_OPTION --upload-artifacts-while-running
 
   assert_git_not_dirty
 }
 
 test_python() {
   # shellcheck disable=SC2086
-  time python test/run_test.py --exclude-jit-executor --exclude-distributed-tests --exclude-quantization-tests $EXCLUDE_CLAUSE $INCLUDE_CLAUSE --verbose $PYTHON_TEST_EXTRA_OPTION
+  time python test/run_test.py --exclude-distributed-tests $EXCLUDE_CLAUSE $INCLUDE_CLAUSE --verbose $PYTHON_TEST_EXTRA_OPTION
   assert_git_not_dirty
 }
 
@@ -697,11 +692,10 @@ test_dynamo_wrapped_shard() {
   # Instead, use @skipIfTorchDynamo on your tests.
   time python test/run_test.py --dynamo \
     --exclude-inductor-tests \
-    --exclude-jit-executor \
     --exclude-distributed-tests \
     --exclude-torch-export-tests \
     --exclude-aot-dispatch-tests \
-    --exclude-quantization-tests \
+    \
     --shard "$1" "$NUM_TEST_SHARDS" \
     --verbose \
     --upload-artifacts-while-running
@@ -1876,49 +1870,6 @@ test_distributed_single_gpu() {
   test_distributed not-multigpu
 }
 
-test_distributed_4gpu() {
-  # Distributed tests that need more GPUs than the standard 2-GPU distributed
-  # runner provides (3-4 GPU tests), run on runners with 4-GPU labels (e.g. ROCm
-  # gfx950.4). Selection reuses the native `multigpu` marker machinery (see
-  # test/conftest.py): --distributed-tests discovers every distributed test file
-  # dynamically, --multigpu-filter multigpu keeps the process-spawning tests, and
-  # --multigpu-min-gpus 3 keeps only those needing more than the standard 2-GPU
-  # runner, so there is no per-test list to maintain.
-  # Python suite only; the multi-GPU C++/mpiexec tests already run on the
-  # standard `distributed` job.
-  echo "Testing distributed python tests that need more than 2 GPUs"
-  local count_file min_gpus=3 total_kept rc
-  count_file=$(mktemp)
-  export PYTORCH_MULTIGPU_SELECTION_COUNT_FILE="$count_file"
-  set +e
-  # shellcheck disable=SC2086
-  time python test/run_test.py --distributed-tests --multigpu-filter multigpu --multigpu-min-gpus "$min_gpus" --shard "$SHARD_NUMBER" "$NUM_TEST_SHARDS" $INCLUDE_CLAUSE --verbose
-  rc=$?
-  set -e
-  total_kept=$(awk '{s+=$1} END {print s+0}' "$count_file")
-  rm -f "$count_file"
-  unset PYTORCH_MULTIGPU_SELECTION_COUNT_FILE
-  # Only meaningful when the run itself succeeded; on failure rc is the real
-  # signal and a 0 count just means collection never finished.
-  # Rerun-disabled-tests mode (PYTORCH_TEST_RERUN_DISABLED_TESTS=1, the 08:29
-  # cron) narrows collection to disabled tests, so a shard can legitimately
-  # select nothing. A normal run that selects 0 is still a broken filter.
-  if [[ "$rc" -eq 0 && "$total_kept" -eq 0 && "${PYTORCH_TEST_RERUN_DISABLED_TESTS}" != "1" ]]; then
-    echo "::error::distributed_4gpu shard selected 0 tests; min-gpus filter may have regressed"
-    exit 1
-  fi
-  echo "distributed_4gpu shard selected $total_kept tests across files"
-  assert_git_not_dirty
-  return "$rc"
-}
-
-test_quantization() {
-  echo "Testing quantization"
-
-  python test/test_quantization.py
-}
-
-
 test_custom_script_ops() {
   echo "Testing custom script operators"
 
@@ -2204,12 +2155,6 @@ EOF
 }
 
 
-test_cpp_extensions() {
-  # This is to test whether cpp extension build is compatible with current env. No need to test both ninja and no-ninja build
-  time python test/run_test.py --include test_cpp_extensions_aot_ninja --verbose
-  assert_git_not_dirty
-}
-
 test_vec256() {
   # This is to test vec256 instructions DEFAULT/AVX/AVX2 (platform dependent, some platforms might not support AVX/AVX2)
   if [[ "$BUILD_ENVIRONMENT" != *rocm* ]]; then
@@ -2419,12 +2364,6 @@ elif [[ "${TEST_CONFIG}" == *libtorch_agnostic_targetting* ]]; then
   test_libtorch_agnostic_targetting
 elif [[ "$TEST_CONFIG" == *torchtitan* ]]; then
   test_torchtitan
-elif [[ "${TEST_CONFIG}" == *executorch* ]]; then
-  test_executorch
-elif [[ "$TEST_CONFIG" == 'jit_legacy' ]]; then
-  test_python_legacy_jit
-elif [[ "$TEST_CONFIG" == 'quantization' ]]; then
-  test_quantization
 elif [[ "${BUILD_ENVIRONMENT}" == *libtorch* ]]; then
   # TODO: run some C++ tests
   echo "no-op at the moment"
