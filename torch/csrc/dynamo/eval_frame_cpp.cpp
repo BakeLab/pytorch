@@ -8,7 +8,6 @@
 #include <torch/csrc/dynamo/eval_frame_cpp.h>
 #include <torch/csrc/dynamo/extra_state.h>
 #include <torch/csrc/dynamo/framelocals_mapping.h>
-#include <torch/csrc/dynamo/stackref_bridge.h>
 
 #include <c10/util/irange.h>
 #include <algorithm>
@@ -139,7 +138,7 @@ py::list _get_frame_value_stack_with_depth(
   }
   _PyStackRef* stack_base = iframe->localsplus + nlocalsplus;
   for (const auto i : c10::irange(depth)) {
-    PyObject* obj = THP_PyStackRef_AsPyObjectBorrow(&stack_base[i]);
+    PyObject* obj = PyStackRef_AsPyObjectBorrow(stack_base[i]);
     if (obj == nullptr) {
       result.append(get_null_stack_value());
     } else {
