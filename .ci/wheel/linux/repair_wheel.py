@@ -169,8 +169,9 @@ def repair_wheel(
     libgomp_path: Path,
     arch_deps: list[Path],
     bundled_libs: list[BundledLib],
-    c_so_rpath: str,
-    lib_so_rpath: str,
+    aux_files: list[AuxFile],
+    c_so_rpath: str | None,
+    lib_so_rpath: str | None,
     force_rpath: bool,
 ) -> None:
     # InWheelCtx unpacks via auditwheel's zip2dir on enter and, once out_wheel is
@@ -200,13 +201,45 @@ def repair_wheel(
         # ROCm SDK wheel packages (currently pre-10.0 rocSHMEM's libnuma).
         for lib in bundled_libs:
             shutil.copy(lib.src, torch_lib / lib.dest_name)
-        # Set RPATH on top-level (_C.so etc.) and lib/ shared objects
-        for sofile in torch_dir.glob("*.so*"):
-            if sofile.is_file():
-                set_rpath(sofile, c_so_rpath, force_rpath)
-        for sofile in torch_lib.glob("*.so*"):
-            if sofile.is_file():
-                set_rpath(sofile, lib_so_rpath, force_rpath)
+            # Some bundled deps are dlopen'd by their *bare* soname at runtime,
+            # not just via NEEDED. In particular rocSHMEM's NUMAWrapper global
+            # ctor does dlopen("libnuma.so"). The original build_rocm.sh shipped
+            # OS deps under bare names; this pipeline keeps them versioned
+            # (e.g. libnuma.so.1), so add a bare-name symlink next to the
+            # versioned file. Without it that dlopen fails and rocSHMEM calls
+            # exit() at load, tripping a rocprofiler-sdk atexit deadlock that
+            # hangs `import torch` on no-GPU/no-kfd hosts. See
+            # pytorch/pytorch#189110.
+            if ".so." in lib.dest_name:
+                bare = lib.dest_name.split(".so.", 1)[0] + ".so"
+                bare_path = torch_lib / bare
+                if not bare_path.exists():
+                    bare_path.symlink_to(lib.dest_name)
+        # Rewrite NEEDED entries only after every bundled lib has been copied
+        # in: bundled libs reference each other (e.g. libhiprtc.so needs
+        # libamd_comgr.so.3), and replace_needed only visits files present in
+        # the wheel at call time, so rewriting inside the copy loop misses
+        # references from libs bundled after their dependency (#189194).
+        for lib in bundled_libs:
+            if lib.needed_alias:
+                replace_needed(torch_dir, lib.needed_alias, lib.dest_name)
+        if bundled_libs:
+            check_no_dangling_bundled_needed(torch_lib)
+
+        # Copy auxiliary content (gfx kernel files, MIOpen db, RCCL algos, ...)
+        for aux in aux_files:
+            dest = torch_dir / aux.rel_dest
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(aux.src, dest)
+
+        # Set RPATH on top-level (_C.so etc.) and lib/ shared objects.
+        if c_so_rpath is not None and lib_so_rpath is not None:
+            for sofile in torch_dir.glob("*.so*"):
+                if sofile.is_file():
+                    set_rpath(sofile, c_so_rpath, force_rpath)
+            for sofile in torch_lib.glob("*.so*"):
+                if sofile.is_file():
+                    set_rpath(sofile, lib_so_rpath, force_rpath)
 
         # Retag linux_* -> manylinux_2_28_* in both the filename and the WHEEL
         # metadata. add_platforms updates ctx.out_wheel to the new name; RECORD
@@ -240,11 +273,10 @@ def main() -> None:
         lib_so_rpath = f"{rpaths}:$ORIGIN"
         force_rpath = True
     elif gpu_arch_type == "xpu":
-        # XPU runtime libs come from pypi packages; set RPATHs like CUDA.
-        xpu_rpaths = "$ORIGIN/../../../.."
-        c_so_rpath = f"{xpu_rpaths}:$ORIGIN:$ORIGIN/lib"
-        lib_so_rpath = f"{xpu_rpaths}:$ORIGIN"
-        force_rpath = True
+        # XPU targets retain their Arch oneAPI paths as transitive DT_RPATH.
+        c_so_rpath = None
+        lib_so_rpath = None
+        force_rpath = False
     elif is_rocm:
         rocm_home = Path(os.environ.get("ROCM_HOME", "/opt/rocm"))
         # A classic install has no _rocm_sdk_* siblings, so SDK RPATHs

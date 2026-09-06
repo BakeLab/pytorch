@@ -57,21 +57,21 @@ remain external.
 
 ## XPU runtime dependencies
 
-The XPU wheel declares only runtime packages used by the BMG build:
+XPU builds require oneAPI 2026.1 or newer (SYCL compiler version 20260100).
 
-- Intel compiler and Unified Runtime support
-- SYCL runtime
-- oneCCL runtime
-- oneMKL BLAS, DFT, LAPACK, and classic MKL runtime
-- Intel OpenMP, TBB, tcmlib, UMF, and PTI
+XPU wheels target the Arch Linux hosts used by this fork and use the oneAPI
+installation under `/opt/intel/oneapi`. The wheel does not install Intel
+runtime packages from PyPI. XPU targets use transitive `DT_RPATH` entries so
+indirect dependencies such as the Intel compiler runtime resolve without
+sourcing `setvars.sh`.
 
-Development-only oneCCL files, oneMKL RNG and sparse components, MPI, OpenCL,
-Python Level Zero tooling, and redundant meta or license packages are not
-declared as top-level wheel dependencies.
-
-Some SYCL and Unified Runtime components are loaded dynamically and therefore
-do not appear in `DT_NEEDED`. Dependency removal must be validated in a clean
-runtime image without `/opt/intel/oneapi`.
+To bootstrap a compiler from an Intel offline installer, configure the
+standalone CMake project in `cmake/oneapi-bootstrap/` with
+`-DONEAPI_SHA256=<sha256>`. The official 2026.1.1.33 installer URL is the
+default; override it with `-DONEAPI_URL=<installer-url>` when needed. Run the
+resulting ExternalProject install first, then configure PyTorch with that
+installation's `setvars.sh`. Keep the host `CC`/`CXX` compiler selection
+separate from the SYCL driver (`icpx`).
 
 ## Bundled libuv
 
