@@ -32,7 +32,6 @@ BASE_DEPENDENCIES = [
     "sympy>=1.13.3",
     "networkx>=2.5.1",
     "jinja2",
-    "fsspec>=0.8.5",
     "tqdm",
 ]
 
