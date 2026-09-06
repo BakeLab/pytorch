@@ -101,7 +101,7 @@ at::Tensor& all_reduce_(
     at::Tensor& input,
     std::string reduce_op,
     std::string group_name) {
-  auto group = c10d::resolve_process_group(std::move(group_name));
+  auto group = c10d::resolve_process_group(group_name);
   return all_reduce_(input, to_reduce_op(reduce_op), std::move(group));
 }
 
@@ -109,7 +109,7 @@ at::Tensor all_reduce(
     const at::Tensor& input,
     std::string reduce_op,
     std::string group_name) {
-  auto group = c10d::resolve_process_group(std::move(group_name));
+  auto group = c10d::resolve_process_group(group_name);
   return all_reduce(input, to_reduce_op(reduce_op), std::move(group));
 }
 
@@ -119,7 +119,7 @@ std::vector<at::Tensor> all_reduce_coalesced_(
     std::string reduce_op,
     // NOLINTNEXTLINE(performance-unnecessary-value-param)
     std::string group_name) {
-  auto group = c10d::resolve_process_group(std::move(group_name));
+  auto group = c10d::resolve_process_group(group_name);
   return all_reduce_coalesced_(
       inputs, to_reduce_op(reduce_op), std::move(group));
 }
@@ -146,7 +146,7 @@ std::vector<at::Tensor> all_reduce_coalesced(
     std::vector<at::Tensor> inputs,
     std::string reduce_op,
     std::string group_name) {
-  auto group = c10d::resolve_process_group(std::move(group_name));
+  auto group = c10d::resolve_process_group(group_name);
   return all_reduce_coalesced(
       inputs, to_reduce_op(reduce_op), std::move(group));
 }
@@ -217,7 +217,7 @@ std::vector<at::Tensor> all_gather_into_tensor_coalesced(
     std::vector<at::Tensor> inputs,
     int64_t group_size,
     std::string group_name) {
-  auto group = c10d::resolve_process_group(std::move(group_name));
+  auto group = c10d::resolve_process_group(group_name);
   return all_gather_into_tensor_coalesced(inputs, group_size, std::move(group));
 }
 
@@ -225,7 +225,7 @@ at::Tensor all_gather_into_tensor(
     const at::Tensor& input,
     int64_t group_size,
     std::string group_name) {
-  auto group = c10d::resolve_process_group(std::move(group_name));
+  auto group = c10d::resolve_process_group(group_name);
   return all_gather_into_tensor(input, group_size, std::move(group));
 }
 
@@ -234,7 +234,7 @@ at::Tensor& all_gather_into_tensor_out(
     int64_t group_size,
     const std::string& group_name,
     at::Tensor& output) {
-  auto group = c10d::resolve_process_group(std::move(group_name));
+  auto group = c10d::resolve_process_group(group_name);
   return all_gather_into_tensor_out(
       input, group_size, std::move(group), output);
 }
@@ -246,7 +246,7 @@ std::vector<at::Tensor> reduce_scatter_tensor_coalesced(
     int64_t group_size,
     // NOLINTNEXTLINE(performance-unnecessary-value-param)
     std::string group_name) {
-  auto group = c10d::resolve_process_group(std::move(group_name));
+  auto group = c10d::resolve_process_group(group_name);
   return reduce_scatter_tensor_coalesced(
       inputs, std::move(reduce_op), group_size, std::move(group));
 }
@@ -297,7 +297,7 @@ at::Tensor reduce_scatter_tensor(
     std::string reduce_op,
     int64_t group_size,
     std::string group_name) {
-  auto group = c10d::resolve_process_group(std::move(group_name));
+  auto group = c10d::resolve_process_group(group_name);
   return reduce_scatter_tensor(
       input, std::move(reduce_op), group_size, std::move(group));
 }
@@ -325,7 +325,7 @@ at::Tensor reduce_scatter_tensor_out(
     int64_t group_size,
     std::string group_name,
     at::Tensor& output) {
-  auto group = c10d::resolve_process_group(std::move(group_name));
+  auto group = c10d::resolve_process_group(group_name);
   return reduce_scatter_tensor_out(
       input, std::move(reduce_op), group_size, std::move(group), output);
 }
@@ -362,7 +362,7 @@ at::Tensor all_to_all_single(
     c10::SymIntArrayRef _input_split_sizes,
     // NOLINTNEXTLINE(performance-unnecessary-value-param)
     std::string group_name) {
-  auto group = c10d::resolve_process_group(std::move(group_name));
+  auto group = c10d::resolve_process_group(group_name);
   return all_to_all_single(
       input, _output_split_sizes, _input_split_sizes, std::move(group));
 }
@@ -405,7 +405,7 @@ at::Tensor all_to_all_single(
 
 // NOLINTNEXTLINE(performance-unnecessary-value-param)
 at::Tensor& broadcast_(at::Tensor& input, int64_t src, std::string group_name) {
-  auto group = c10d::resolve_process_group(std::move(group_name));
+  auto group = c10d::resolve_process_group(group_name);
   return broadcast_(input, src, std::move(group));
 }
 
@@ -427,7 +427,7 @@ at::Tensor broadcast(
     const at::Tensor& input,
     int64_t src,
     std::string group_name) {
-  auto group = c10d::resolve_process_group(std::move(group_name));
+  auto group = c10d::resolve_process_group(group_name);
   return broadcast(input, src, std::move(group));
 }
 
