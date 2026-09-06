@@ -50,8 +50,6 @@ set(TORCH_PYTHON_INCLUDE_DIRECTORIES
 
     ${TORCH_ROOT}/third_party/valgrind-headers
 
-    ${TORCH_ROOT}/third_party/gloo
-    ${TORCH_ROOT}/torch/csrc/profiler/kineto/libkineto/include
     ${TORCH_ROOT}/third_party/cpp-httplib
 
     ${TORCH_SRC_DIR}/csrc
@@ -138,6 +136,7 @@ endif()
 if(USE_XPU)
     include(${TORCH_ROOT}/cmake/public/xpu.cmake)
     append_filelist("libtorch_python_xpu_sources" TORCH_PYTHON_SRCS)
+    list(APPEND TORCH_PYTHON_LINK_LIBRARIES ${TORCH_XPU_LIB} torch::xpurt)
     list(APPEND TORCH_PYTHON_INCLUDE_DIRECTORIES
       ${TORCH_ROOT}/third_party/torch-xpu-ops/src)
     list(APPEND TORCH_PYTHON_COMPILE_DEFINITIONS USE_XPU)
@@ -333,6 +332,9 @@ target_compile_definitions(torch_python PRIVATE ${TORCH_PYTHON_COMPILE_DEFINITIO
 target_compile_options(torch_python PRIVATE ${TORCH_PYTHON_COMPILE_OPTIONS})
 
 target_include_directories(torch_python PUBLIC ${TORCH_PYTHON_INCLUDE_DIRECTORIES})
+target_include_directories(torch_python SYSTEM PRIVATE
+    ${TORCH_ROOT}/third_party/gloo
+    ${TORCH_ROOT}/torch/csrc/profiler/kineto/libkineto/include)
 
 
 
