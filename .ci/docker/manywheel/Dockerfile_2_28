@@ -48,12 +48,6 @@ ARG BASE_CUDA_VERSION=12.6
 ADD ./common/install_magma.sh install_magma.sh
 RUN bash ./install_magma.sh ${BASE_CUDA_VERSION} && rm install_magma.sh
 
-FROM base as jni
-# Install java jni header
-ADD ./common/install_jni.sh install_jni.sh
-ADD ./java/jni.h jni.h
-RUN bash ./install_jni.sh && rm install_jni.sh
-
 FROM base as libpng
 # Install libpng
 ADD ./common/install_libpng.sh install_libpng.sh
@@ -110,7 +104,6 @@ COPY --from=libpng             /usr/local/include/png*               /usr/local/
 COPY --from=libpng             /usr/local/include/libpng*            /usr/local/include/
 COPY --from=libpng             /usr/local/lib/libpng*                /usr/local/lib/
 COPY --from=libpng             /usr/local/lib/pkgconfig              /usr/local/lib/pkgconfig
-COPY --from=jni                /usr/local/include/jni.h              /usr/local/include/jni.h
 
 # Install Rust toolchain (needed to build the torch._rust extension when building
 # the Python wheels). In `common` so all *_final wheel-builder targets inherit it.

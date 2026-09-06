@@ -202,10 +202,6 @@ ENV PATH=/opt/cache/bin:$PATH
 RUN if [ -z "${SKIP_SCCACHE_INSTALL}" ]; then bash ./install_cache.sh; fi
 RUN rm install_cache.sh
 
-# Add jni.h for java host build
-COPY ./common/install_jni.sh install_jni.sh
-COPY ./java/jni.h jni.h
-RUN bash ./install_jni.sh && rm install_jni.sh
 
 # Include BUILD_ENVIRONMENT environment variable in image
 ARG BUILD_ENVIRONMENT

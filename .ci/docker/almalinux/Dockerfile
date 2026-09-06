@@ -115,10 +115,6 @@ ARG DEVTOOLSET_VERSION=13
 COPY --from=patchelf           /patchelf              /usr/local/bin/patchelf
 COPY --from=conda              /opt/conda             /opt/conda
 
-# Add jni.h for java host build.
-COPY ./common/install_jni.sh install_jni.sh
-COPY ./java/jni.h jni.h
-RUN bash ./install_jni.sh && rm install_jni.sh
 
 ENV PATH /opt/conda/bin:$PATH
 ENV LD_LIBRARY_PATH=/opt/rh/gcc-toolset-${DEVTOOLSET_VERSION}/root/usr/lib64:/opt/rh/gcc-toolset-${DEVTOOLSET_VERSION}/root/usr/lib:$LD_LIBRARY_PATH
