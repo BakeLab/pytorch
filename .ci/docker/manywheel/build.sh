@@ -71,14 +71,10 @@ case ${image} in
     manylinux2_28-builder:rocm*)
         MANY_LINUX_VERSION="2_28"
         DEVTOOLSET_VERSION="13"
-        PYTORCH_ROCM_ARCH="gfx950;gfx1200;gfx1201;gfx1151"
+        PYTORCH_ROCM_ARCH="gfx1201"
         TARGET=rocm_final
         GPU_IMAGE=amd64/almalinux:8
-        if [[ "${GPU_ARCH_VERSION}" == "7.14" ]]; then
-            THEROCK_INDEX_URL="https://repo.amd.com/rocm/whl-multi-arch/"
-        else
-            THEROCK_INDEX_URL="https://stable.repo.amd.com/rocm/whl-next/"
-        fi
+        THEROCK_INDEX_URL="https://stable.repo.amd.com/rocm/whl-next/"
         DOCKER_GPU_BUILD_ARG="--build-arg ROCM_VERSION=${GPU_ARCH_VERSION} --build-arg PYTORCH_ROCM_ARCH=${PYTORCH_ROCM_ARCH} --build-arg DEVTOOLSET_VERSION=${DEVTOOLSET_VERSION} --build-arg THEROCK_INDEX_URL=${THEROCK_INDEX_URL}"
         ;;
     manylinux2_28-builder:xpu)

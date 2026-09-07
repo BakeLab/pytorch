@@ -51,7 +51,6 @@ jobs:
           { name: "manylinux2_28-builder",          tag: "cuda13.2",          runner: "${{ needs.select-runner.outputs.x86 }}" },
           { name: "manylinux2_28-builder",          tag: "cuda13.0",          runner: "${{ needs.select-runner.outputs.x86 }}" },
           { name: "manylinux2_28-builder",          tag: "cuda12.6",          runner: "${{ needs.select-runner.outputs.x86 }}" },
-          { name: "manylinux2_28-builder",          tag: "rocm7.14",          runner: "${{ needs.select-runner.outputs.x86 }}" },
           { name: "manylinux2_28-builder",          tag: "rocm10.0",          runner: "${{ needs.select-runner.outputs.x86 }}" },
           { name: "manylinux2_28-builder",          tag: "cpu",               runner: "${{ needs.select-runner.outputs.x86 }}" },
           { name: "manylinux2_28-builder",          tag: "xpu",               runner: "${{ needs.select-runner.outputs.x86 }}" },

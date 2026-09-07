@@ -42,7 +42,7 @@ CUDA_ARCHES_CUDNN_VERSION = {
     "13.4": "9",
 }
 
-ROCM_ARCHES = ["7.14", "10.0"]
+ROCM_ARCHES = ["10.0"]
 
 XPU_ARCHES = ["xpu"]
 RELEASE_PYTHON_VERSIONS = [
@@ -59,8 +59,6 @@ PYTORCH_EXTRA_INSTALL_REQUIREMENTS = {
         "nvidia-nccl-cu13==2.31.2; platform_system == 'Linux' | "
         "nvidia-nvshmem-cu13==3.4.5; platform_system == 'Linux'"
     ),
-    # dependency on latest patch version for (major, minor)
-    "7.14": ("rocm[libraries,device-all]==7.14.*"),
     "10.0": ("rocm[libraries,device-all]==10.0.*"),
 }
 
@@ -220,7 +218,7 @@ def package_build_variant(
     if gpu_arch_type == "xpu":
         return "xpu-bmg"
     if gpu_arch_type == "rocm":
-        return f"rocm{gpu_arch_version}-mi300x"
+        return f"rocm{gpu_arch_version}-gfx1201"
     if gpu_arch_type == "cuda":
         return f"cuda{gpu_arch_version}"
     return gpu_arch_type

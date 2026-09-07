@@ -27,11 +27,7 @@ if [[ "${DOCKER_TAG_PREFIX}" == cuda* ]]; then
 elif [[ "${DOCKER_TAG_PREFIX}" == rocm* ]]; then
     # extract rocm version from image name and tag.  e.g. manylinux2_28-builder:rocm6.2.4 returns 6.2.4
     ROCM_VERSION=$(echo "${DOCKER_TAG_PREFIX}" | awk -F'rocm' '{print $2}')
-    if [[ "${ROCM_VERSION}" == "7.14" ]]; then
-        THEROCK_INDEX_URL="https://repo.amd.com/rocm/whl-multi-arch/"
-    else
-        THEROCK_INDEX_URL="https://stable.repo.amd.com/rocm/whl-next/"
-    fi
+    THEROCK_INDEX_URL="https://stable.repo.amd.com/rocm/whl-next/"
     EXTRA_BUILD_ARGS="--build-arg ROCM_VERSION=${ROCM_VERSION} --build-arg THEROCK_INDEX_URL=${THEROCK_INDEX_URL}"
 fi
 
@@ -44,7 +40,7 @@ case ${DOCKER_TAG_PREFIX} in
     ;;
   rocm*)
     BASE_TARGET=rocm
-    PYTORCH_ROCM_ARCH="gfx1200;gfx1201;gfx950;gfx1151"
+    PYTORCH_ROCM_ARCH="gfx1201"
     EXTRA_BUILD_ARGS="${EXTRA_BUILD_ARGS} --build-arg PYTORCH_ROCM_ARCH=${PYTORCH_ROCM_ARCH}"
     ;;
   *)
