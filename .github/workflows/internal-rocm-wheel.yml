@@ -2,6 +2,9 @@
 name: internal-rocm-wheel
 
 on:
+  push:
+    tags:
+      - internal-rocm-wheel-*
   workflow_dispatch:
 
 permissions:
