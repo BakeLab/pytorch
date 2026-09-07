@@ -6,83 +6,15 @@ if(NOT __AOTRITON_INCLUDED)
   set(__AOTRITON_INSTALL_DIR "${PROJECT_SOURCE_DIR}/torch")
   add_library(__caffe2_aotriton INTERFACE)
 
-  # AOTriton package information from GitHub Release Pages
-  # Replaces .ci/docker/aotriton_version.txt
-  # Note packages information may have versions skipped (due to no ABI breaks)
-  # But they must be listed from lower version to higher version
   set(__AOTRITON_VER "0.14.2b")
-  set(__AOTRITON_BUILD_VARIANTS "")
-  # Note in this file rocm<X.Y> was actually repurposed to match the HIP version
-  # ROCm 7.0 nightlies shipped two incompatible HIP versions, 6.5 and
-  # 7.0, so the ROCm version alone cannot select a compatible package
-  # The rocm prefix stays only because renaming to hip may break things
-  set(__AOTRITON_MANYLINUX_LIST
-      "manylinux_2_28"  # rocm6.4
-      "manylinux_2_28"  # rocm7.0
-      "manylinux_2_28"  # rocm7.1
-      "manylinux_2_28"  # rocm7.2
-      "manylinux_2_28"  # rocm7.14
-      "manylinux_2_28"  # "rocm7.15" ROCM 10.0
-      "manylinux_2_28"  # "rocm7.16" ROCM 10.1/10.2
-      )
-  set(__AOTRITON_ROCM_LIST
-      "rocm6.4"
-      "rocm7.0"
-      "rocm7.1"
-      "rocm7.2"
-      "rocm7.14"
-      "rocm7.15"
-      "rocm7.16"
-      )
   if(DEFINED ENV{PYTORCH_AOTRITON_COMMIT})
     set(__AOTRITON_CI_COMMIT "$ENV{PYTORCH_AOTRITON_COMMIT}")
   else()
     set(__AOTRITON_CI_COMMIT "c11b5b886a10a00f925f74133d38b3505e67ccd9")
   endif()
-  set(__AOTRITON_SHA256_LIST
-      "35f598d0aabf1fca887fb8428e12f34de9e3ce852dc2aa832b76e318cf4f3940"  # rocm6.4
-      "98800207360e1b688afc4fccf794b50560ef2b42bdd32ed0b71f90fdc86b0cf6"  # rocm7.0
-      "d6c86838cb640d4ad1f337d061ffe10121a34424551ae8340eb1e48e55477549"  # rocm7.1
-      "0b01ec5ccc55ca86059afb20f1f5764fee5edd9d7e7b456167d77dc9f691cdc9"  # rocm7.2
-      "dc756824b5c63a689179f765c51f2aa747d3d5ee842b17bdd9238adcf237f91b"  # rocm7.14
-      "6ed840e37b3037fd7e6677e7d29d4ab8fd1578757820ce00b40176bbb51ab053"  # rocm7.15
-      "02370004391255af58141068d83df1b50786a1046df6ef49d0e2509b9537b61b"  # rocm7.16
-      )
-  set(__AOTRITON_IMAGE_LIST
-      "amd-gfx950"
-      "amd-gfx115x"
-      "amd-gfx120x"
-      "amd-gfx1250"
-     )
-  set(__AOTRITON_IMAGE_SHA256_LIST
-     "518fd072eb05948fc0a6c25a20832591c6406df865e3b691a2aeff3fd4c5ce1d" # amd-gfx950
-     "1bc50e8aa8b6bda3410e92886ccca8fd45df3e60a6cbda9ffc58b2c541efd5c2" # amd-gfx115x
-     "6a465dbc03148bba8a2d78c4c2a3cb83155eca00f4f7f749e676402d7660968c" # amd-gfx120x
-     "4aaf71d6e510549d593757e5f88598df1e4a29cbcd91f70750ee8a76f65c027f" # amd-gfx1250
-     )
-  if(USE_ASAN)
-    set(__AOTRITON_BUILD_VARIANTS "+asan")
-    set(__AOTRITON_MANYLINUX_LIST
-        "manylinux_2_28"  # rocm7.14
-        "manylinux_2_28"  # rocm7.15
-        )
-    # ASAN only supports rocm7.14
-    set(__AOTRITON_ROCM_LIST
-        "rocm7.14"
-        "rocm7.15"
-        )
-    set(__AOTRITON_SHA256_LIST
-        "3f5cfba6c42261a3e3b44022c66083ec859fcc98296faa4646b65373fead3448"  # rocm7.14+asan
-        "7a7928d881d6341fc0b8ffb3ad7077f62438a8412ec57f97fb4b4dfbc73b3e64"  # rocm7.15+asan
-        )
-    # ASAN only supports gfx950
-    set(__AOTRITON_IMAGE_LIST
-        "amd-gfx950"
-       )
-    set(__AOTRITON_IMAGE_SHA256_LIST
-       "b428dfe6eef7a1dcfac54ac2408dd136dbd622016331dc863e87ce9ea84c8054" # amd-gfx950+asan
-       )
-  endif()
+  set(__AOTRITON_IMAGE "amd-gfx120x")
+  set(__AOTRITON_IMAGE_SHA256
+      "f173671cc5112897e134f1d209bd6f572ecd507f4d68dc84cb6f07b67e13e851")
   set(__AOTRITON_BASE_URL "$ENV{PYTORCH_AOTRITON_BASE_URL}")
   if(NOT __AOTRITON_BASE_URL)
     set(__AOTRITON_BASE_URL "https://github.com/ROCm/aotriton/releases/download/")  # @lint-ignore
@@ -105,9 +37,14 @@ if(NOT __AOTRITON_INCLUDED)
       GIT_TAG ${__AOTRITON_CI_COMMIT}
       ${__AOTRITON_PATCH_COMMAND}
       PREFIX ${__AOTRITON_EXTERN_PREFIX}
+      PATCH_COMMAND
+      ${CMAKE_COMMAND}
+      -DAOTRITON_SOURCE_DIR:PATH=<SOURCE_DIR>
+      -P "${CMAKE_CURRENT_LIST_DIR}/aotriton_gfx1201_database_filter.cmake"
       CMAKE_CACHE_ARGS
       -DAOTRITON_TARGET_ARCH:STRING=${PYTORCH_ROCM_ARCH}
       -DCMAKE_INSTALL_PREFIX:FILEPATH=${__AOTRITON_INSTALL_DIR}
+      -DCMAKE_PREFIX_PATH:PATH=${ROCM_PATH}
       CMAKE_ARGS
       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
       -DAOTRITON_GPU_BUILD_TIMEOUT=0
@@ -122,70 +59,33 @@ if(NOT __AOTRITON_INCLUDED)
     )
   endfunction()
 
-  set(__AOTRITON_ARCH ${CMAKE_HOST_SYSTEM_PROCESSOR})
-  function(aotriton_download_runtime index project)
-    list(GET __AOTRITON_ROCM_LIST ${index} __AOTRITON_ROCM)
-    list(GET __AOTRITON_MANYLINUX_LIST ${index} __AOTRITON_MANYLINUX)
-    list(GET __AOTRITON_SHA256_LIST ${index} __AOTRITON_SHA256)
-
-    string(CONCAT __AOTRITON_FILE "aotriton-"
-                                  "${__AOTRITON_VER}"
-                                  "${__AOTRITON_BUILD_VARIANTS}-"
-                                  "${__AOTRITON_MANYLINUX}"
-                                  "_${__AOTRITON_ARCH}-${__AOTRITON_ROCM}"
-                                  "-shared.tar.${__AOTRITON_Z}")
-    string(CONCAT __AOTRITON_URL
-           "${__AOTRITON_BASE_URL}"
-           "${__AOTRITON_VER}/${__AOTRITON_FILE}")
-    ExternalProject_Add(${project}
-      URL "${__AOTRITON_URL}"
-      URL_HASH SHA256=${__AOTRITON_SHA256}
-      SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/aotriton_runtime
-      CONFIGURE_COMMAND ""
-      BUILD_COMMAND ""
-      INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory
-      "${CMAKE_CURRENT_BINARY_DIR}/aotriton_runtime"
-      "${__AOTRITON_INSTALL_DIR}"
-      BUILD_BYPRODUCTS "${__AOTRITON_INSTALL_DIR}/${__AOTRITON_LIB}"
-    )
-    message(STATUS "Using AOTriton Runtime from pre-compiled binary ${__AOTRITON_URL}.\
-    Set env variables AOTRITON_INSTALL_FROM_SOURCE=1 to build from source.")
-  endfunction()
-
-  function(aotriton_download_image image project)
-    list(FIND __AOTRITON_IMAGE_LIST ${image} index)
-    list(GET __AOTRITON_IMAGE_SHA256_LIST ${index} __AOTRITON_SHA256)
-
+  function(aotriton_download_image project)
     string(CONCAT __AOTRITON_FILE
-           "aotriton-${__AOTRITON_VER}${__AOTRITON_BUILD_VARIANTS}-images-"
-           "${image}.tar.${__AOTRITON_Z}")
+           "aotriton-${__AOTRITON_VER}-images-"
+           "${__AOTRITON_IMAGE}.tar.${__AOTRITON_Z}")
     string(CONCAT __AOTRITON_URL
            "${__AOTRITON_BASE_URL}"
            "${__AOTRITON_VER}/${__AOTRITON_FILE}")
 
     # Set up directories
-    set(__AOTRITON_DOWNLOAD_DIR ${CMAKE_CURRENT_BINARY_DIR}/aotriton_download-${image})
-    set(__AOTRITON_EXTRACT_DIR ${CMAKE_CURRENT_BINARY_DIR}/aotriton_image-${image})
+    set(__AOTRITON_DOWNLOAD_DIR
+        ${CMAKE_CURRENT_BINARY_DIR}/aotriton_download-${__AOTRITON_IMAGE})
+    set(__AOTRITON_EXTRACT_DIR
+        ${CMAKE_CURRENT_BINARY_DIR}/aotriton_image-${__AOTRITON_IMAGE})
     set(__AOTRITON_INSTALL_SOURCE_DIR ${__AOTRITON_EXTRACT_DIR})
-    set(__DOWNLOAD_NO_EXTRACT "")
-    set(__BUILD_COMMANDS "")
-
-    # On Windows, we need custom tar extraction with UTF-8 support
 
     ExternalProject_Add(${project}
       URL "${__AOTRITON_URL}"
-      URL_HASH SHA256=${__AOTRITON_SHA256}
+      URL_HASH SHA256=${__AOTRITON_IMAGE_SHA256}
       DOWNLOAD_DIR ${__AOTRITON_DOWNLOAD_DIR}
-      ${__DOWNLOAD_NO_EXTRACT}
       SOURCE_DIR ${__AOTRITON_EXTRACT_DIR}
       CONFIGURE_COMMAND ""
       BUILD_COMMAND ""
-      ${__BUILD_COMMANDS}
       INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory
       "${__AOTRITON_INSTALL_SOURCE_DIR}"
       "${__AOTRITON_INSTALL_DIR}"
       BUILD_BYPRODUCTS
-      "${__AOTRITON_INSTALL_DIR}/lib/aotriton.images/${image}/__signature__"
+      "${__AOTRITON_INSTALL_DIR}/lib/aotriton.images/${__AOTRITON_IMAGE}/__signature__"
     )
     message(STATUS "Download AOTriton pre-compiled GPU images from ${__AOTRITON_URL}.")
   endfunction()
@@ -198,35 +98,15 @@ if(NOT __AOTRITON_INCLUDED)
             DESTINATION ${__AOTRITON_INSTALL_DIR})
     set(__AOTRITON_INSTALL_DIR "$ENV{AOTRITON_INSTALLED_PREFIX}")
     message(STATUS "Using Preinstalled AOTriton at ${__AOTRITON_INSTALL_DIR}")
-  elseif(DEFINED ENV{AOTRITON_INSTALL_FROM_SOURCE})
+  elseif(DEFINED ENV{AOTRITON_INSTALL_FROM_SOURCE} OR USE_ASAN)
     aotriton_build_from_source(OFF aotriton_external)
     add_dependencies(__caffe2_aotriton aotriton_external)
     message(STATUS "Using AOTriton compiled from source directory ${__AOTRITON_EXTERN_PREFIX}")
   else()
-    set(__AOTRITON_SYSTEM_ROCM "${hip_VERSION_MAJOR}.${hip_VERSION_MINOR}")
-    list(FIND __AOTRITON_ROCM_LIST "rocm${__AOTRITON_SYSTEM_ROCM}" __AOTRITON_RUNTIME_INDEX)
-    if(${__AOTRITON_RUNTIME_INDEX} LESS 0)
-      message(STATUS "Cannot find AOTriton runtime for ROCM ${__AOTRITON_SYSTEM_ROCM}. \
-      Build runtime from source")
-      aotriton_build_from_source(ON aotriton_runtime)
-    else()
-      aotriton_download_runtime(${__AOTRITON_RUNTIME_INDEX} aotriton_runtime)
-    endif()
+    aotriton_build_from_source(ON aotriton_runtime)
     add_dependencies(__caffe2_aotriton aotriton_runtime)
-    set(__AOTRITON_CHAINED_IMAGE "aotriton_runtime")
-    foreach(image ${__AOTRITON_IMAGE_LIST})
-      string(SUBSTRING ${image} 7 -1 gfx_pattern)
-      string(REPLACE "x" "." gfx_regex ${gfx_pattern})
-      foreach(target ${PYTORCH_ROCM_ARCH})
-        if(target MATCHES ${gfx_regex})
-          set(__AOTRITON_DOWNLOAD_TARGET aotriton_image_${gfx_pattern})
-          aotriton_download_image(${image} ${__AOTRITON_DOWNLOAD_TARGET})
-          add_dependencies(${__AOTRITON_CHAINED_IMAGE} ${__AOTRITON_DOWNLOAD_TARGET})
-          set(__AOTRITON_CHAINED_IMAGE ${__AOTRITON_DOWNLOAD_TARGET})
-          break()
-        endif()
-      endforeach()
-    endforeach()
+    aotriton_download_image(aotriton_image_gfx120x)
+    add_dependencies(aotriton_runtime aotriton_image_gfx120x)
   endif()
   target_link_libraries(__caffe2_aotriton INTERFACE "${__AOTRITON_INSTALL_DIR}/${__AOTRITON_LIB}")
   target_include_directories(__caffe2_aotriton INTERFACE ${__AOTRITON_INSTALL_DIR}/include)

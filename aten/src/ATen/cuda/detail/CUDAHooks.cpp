@@ -31,6 +31,7 @@
 #include <sstream>
 #include <cstddef>
 #include <memory>
+#include <string_view>
 
 namespace c10::cuda::_internal {
 void setHasPrimaryContext(bool (*func)(DeviceIndex));
@@ -368,15 +369,7 @@ std::string CUDAHooks::showConfig() const {
 
   auto printCudaStyleVersion = [&](size_t v) {
 #ifdef USE_ROCM
-    // HIP_VERSION value format was changed after ROCm v4.2 to include the patch number
-    if(v < 500) {
-      // If major=xx, minor=yy then format -> xxyy
-      oss << (v / 100) << '.' << (v % 10);
-    }
-    else {
-      // If major=xx, minor=yy & patch=zzzzz then format -> xxyyzzzzz
-      oss << (v / 10000000) << '.' << (v / 100000 % 100) << '.' << (v % 100000);
-    }
+    oss << (v / 10000000) << '.' << (v / 100000 % 100) << '.' << (v % 100000);
 #else
     oss << (v / 1000) << '.' << (v / 10 % 100);
     if (v % 10 != 0) {
@@ -473,47 +466,25 @@ DeviceIndex CUDAHooks::getCurrentDevice() const {
 
 #ifdef USE_ROCM
 bool CUDAHooks::isGPUArch(const std::vector<std::string>& archs, DeviceIndex device_index) const {
-  hipDeviceProp_t* prop;
-  if (device_index == -1){
-      prop = at::cuda::getCurrentDeviceProperties();
-  } else {
-      prop = at::cuda::getDeviceProperties(device_index);
-  }
-
-  std::string device_arch = prop->gcnArchName;
-  for (std::string arch : archs) {
-      size_t substring = device_arch.find(arch);
-      if (substring != std::string::npos) {
-          return true;
-      }
+  const auto* prop = device_index == -1
+      ? at::cuda::getCurrentDeviceProperties()
+      : at::cuda::getDeviceProperties(device_index);
+  const std::string_view device_arch = prop->gcnArchName;
+  for (const auto& arch : archs) {
+    if (device_arch.find(arch) != std::string_view::npos) {
+      return true;
+    }
   }
   return false;
 }
 
 const std::vector<std::string>& CUDAHooks::getHipblasltPreferredArchs() const {
-  static const std::vector<std::string> archs = {
-    "gfx1200", "gfx1201",
-    "gfx950",
-    "gfx1151",
-#if ROCM_VERSION >= 100300
-    "gfx1170", "gfx1171",
-#endif
-    // TheRock can provide a newer runtime than the ROCm headers used to build
-    // PyTorch, so gfx1250 support cannot depend on the compile-time version.
-    "gfx1250",
-  };
+  static const std::vector<std::string> archs = {"gfx1201"};
   return archs;
 }
 
 const std::vector<std::string>& CUDAHooks::getHipblasltSupportedArchs() const {
-  static const std::vector<std::string> archs = {
-    "gfx1200", "gfx1201", 
-    "gfx950", "gfx1151",
-#if ROCM_VERSION >= 100300
-    "gfx1170", "gfx1171",
-#endif
-    "gfx1250",
-  };
+  static const std::vector<std::string> archs = {"gfx1201"};
   return archs;
 }
 #endif

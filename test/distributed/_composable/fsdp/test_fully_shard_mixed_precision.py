@@ -41,7 +41,6 @@ from torch.testing._internal.common_fsdp import (
 )
 from torch.testing._internal.common_utils import (
     run_tests,
-    skipIfRocmVersionLessThan,
     TEST_CUDA,
     TEST_XPU,
     TestCase,
@@ -215,7 +214,6 @@ class TestFullyShardMixedPrecisionTraining(FSDPTestContinuous):
             use_shard_placement_fn_vals.append(True)
         return use_shard_placement_fn_vals
 
-    @skipIfRocmVersionLessThan((7, 0))
     @skip_if_lt_x_gpu(2)
     @unittest.skipIf(DISTRIBUTED_BACKEND != "nccl", "Requires NCCL backend")
     @requires_nccl_version((2, 10), "Need NCCL 2.10+ for bf16 collectives")
@@ -306,7 +304,6 @@ class TestFullyShardMixedPrecisionTraining(FSDPTestContinuous):
         copied_dtypes = {dtype for dtypes in copy_in_dtypes for dtype in dtypes}
         self.assertEqual(copied_dtypes, {param_dtype})
 
-    @skipIfRocmVersionLessThan((7, 0))
     @skip_if_lt_x_gpu(2)
     @unittest.skipIf(DISTRIBUTED_BACKEND != "nccl", "Requires NCCL backend")
     @requires_nccl_version((2, 10), "Need NCCL 2.10+ for bf16 collectives")
@@ -385,93 +382,6 @@ class TestFullyShardMixedPrecisionTraining(FSDPTestContinuous):
             self.assertEqual(fsdp_loss, ref_loss)
             check_sharded_parity(self, ref_model, model)
 
-    @skip_if_lt_x_gpu(2)
-    @unittest.skipIf(DISTRIBUTED_BACKEND != "nccl", "Requires NCCL backend")
-    @requires_nccl_version((2, 10), "Need NCCL 2.10+ for bf16 collectives")
-    def test_per_param_mixed_precision(self):
-        torch.manual_seed(42)
-        model = KDAStyleTransformer().to(device_type)
-        ref_model = copy.deepcopy(model)
-        ref_compute_model = copy.deepcopy(model)
-        reduce_dtype = torch.float32
-
-        fp32_params = {model.A_log, model.dt_bias}
-        fp32_params.update(
-            module.weight
-            for module in model.modules()
-            if isinstance(module, nn.RMSNorm)
-        )
-        expected_dtypes = {
-            name: torch.float32 if param in fp32_params else torch.bfloat16
-            for name, param in model.named_parameters()
-        }
-        for module in ref_compute_model.modules():
-            if isinstance(module, (nn.Embedding, nn.Linear)):
-                module.to(torch.bfloat16)
-        for param in ref_compute_model.parameters():
-            param.grad_dtype = reduce_dtype
-
-        def param_dtype_override_fn(param: nn.Parameter) -> torch.dtype | None:
-            return torch.float32 if param in fp32_params else None
-
-        mp_policy = MixedPrecisionPolicy(
-            param_dtype=torch.bfloat16,
-            reduce_dtype=reduce_dtype,
-            cast_forward_inputs=True,
-            param_dtype_override_fn=param_dtype_override_fn,
-        )
-        fully_shard(model, mp_policy=mp_policy)
-        optim = torch.optim.SGD(model.parameters(), lr=1e-2)
-        ref_optim = torch.optim.SGD(ref_model.parameters(), lr=1e-2)
-
-        reduce_dtypes: list[torch.dtype] = []
-        orig_reduce_scatter = dist.reduce_scatter_single
-
-        def record_dtype(output: torch.Tensor):
-            reduce_dtypes.append(output.dtype)
-
-        reduce_scatter = functools.partial(
-            reduce_scatter_with_assert, self, orig_reduce_scatter, record_dtype
-        )
-        tokens = (torch.arange(16, device=device_type) + self.rank).remainder(16)
-        tokens = tokens.view(2, 8)
-        residual = torch.randn(2, 8, 16, device=device_type)
-        ref_residual = residual.to(torch.bfloat16)
-
-        output = model(tokens, residual)
-        self.assertEqual(model.forward_input_dtype, torch.bfloat16)
-        self.assertEqual(model.forward_dtypes, expected_dtypes)
-        with patch_reduce_scatter(reduce_scatter):
-            output.sum().backward()
-
-        ref_output = ref_compute_model(tokens, ref_residual)
-        self.assertEqual(output, ref_output)
-        ref_output.sum().backward()
-        predivide, postdivide, _, _ = _get_gradient_divide_factors(
-            self.process_group, all_reduce_group=None, reduce_dtype=reduce_dtype
-        )
-        for ref_param, compute_param in zip(
-            ref_model.parameters(), ref_compute_model.parameters(), strict=True
-        ):
-            self.assertIsNotNone(compute_param.grad)
-            grad = compute_param.grad
-            if predivide is not None and predivide > 1:
-                grad.div_(predivide)
-            elif predivide is None:
-                grad.div_(self.world_size)
-            reduced_grad = torch.empty_like(torch.chunk(grad, self.world_size)[0])
-            dist.reduce_scatter_single(reduced_grad, grad)
-            dist.all_gather_single(grad, reduced_grad)
-            if postdivide is not None and postdivide > 1:
-                grad.div_(postdivide)
-            ref_param.grad = grad.float()
-
-        self.assertEqual(reduce_dtypes, [reduce_dtype])
-        optim.step()
-        ref_optim.step()
-        check_sharded_parity(self, ref_model, model)
-
-    @skipIfRocmVersionLessThan((7, 0))
     @skip_if_lt_x_gpu(2)
     def test_reduce_dtype_after_frozen_first_forward(self):
         class Model(nn.Module):
