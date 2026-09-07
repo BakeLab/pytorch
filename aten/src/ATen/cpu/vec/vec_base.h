@@ -370,9 +370,9 @@ struct Vectorized {
     }
     return ret;
   }
-  T reduce(T (*const f)(T)) const {
-    T ret = 0;
-    for (int64_t i = 0; i != size(); i++) {
+  T reduce(T (*const f)(T, T)) const {
+    T ret = values[0];
+    for (int64_t i = 1; i != size(); i++) {
       ret = f(ret, values[i]);
     }
     return ret;
@@ -692,7 +692,7 @@ struct Vectorized {
   // be carried explicitly: every comparison against it is false, so the naive
   // ternary would let the next lane displace it.
   T reduce_max() const {
-    return reduce([](T x, T y) -> T { return (_isnan(x) || x > y) ? x : y; });
+    return reduce([](T x, T y) -> T { return std::max(x, y); });
   }
 
  private:
