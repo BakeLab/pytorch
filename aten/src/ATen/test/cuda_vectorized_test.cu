@@ -43,7 +43,6 @@ TEST(TestVectorizedMemoryAccess, CanVectorizeUpTo) {
   char *ptr = buffer;
 
 #ifdef USE_ROCM
-  // ROCm vectorizes 1-byte types up to 16 and caps 4/8-byte types at 4.
   ASSERT_EQ(memory::can_vectorize_up_to<bool>(ptr), 16);
   ASSERT_EQ(memory::can_vectorize_up_to<int8_t>(ptr), 16);
   ASSERT_EQ(memory::can_vectorize_up_to<int16_t>(ptr), 8);

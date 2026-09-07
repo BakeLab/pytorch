@@ -631,31 +631,6 @@ if(USE_ROCM)
     list(APPEND HIP_CXX_FLAGS -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_HIP)
     list(APPEND HIP_CXX_FLAGS -DHIPBLAS_V2)
     list(APPEND HIP_CXX_FLAGS -DHIP_ENABLE_WARP_SYNC_BUILTINS)
-    if(HIPBLASLT_OUTER_VEC)
-      list(APPEND HIP_CXX_FLAGS -DHIPBLASLT_OUTER_VEC)
-    endif()
-    if(HIPBLASLT_VEC_EXT)
-      list(APPEND HIP_CXX_FLAGS -DHIPBLASLT_VEC_EXT)
-    endif()
-    # composable_kernel supports CK GEMM only on an allowlist of gfx archs
-    # (torch_filter_ck_gemm_arches in cmake/public/utils.cmake; mirrors the
-    # allowlist in at::Context::ckGemmSupported()). aten/src/ATen/CMakeLists.txt
-    # restricts the ck_gemm target's HIP_ARCHITECTURES to that subset. When none
-    # of the requested archs are supported that list is empty and CMake fails at
-    # generate time with 'HIP_ARCHITECTURES is empty for target "ck_gemm"', so
-    # turn CK GEMM off entirely here -- before -DUSE_ROCM_CK_GEMM is added below,
-    # since the non-CK TUs guarded by that define (HIPBlas.cpp, HIPHooks.cpp,
-    # GroupedBlas.cpp) would otherwise reference symbols the unbuilt ck_gemm
-    # target never provides. Mirrors the USE_ROCM_CK_SDPA / USE_MSLK auto-disable
-    # pattern in aten/src/ATen/CMakeLists.txt.
-    if(USE_ROCM_CK_GEMM)
-      torch_filter_ck_gemm_arches(_ck_gemm_supported_arches)
-      if(_ck_gemm_supported_arches STREQUAL "")
-        message(STATUS "USE_ROCM_CK_GEMM disabled: PYTORCH_ROCM_ARCH (${PYTORCH_ROCM_ARCH}) has no arch supported by composable_kernel")
-        caffe2_update_option(USE_ROCM_CK_GEMM OFF)
-      endif()
-      unset(_ck_gemm_supported_arches)
-    endif()
     if(USE_ROCM_CK_GEMM)
       list(APPEND HIP_CXX_FLAGS -DUSE_ROCM_CK_GEMM)
     endif()
@@ -677,10 +652,6 @@ if(USE_ROCM)
       file(TO_CMAKE_PATH "${ROCM_PATH}/lib/llvm/amdgcn/bitcode" _rocm_device_lib_path)
       string(APPEND CMAKE_HIP_FLAGS " --rocm-device-lib-path=${_rocm_device_lib_path}")
     endif()
-    add_definitions(-DROCM_VERSION=${ROCM_VERSION_DEV_INT})
-    add_definitions(-DTORCH_HIP_VERSION=${TORCH_HIP_VERSION})
-    message("TORCH_HIP_VERSION=${TORCH_HIP_VERSION} is added as a compiler defines")
-
     if(CMAKE_BUILD_TYPE MATCHES Debug)
        list(APPEND HIP_CXX_FLAGS -g2)
        list(APPEND HIP_CXX_FLAGS -O0)
@@ -731,11 +702,6 @@ if(USE_ROCM)
       set(CAFFE2_USE_HIPSPARSELT ON)
     elseif(USE_HIPSPARSELT)
       caffe2_update_option(USE_HIPSPARSELT OFF)
-    endif()
-
-    # hipfile only ships with ROCm 7.14 and above, disable the option if not found
-    if(USE_CUFILE AND NOT hipfile_FOUND)
-      caffe2_update_option(USE_CUFILE OFF)
     endif()
 
     # ---[ Kernel asserts
