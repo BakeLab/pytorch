@@ -174,7 +174,7 @@ struct Flatten : IterArgs<Flatten> {
       out.emplace_back(x.value());
   }
   void operator()(at::ArrayRef<at::Tensor> xs) {
-    out.insert(out.end(), xs.begin(), xs.end());
+    out.append_range(xs);
   }
 };
 
