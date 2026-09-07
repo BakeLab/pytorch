@@ -376,7 +376,7 @@ cmake_dependent_option(USE_ROCM_CK_GEMM "Use ROCm Composable Kernel for GEMMs" O
 # cmake/public/utils.cmake) and the runtime support check / dispatch, which read
 # it through the generated ATen/ROCmCKGEMMConfig.h. Add a WMMA arch (e.g.
 # gfx1200) here to opt it back in without patching source.
-set(TORCH_CK_GEMM_ARCH_LIST "gfx950" CACHE STRING
+set(TORCH_CK_GEMM_ARCH_LIST "gfx1201" CACHE STRING
     "Semicolon-separated GPU archs Composable Kernel GEMM is built and enabled for")
 cmake_dependent_option(USE_ROCM_CK_SDPA "Use ROCm Composable Kernel for SDPA" OFF "USE_ROCM" OFF)
 # Off by default because enabling gfx12 adds CK SDPA code generation and compile
@@ -818,10 +818,7 @@ if(USE_FLASH_ATTENTION AND USE_CUDA AND NOT USE_ROCM)
 endif()
 
 
-IF(USE_ROCM AND "gfx950" IN_LIST PYTORCH_ROCM_ARCH)
-  message(WARNING "Setting USE_MSLK for gfx950 to ON by default, doing ROCM build")
-  set(USE_MSLK_DEFAULT ON)
-elseif(USE_CUDA AND "$ENV{TORCH_CUDA_ARCH_LIST}" MATCHES "10.0" AND CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 12.8)
+if(USE_CUDA AND "$ENV{TORCH_CUDA_ARCH_LIST}" MATCHES "10.0" AND CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 12.8)
   message(STATUS "Setting USE_MSLK to ON by default , doing CUDA build for SM100a")
   set(USE_MSLK_DEFAULT ON)
 else()
@@ -833,7 +830,7 @@ cmake_dependent_option(
   "Whether to build MSLK quantized GEMM kernels.\
   Will be disabled if not supported by the platform"
   ${USE_MSLK_DEFAULT}
-  "USE_CUDA OR USE_ROCM"
+  "USE_CUDA"
   OFF)
 
 

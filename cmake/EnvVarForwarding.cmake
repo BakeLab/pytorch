@@ -68,10 +68,9 @@
 # Architecture selection (forwarded by prefix or read from the environment):
 #   TORCH_CUDA_ARCH_LIST     CUDA arches to build for, e.g. "6.0;7.0" (passthrough)
 #   TORCH_XPU_ARCH_LIST      Xe2+ XPU arches, e.g. "bmg,lnl-m,ptl-h" (passthrough)
-#   PYTORCH_ROCM_ARCH        AMD GPU targets, e.g. "gfx950;gfx1201" (read from env
-#                            in cmake/public/utils.cmake)
-#   TORCH_CK_GEMM_ARCH_LIST  AMD GPU archs Composable Kernel GEMM is built and
-#                            enabled for, e.g. "gfx90a;gfx942;gfx950" (passthrough)
+#   PYTORCH_ROCM_ARCH        AMD GPU target; this fork requires "gfx1201" (read
+#                            from the environment in cmake/public/utils.cmake)
+#   TORCH_CK_GEMM_ARCH_LIST  CK GEMM build and runtime architecture allowlist (passthrough)
 #
 # Library/backend selection (passthrough or read from the environment):
 #   UBSAN_FLAGS             additional UBSan compiler and linker flags

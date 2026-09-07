@@ -17,11 +17,11 @@
 #endif
 #ifndef AT_ROCM_CK_SDPA_ARCHS
 // Non-CMake ROCm builds (e.g. Buck) do not generate the header but still
-// build CK SDPA, so fall back to the archs it supported before the header
-// existed. An empty list here would make ckSDPASupported() return false and
+// build CK SDPA, so fall back to the architecture supported by this build.
+// An empty list here would make ckSDPASupported() return false and
 // silently reroute a CK preference to AOTriton, which internal builds stub
 // out with a runtime error.
-#define AT_ROCM_CK_SDPA_ARCHS "gfx950"
+#define AT_ROCM_CK_SDPA_ARCHS "gfx1201"
 #endif
 
 #if defined(USE_ROCM) && defined(__has_include) && \

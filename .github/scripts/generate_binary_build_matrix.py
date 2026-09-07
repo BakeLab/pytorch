@@ -352,7 +352,7 @@ def package_build_variant(
     if gpu_arch_type == "xpu":
         return "xpu-bmg"
     if gpu_arch_type == "rocm":
-        return f"rocm{gpu_arch_version}-mi300x"
+        return f"rocm{gpu_arch_version}-gfx1201"
     if gpu_arch_type == "cuda":
         return f"cuda{gpu_arch_version}"
     return gpu_arch_type

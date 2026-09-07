@@ -476,7 +476,6 @@ pyyaml = ["pyyaml"]
 
 [tool.isort]
 src_paths = ["caffe2", "torch", "torchgen", "functorch", "test"]
-extra_standard_library = ["typing_extensions"]
 skip_gitignore = true
 skip_glob = ["third_party/*"]
 atomic = true
@@ -494,8 +493,6 @@ collapse_blank_lines_in_category = false
 
 [tool.usort.known]
 first_party = ["caffe2", "torch", "torchgen", "functorch", "test"]
-standard_library = ["typing_extensions"]
-
 [tool.ruff]
 # Ruff takes its target version from requires-python, which is now >=3.11. That
 # turns on UP035/UP036/UP044/UP017 and rewrites ~160 files that still carry the

@@ -22,7 +22,6 @@ from unittest import mock, SkipTest
 
 import torch
 from torch import inf, nan
-from torch._subclasses.fake_tensor import FakeTensorMode
 import torch.autograd.forward_ad as fwAD
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
@@ -36,7 +35,7 @@ from torch.nn import Buffer, Parameter
 from torch.nn.parallel._functions import Broadcast
 from torch.testing._internal.common_dtype import integral_types, get_all_math_dtypes, floating_types
 from torch.testing._internal.common_utils import dtype_name, freeze_rng_state, run_tests, TestCase, \
-    skipIfNoLapack, skipIfRocm, skipIfRocmVersionLessThan, getRocmVersion, TEST_MPS, TEST_NUMPY, TEST_SCIPY, TEST_WITH_CROSSREF, TEST_WITH_ROCM, TEST_MULTIACCELERATOR, \
+    skipIfNoLapack, skipIfRocm, getRocmVersion, TEST_NUMPY, TEST_SCIPY, TEST_WITH_CROSSREF, TEST_WITH_ROCM, TEST_MULTIACCELERATOR, \
     download_file, get_function_arglist, load_tests, skipIfMPS, MACOS_VERSION, \
     IS_ARM64, IS_MACOS, IS_WINDOWS, \
     parametrize as parametrize_test, subtest, instantiate_parametrized_tests, \
@@ -48,10 +47,10 @@ from torch.testing._internal.common_nn import NNTestCase, NewModuleTest, Criteri
     module_tests, criterion_tests, loss_reference_fns, _create_basic_net, \
     ctcloss_reference, get_new_module_tests, single_batch_reference_fn, _test_bfloat16_ops, _test_module_empty_input
 from torch.testing._internal.common_device_type import dtypesIfMPS, instantiate_device_type_tests, dtypes, \
-    dtypesIfCUDA, precisionOverride, onlyCUDA, onlyCPU, onlyAccelerator, \
-    skipCUDAIf, skipCUDAIfMiopen, skipCUDAIfNoCudnn, skipCUDAIfNotRocm, largeMPSBufferTest, skipMPS, \
-    onlyNativeDeviceTypes, deviceCountAtLeast, largeTensorTest, expectedFailureMeta, \
-    expectedFailureMPS, skipMeta, get_all_device_types, skipCUDAIfNoSparseGeneric
+    dtypesIfCUDA, precisionOverride, onlyCUDA, onlyCPU, onlyAccelerator, onlyOn, \
+    skipCUDAIf, skipCUDAIfNoCudnn, skipCUDAIfRocm, skipMPSIf, skipMPS, \
+    onlyNativeDeviceTypes, deviceCountAtLeast, largeTensorTest, expectedFailureMeta, expectedFailureMPS, \
+    expectedFailureMPSPre27, skipMeta, get_all_device_types, skipCUDAIfNoSparseGeneric
 from torch.testing._internal.common_modules import module_inputs_torch_nn_LinearCrossEntropyLoss
 
 from hypothesis import assume, given, settings, strategies as st
@@ -4261,6 +4260,41 @@ tensor(..., device='meta', size=(1,), requires_grad=True)""")
         self.assertEqual(out, torch.ones(2, dtype=torch.float))
 
 
+    def test_grid_sample_error_checking(self):
+        input = torch.empty(1, 1, 2, 2)
+        grid = torch.empty(1, 1, 1, 2)
+
+        # assert no error
+        F.grid_sample(input, grid, align_corners=False)
+
+        with self.assertRaisesRegex(ValueError, "but got: 'garbage'"):
+            F.grid_sample(input, grid, mode='garbage', align_corners=False)
+
+        with self.assertRaisesRegex(ValueError, "but got: 'garbage'"):
+            F.grid_sample(input, grid, padding_mode='garbage', align_corners=False)
+
+        with self.assertRaisesRegex(RuntimeError, "expected grid to have size 1 in last dimension"):
+            F.grid_sample(input[0], grid, align_corners=False)
+
+        with self.assertRaisesRegex(RuntimeError, "expected grid to have size 2 in last dimension"):
+            F.grid_sample(input, torch.empty(1, 1, 1, 1, 3), align_corners=False)
+
+        with self.assertRaisesRegex(RuntimeError, "expected grid and input to have same batch size"):
+            F.grid_sample(input, torch.empty(2, 1, 1, 2), align_corners=False)
+
+        with self.assertRaisesRegex(RuntimeError, "expected grid to have size 2 in last dimension"):
+            F.grid_sample(input, torch.empty(1, 1, 1, 3), align_corners=False)
+
+        with self.assertRaisesRegex(RuntimeError, "expected input to have non-empty spatial dimensions"):
+            F.grid_sample(torch.empty(1, 1, 0, 2), grid, align_corners=False)
+
+        with self.assertRaisesRegex(RuntimeError, "bicubic interpolation only supports 4D input"):
+            F.grid_sample(torch.empty(1, 1, 2, 2, 2), torch.empty(1, 1, 1, 1, 3), mode='bicubic')
+
+        if TEST_CUDA:
+            with self.assertRaisesRegex(RuntimeError, "Expected all tensors to be on the same device"):
+                F.grid_sample(input.cuda(), grid, align_corners=False)
+
     def test_affine_grid_error_checking(self):
         # 2D affine
         theta = torch.empty(1, 2, 3, dtype=torch.double)
@@ -4699,8 +4733,111 @@ tensor(..., device='meta', size=(1,), requires_grad=True)""")
                                 test(N, C, H, W, mode, padding_mode, align_corners, input_requires_grad)
 
     @set_default_dtype(torch.double)
-    def test_grid_sample_3d_gradcheck(self):
-        for mode in ('bilinear', 'nearest', 'bicubic'):
+    def test_grid_sample_3d(self):
+        # Backward pass of native C++ and CUDA kernels branch depending on whether input requires gradient,
+        # so we test both cases.
+        def test(N, C, D, H, W, mode, padding_mode, align_corners, input_requires_grad):
+            def test_shape(N, C, ID, IH, IW, D, H, W, mode, padding_mode, align_corners):
+                input_cpu = torch.randn(C, N, ID, IH, IW).transpose(0, 1).requires_grad_(input_requires_grad)
+                grid_cpu = torch.randn(D, N, H, W, 3).transpose(0, 1).requires_grad_()
+                out_cpu = F.grid_sample(input_cpu, grid_cpu, mode=mode, padding_mode=padding_mode,
+                                        align_corners=align_corners)
+                self.assertTrue(out_cpu.size() == torch.Size([N, C, D, H, W]))
+
+                gradients = torch.randn_like(out_cpu)
+                out_cpu.backward(gradients)
+
+                if TEST_CUDA:
+                    input_cuda = input_cpu.detach().transpose(0, 1).cuda().transpose(0, 1).requires_grad_(input_requires_grad)
+                    grid_cuda = grid_cpu.detach().transpose(0, 1).cuda().transpose(0, 1).requires_grad_()
+                    out_cuda = F.grid_sample(input_cuda, grid_cuda, mode=mode, padding_mode=padding_mode,
+                                             align_corners=align_corners)
+                    self.assertEqual(out_cpu, out_cuda)
+
+                    out_cuda.backward(gradients.cuda())
+                    if input_requires_grad:
+                        self.assertEqual(input_cpu.grad, input_cuda.grad)
+                    self.assertEqual(grid_cpu.grad, grid_cuda.grad, atol=5e-5, rtol=0)
+
+                    # check that zero-dimensional input strides don't error out
+                    base_input = torch.randn(N, C, 1, IH, IW)
+                    input_cpu = base_input.expand_as(input_cuda).requires_grad_(input_requires_grad)
+                    grid_cpu = torch.randn(N, D, H, W, 3, requires_grad=True)
+                    out_cpu = F.grid_sample(input_cpu, grid_cpu, mode=mode, padding_mode=padding_mode,
+                                            align_corners=align_corners)
+
+                    input_cuda = base_input.cuda().expand_as(input_cuda).requires_grad_(input_requires_grad)
+                    grid_cuda = grid_cpu.detach().cuda().requires_grad_()
+                    out_cuda = F.grid_sample(input_cuda, grid_cuda, mode=mode, padding_mode=padding_mode,
+                                             align_corners=align_corners)
+                    self.assertEqual(out_cpu, out_cuda)
+
+            # test same size output
+            test_shape(N, C, D, H, W, D, H, W, mode, padding_mode, align_corners)
+
+            # test larger output
+            N = random.randint(2, 7)
+            C = random.randint(2, 5)
+            ID = random.randint(2, 7)
+            IH = random.randint(2, 7)
+            IW = random.randint(2, 7)
+            D = random.randint(ID + 1, 10)
+            H = random.randint(IH + 1, 10)
+            W = random.randint(IW + 1, 10)
+            test_shape(N, C, ID, IH, IW, D, H, W, mode, padding_mode, align_corners)
+
+            # test smaller output
+            N = random.randint(2, 7)
+            C = random.randint(2, 5)
+            ID = random.randint(2, 7)
+            IH = random.randint(2, 7)
+            IW = random.randint(2, 7)
+            D = random.randint(2, ID)
+            H = random.randint(2, IH)
+            W = random.randint(2, IW)
+            test_shape(N, C, ID, IH, IW, D, H, W, mode, padding_mode, align_corners)
+
+            # test 1x1 inpput
+            N = random.randint(2, 7)
+            C = random.randint(2, 7)
+            ID = 1
+            IH = 1
+            IW = 1
+            H = random.randint(2, 5)
+            W = random.randint(2, 5)
+            test_shape(N, C, ID, IH, IW, D, H, W, mode, padding_mode, align_corners)
+
+            # testing empty grid
+            N = random.randint(2, 7)
+            C = random.randint(2, 5)
+            ID = random.randint(2, 7)
+            IH = random.randint(2, 7)
+            IW = random.randint(2, 7)
+            D = random.randint(3, ID + 2)
+            W = random.randint(3, IW + 2)
+            test_shape(N, C, ID, IH, IW, D, 0, W, mode, padding_mode, align_corners)
+
+            # testing empty channel
+            N = random.randint(2, 7)
+            ID = random.randint(2, 5)
+            IH = random.randint(2, 7)
+            IW = random.randint(2, 7)
+            D = random.randint(3, ID + 2)
+            H = random.randint(3, IH + 2)
+            W = random.randint(3, IW + 2)
+            test_shape(N, 0, ID, IH, IW, D, H, W, mode, padding_mode, align_corners)
+
+            # testing empty batch
+            C = random.randint(2, 5)
+            ID = random.randint(2, 7)
+            IH = random.randint(2, 7)
+            IW = random.randint(2, 7)
+            D = random.randint(3, ID + 2)
+            H = random.randint(3, IH + 2)
+            W = random.randint(3, IW + 2)
+            test_shape(0, C, ID, IH, IW, D, H, W, mode, padding_mode, align_corners)
+
+        for mode in ('bilinear', 'nearest'):
             for padding_mode in ('zeros', 'border', 'reflection'):
                 for align_corners in (True, False):
                     # do gradcheck
@@ -8401,6 +8538,7 @@ class TestNNDeviceType(NNTestCase):
             self.assertEqual(x.grad[:, :, 0], g[:, :, : pl + 1].sum(-1))
             self.assertEqual(x.grad[:, :, -1], g[:, :, -pr - 1:].sum(-1))
 
+    @expectedFailureMPSPre27  # Correctness issue https://github.com/pytorch/pytorch/issues/135447
     def test_ReplicationPad2d_large(self, device):
         shapes = ([2, 65736, 4, 4], [65736, 2, 4, 4])
         pl, pr, pt, pb = 3, 4, 5, 6
@@ -8624,27 +8762,7 @@ class TestNNDeviceType(NNTestCase):
             inp = torch.randn(1, 1, 3, 3, 3, device=device)
             torch.ops.aten.reflection_pad3d(inp, (1, 1, 1, 1, 1, 1, 1))
 
-    @parametrize_test("mode,pad", (("reflect", 1024), ("replicate", 1)))
-    @parametrize_test("ndim", (1, 2, 3))
-    @parametrize_test("length", (65537, 95520, 200000))
-    @parametrize_test("batched", (False, True))
-    def test_pad_large_width(self, device, mode, pad, ndim, length, batched):
-        # https://github.com/pytorch/pytorch/issues/196949
-        dtype = torch.bfloat16
-        shape = ((2, 3) if batched else (3,)) + (2,) * (ndim - 1) + (length,)
-        padding = (pad, pad) + (0, 0) * (ndim - 1)
-        x = torch.randn(shape, device=device, dtype=dtype, requires_grad=True)
-        ref_x = x.detach().cpu().double().requires_grad_()
-        out = F.pad(x, padding, mode=mode)
-        ref_out = F.pad(ref_x, padding, mode=mode)
-        self.assertEqual(out, ref_out.to(dtype), atol=0, rtol=0)
-        grad = torch.randn_like(out)
-        out.backward(grad)
-        ref_out.backward(grad.cpu().double())
-        self.assertEqual(x.grad, ref_x.grad.to(dtype), atol=0, rtol=0)
-
-    @skipMPS  # backward mismatches CPU reference at this size on MPS
-    @onlyAccelerator
+    @onlyCUDA   # Test if CPU and GPU results match
     def test_ReflectionPad2d_large(self, device):
         shapes = ([2, 65736, 6, 6], [65736, 2, 6, 6])
         pad = (1, 2, 3, 4)
@@ -10724,11 +10842,7 @@ class TestNNDeviceType(NNTestCase):
             sum(i * s for i, s in zip(large_view.size(), large_view.stride())) >= 2 ** 31,
             msg="View must use 64-bit indexing")
         for mode, padding_mode, align_corners in itertools.product(
-                ('nearest', 'bilinear', 'bicubic'), ('zeros', 'border', 'reflection'), (True, False)):
-            # Neither MPS nor XPU has a 5-D bicubic sampler. XPU does not run this class
-            # (allow_xpu=False); its kernel lives in torch-xpu-ops.
-            if mode == 'bicubic' and torch.device(device).type in ('mps', 'xpu'):
-                continue
+                ('nearest', 'bilinear'), ('zeros', 'border', 'reflection'), (True, False)):
             a = F.grid_sample(
                 small_image, coords, mode=mode,
                 padding_mode=padding_mode, align_corners=align_corners)
@@ -10750,8 +10864,10 @@ class TestNNDeviceType(NNTestCase):
     def test_grid_sample_half_precision(self, device):
         def helper(shape_in, shape_out, align_corners):
             for mode in ('bilinear', 'nearest', 'bicubic'):
-                data = torch.randn(shape_in, device=device, dtype=torch.half)
-                grid = torch.rand(shape_out, device=device, dtype=torch.half) * 2.0 - 1.0
+                if len(shape_in) != 4 and mode == 'bicubic':
+                    continue
+                data = torch.randn(shape_in, device='cuda', dtype=torch.half)
+                grid = torch.rand(shape_out, device='cuda', dtype=torch.half) * 2.0 - 1.0
 
                 out_half = F.grid_sample(data, grid, mode=mode, padding_mode='zeros', align_corners=align_corners)
                 out_double = F.grid_sample(data.double(), grid.double(), mode=mode, padding_mode='zeros',
@@ -10769,8 +10885,10 @@ class TestNNDeviceType(NNTestCase):
     def test_grid_sample_bfloat16_precision(self, device):
         def helper(shape_in, shape_out, align_corners):
             for mode in ('bilinear', 'nearest', 'bicubic'):
-                data = torch.randn(shape_in, device=device, dtype=torch.bfloat16)
-                grid = torch.rand(shape_out, device=device, dtype=torch.bfloat16) * 2.0 - 1.0
+                if len(shape_in) != 4 and mode == 'bicubic':
+                    continue
+                data = torch.randn(shape_in, device='cuda', dtype=torch.bfloat16)
+                grid = torch.rand(shape_out, device='cuda', dtype=torch.bfloat16) * 2.0 - 1.0
 
                 out_half = F.grid_sample(data, grid, mode=mode, padding_mode='zeros', align_corners=align_corners)
                 out_double = F.grid_sample(data.double(), grid.double(), mode=mode, padding_mode='zeros',
@@ -11011,9 +11129,7 @@ class TestNNDeviceType(NNTestCase):
         self.assertEqual(out_ref, out)
 
     @unittest.expectedFailure
-    @skipIfRocmVersionLessThan((7, 14))
-    @skipMPS  # MPS has no CUDA-style grid-y launch limit
-    @onlyAccelerator
+    @onlyCUDA
     def test_upsamplingNearest2d_launch_fail(self, device):
         m = nn.Upsample(scale_factor=2)
         # launch grid_y == 2**16 (larger than maximum y-dimension limit 65535)
@@ -11466,266 +11582,6 @@ class TestNNDeviceType(NNTestCase):
             out1 = model(inp1)
             out2 = model(inp2)
             self.assertTrue(torch.equal(out1, out2))
-
-    @parametrize_test("padding_mode", ["zeros", "border", "reflection"])
-    @parametrize_test("align_corners", [True, False])
-    @expectedFailureMPS  # TypeError: the MPS framework doesn't support float64
-    @onlyNativeDeviceTypes
-    @dtypes(torch.double, torch.float)
-    def test_grid_sample_3d_bicubic_matches_2d(self, device, dtype, padding_mode, align_corners):
-        # A volume constant along z samples as the image: the four z weights sum to one.
-        image = torch.randn(2, 3, 7, 8, device=device, dtype=dtype)
-        volume = image.unsqueeze(2).expand(2, 3, 5, 7, 8).contiguous()
-        grid_2d = torch.randn(2, 4, 6, 2, device=device, dtype=dtype).clamp(-1.2, 1.2)
-        # z off a voxel centre weights all four z taps, and keeps them inside the 5-deep axis
-        grid_3d = torch.cat([grid_2d, torch.full_like(grid_2d[..., :1], 0.1)], dim=-1).unsqueeze(1)
-        out_2d = F.grid_sample(image, grid_2d, mode='bicubic',
-                               padding_mode=padding_mode, align_corners=align_corners)
-        out_3d = F.grid_sample(volume, grid_3d, mode='bicubic',
-                               padding_mode=padding_mode, align_corners=align_corners)
-        # 5-D sums the 64 taps in the accumulate type, 4-D nests two passes in the scalar type
-        tolerance = {} if dtype == torch.double else {"atol": 1e-4, "rtol": 1e-4}
-        self.assertEqual(out_3d.squeeze(2), out_2d, **tolerance)
-
-    @parametrize_test("dual_inputs", ["grid", "input_and_grid"])
-    @expectedFailureMPS  # 5-D bicubic is CPU and CUDA only
-    @onlyNativeDeviceTypes
-    @dtypes(torch.double)
-    def test_grid_sample_3d_bicubic_forward_ad(self, device, dtype, dual_inputs):
-        input = torch.randn(1, 1, 3, 3, 3, device=device, dtype=dtype)
-        grid = torch.rand(1, 1, 2, 2, 3, device=device, dtype=dtype) - 0.5
-        input.requires_grad_(dual_inputs == "input_and_grid")
-        grid.requires_grad_()
-
-        def sample(input, grid):
-            return F.grid_sample(
-                input, grid, mode='bicubic', align_corners=False
-            )
-
-        self.assertTrue(
-            gradcheck(
-                sample,
-                (input, grid),
-                check_batched_grad=False,
-                check_backward_ad=False,
-                check_forward_ad=True,
-            )
-        )
-
-    @parametrize_test("dim", [2, 3])
-    @expectedFailureMPS  # TypeError: the MPS framework doesn't support float64
-    @onlyNativeDeviceTypes
-    @dtypes(torch.double)
-    def test_grid_sample_nearest_grid_forward_ad(self, device, dtype, dim):
-        input_shape = (1, 2, 4, 5) if dim == 2 else (1, 2, 3, 4, 5)
-        grid_shape = (1, 3, 2, 2) if dim == 2 else (1, 2, 3, 2, 3)
-        input = torch.randn(input_shape, device=device, dtype=dtype)
-        grid = torch.rand(grid_shape, device=device, dtype=dtype) - 0.5
-        output, tangent = torch.func.jvp(
-            lambda grid: F.grid_sample(
-                input, grid, mode='nearest', align_corners=False
-            ),
-            (grid,),
-            (torch.randn_like(grid),),
-            strict=True,
-        )
-        self.assertEqual(tangent, torch.zeros_like(output))
-
-    @onlyCPU
-    @dtypes(torch.float)
-    def test_grid_sample_cpu_fallback_forward_ad(self, device, dtype):
-        input = torch.randn(1, 2, 5, 6, device=device, dtype=dtype)
-        grid = torch.rand(1, 3, 4, 2, device=device, dtype=dtype) - 0.5
-        tangents = (torch.randn_like(input), torch.randn_like(grid))
-
-        def sample(input, grid):
-            return torch._grid_sampler_2d_cpu_fallback(
-                input, grid, 0, 0, False
-            )
-
-        actual = torch.func.jvp(sample, (input, grid), tangents)
-        expected = torch.func.jvp(
-            lambda input, grid: F.grid_sample(
-                input, grid, mode='bilinear', align_corners=False
-            ),
-            (input, grid),
-            tangents,
-        )
-        self.assertEqual(actual, expected, atol=1e-4, rtol=5e-5)
-
-    @onlyCUDA
-    @skipCUDAIfNoCudnn
-    @skipCUDAIfMiopen
-    @dtypes(torch.double)
-    def test_cudnn_grid_sample_forward_ad(self, device, dtype):
-        input = torch.randn(2, 3, 5, 6, device=device, dtype=dtype)
-        grid = torch.rand(2, 4, 3, 2, device=device, dtype=dtype) - 0.5
-        input_tangent = torch.randn_like(input)
-        grid_tangent = torch.randn_like(grid)
-
-        def jvp(op):
-            with fwAD.dual_level():
-                dual_input = fwAD.make_dual(input, input_tangent)
-                dual_grid = fwAD.make_dual(grid, grid_tangent)
-                return fwAD.unpack_dual(op(dual_input, dual_grid))
-
-        expected = jvp(
-            lambda input, grid: torch.ops.aten.grid_sampler_2d(
-                input, grid, 0, 0, True
-            )
-        )
-        actual = jvp(torch.ops.aten.cudnn_grid_sampler)
-        self.assertEqual(actual, expected)
-
-    @parametrize_test("padding_mode", ["zeros", "border", "reflection"])
-    @expectedFailureMPS  # TypeError: the MPS framework doesn't support float64
-    @onlyNativeDeviceTypes
-    @dtypes(torch.double)
-    def test_grid_sample_3d_bicubic_far_coordinates(self, device, dtype, padding_mode):
-        # Odd fold counts past INT_MAX, off the image centre, where the two parities read
-        # different taps. Double: float32 cannot resolve a voxel this far out.
-        image = torch.randn(1, 2, 7, 8, device=device, dtype=dtype)
-        volume = image.unsqueeze(2).expand(1, 2, 5, 7, 8).contiguous()
-        far = torch.tensor([-5e9, -2e10, -1e11], device=device, dtype=dtype) + 0.0625
-        grid_2d = torch.stack([far, torch.full_like(far, 0.1)], -1).reshape(1, 1, 3, 2)
-        grid_3d = torch.cat(
-            [grid_2d, torch.full_like(grid_2d[..., :1], 0.1)], dim=-1).unsqueeze(1)
-        if padding_mode == 'reflection':
-            # one reflection period is 4; the 4-D CUDA helper counts folds in an int
-            grid_2d[..., 0].remainder_(4)
-        grid_2d.requires_grad_()
-        grid_3d.requires_grad_()
-        out_2d = F.grid_sample(image, grid_2d, mode='bicubic',
-                               padding_mode=padding_mode, align_corners=False)
-        out_3d = F.grid_sample(volume, grid_3d, mode='bicubic',
-                               padding_mode=padding_mode, align_corners=False)
-        self.assertEqual(out_3d.squeeze(2), out_2d)
-        # the backward resolves the same taps
-        grad_2d = torch.autograd.grad(out_2d.sum(), grid_2d)[0]
-        grad_3d = torch.autograd.grad(out_3d.sum(), grid_3d)[0]
-        self.assertEqual(grad_3d.squeeze(1)[..., :2], grad_2d)
-
-    @expectedFailureMPS  # 5-D bicubic is CPU and CUDA only
-    @onlyNativeDeviceTypes
-    @dtypes(torch.float16, torch.bfloat16)
-    def test_grid_sample_3d_bicubic_double_backward_low_precision(self, device, dtype):
-        # On a 512-wide axis a half grid unnormalized in its own dtype lands on a
-        # neighbouring voxel. The reference is the same quantized data in double.
-        volume = (torch.randn(1, 1, 4, 5, 512, device=device) * 0.01).to(dtype)
-        grid = torch.tensor([[[[[0.1, 0.2, 0.3]]]]], device=device).to(dtype)
-
-        def second_order(volume, grid):
-            volume = volume.detach().requires_grad_()
-            grid = grid.detach().requires_grad_()
-            out = F.grid_sample(volume, grid, mode='bicubic', padding_mode='border',
-                                align_corners=False)
-            d_grid = torch.autograd.grad(out.sum(), grid, create_graph=True)[0]
-            return torch.autograd.grad(d_grid.sum(), [volume, grid])
-
-        expected = second_order(volume.double(), grid.double())
-        for got, want in zip(second_order(volume, grid), expected):
-            self.assertEqual(got.dtype, dtype)
-            self.assertEqual(got.double(), want, rtol=1e-2, atol=0)
-
-    @parametrize_test("size", [2 ** 24 + 1, 2 ** 53 + 1])
-    @expectedFailureMPS  # 5-D bicubic is CPU and CUDA only
-    @onlyNativeDeviceTypes
-    def test_grid_sample_3d_bicubic_last_voxel_of_a_wide_axis(self, device, size):
-        # Neither extent is exact in float32, and the second is not exact in double.
-        # The view stores a single element.
-        volume = torch.ones(1, 1, 1, 1, 1, device=device).expand(1, 1, 1, 1, size)
-        grid = torch.tensor([[[[[1.0, 0.0, 0.0]]]]], device=device)
-        for padding_mode in ('zeros', 'border', 'reflection'):
-            out = F.grid_sample(volume, grid, mode='bicubic', padding_mode=padding_mode,
-                                align_corners=True)
-            self.assertEqual(out.item(), 1.0)
-
-    @parametrize_test("padding_mode", ["zeros", "border", "reflection"])
-    @parametrize_test("wrt", ["input", "grid"])
-    @expectedFailureMPS  # TypeError: the MPS framework doesn't support float64
-    @onlyNativeDeviceTypes
-    @dtypes(torch.double)
-    def test_grid_sample_3d_bicubic_one_sided_grad(self, device, dtype, wrt, padding_mode):
-        # One output at a time: the double backward builds each output's terms only when
-        # asked, and the OpInfo samples ask for both.
-        volume = torch.randn(1, 2, 4, 5, 5, device=device, dtype=dtype)
-        # Two bands: one with every tap in bounds, one around -1.5 in source units, where
-        # the set of dropped taps stays constant under gradcheck's perturbation.
-        inside = torch.rand(1, 2, 3, 3, 3, device=device, dtype=dtype) * 0.5 - 0.25
-        outside = torch.rand(1, 2, 3, 3, 3, device=device, dtype=dtype) * 0.04 - 1.42
-        grid = torch.cat([inside, outside], dim=1)
-
-        def fn(t):
-            args = (t, grid) if wrt == "input" else (volume, t)
-            return F.grid_sample(*args, mode='bicubic', padding_mode=padding_mode, align_corners=False)
-
-        wrt_tensor = (volume if wrt == "input" else grid).clone().requires_grad_(True)
-        gradgradcheck(fn, (wrt_tensor,))
-
-    @parametrize_test("padding_mode", ["zeros", "border", "reflection"])
-    @expectedFailureMPS  # TypeError: the MPS framework doesn't support float64
-    @onlyNativeDeviceTypes
-    @dtypes(torch.double)
-    def test_grid_sample_3d_bicubic_non_finite(self, device, dtype, padding_mode):
-        # A non-finite coordinate or voxel gives the same answer at both ranks: a dropped
-        # tap contributes a zero value and keeps its coefficient.
-        image = torch.randn(1, 1, 5, 5, device=device, dtype=dtype)
-        image[0, 0, 0, 0] = float('inf')
-        volume = image.unsqueeze(2).expand(1, 1, 5, 5, 5).contiguous()
-        for coordinate in (float('nan'), float('inf'), -float('inf'), 50.0):
-            grid_2d = torch.full((1, 1, 2, 2), coordinate, device=device, dtype=dtype)
-            grid_2d[0, 0, 1] = 0.1  # a sane sample beside the bad one
-            grid_3d = torch.cat(
-                [grid_2d, torch.full_like(grid_2d[..., :1], 0.1)], dim=-1).unsqueeze(1)
-            out_2d = F.grid_sample(image, grid_2d, mode='bicubic',
-                                   padding_mode=padding_mode, align_corners=False)
-            out_3d = F.grid_sample(volume, grid_3d, mode='bicubic',
-                                   padding_mode=padding_mode, align_corners=False)
-            self.assertEqual(out_3d.squeeze(2), out_2d)
-
-    @parametrize_test("mode", ["bilinear", "bicubic"])
-    @expectedFailureMPS  # TypeError: the MPS framework doesn't support float64
-    @onlyNativeDeviceTypes
-    @dtypes(torch.double)
-    def test_grid_sample_double_backward_drops_masked_taps(self, device, dtype, mode):
-        # A dropped tap is gathered from, and its cotangent scattered to, the voxel it clamps
-        # onto. Plane 0, where dropped taps clamp, holds a non-finite value, and the
-        # gradients must match those computed with a finite one.
-        def second_order(dim, plane_value, cotangent):
-            # squared: on a ramp the grid gradient below is zero
-            ramp = torch.arange(1., 43. if dim == 2 else 211., device=device, dtype=dtype)
-            input = (ramp * ramp).reshape((1, 1, 6, 7) if dim == 2 else (1, 1, 5, 6, 7))
-            if dim == 2:
-                input[0, 0, 0, :] = plane_value
-                # one sample fully outside along an axis, one inside and off the voxel centre
-                grid = torch.tensor([[[[0.1, -2.0], [0.1, 0.3]]]], device=device, dtype=dtype)
-            else:
-                input[0, 0, :, 0, :] = plane_value
-                grid = torch.tensor([[[[[0.1, -2.0, 0.1], [0.1, 0.3, 0.1]]]]],
-                                    device=device, dtype=dtype)
-            input.requires_grad_()
-            grid.requires_grad_()
-            out = F.grid_sample(input, grid, mode=mode, padding_mode='zeros',
-                                align_corners=False)
-            grad_output = torch.ones_like(out)
-            grad_output.view(-1)[0] = cotangent  # carried by the dropped taps alone
-            d_grid = torch.autograd.grad(out, grid, grad_outputs=grad_output,
-                                         create_graph=True)[0]
-            # a finite seed: a non-finite result can only come from the masking
-            return torch.autograd.grad(d_grid.sum(), [input, grid])
-
-        for dim in (2, 3):
-            reference = second_order(dim, 1.0, 1.0)
-            for bad in (float('inf'), -float('inf'), float('nan')):
-                # the voxel a dropped tap aliases reaches neither gradient
-                for got, expected in zip(second_order(dim, bad, 1.0), reference):
-                    self.assertTrue(bool(got.isfinite().all()))
-                    self.assertEqual(got, expected)
-                # nor does the cotangent it carries reach the scattered one. The grid gradient
-                # holds what the first-order kernel makes of that cotangent.
-                d_input = second_order(dim, 1.0, bad)[0]
-                self.assertTrue(bool(d_input.isfinite().all()))
-                self.assertEqual(d_input, reference[0])
 
     @onlyNativeDeviceTypes
     @dtypes(torch.float, torch.double)
