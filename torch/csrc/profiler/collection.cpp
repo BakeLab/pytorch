@@ -1644,7 +1644,7 @@ RecordQueue::getRecords(
       torch::profiler::impl::kineto::stopTrace();
       throw;
     }
-    out.insert(out.end(), ev.begin(), ev.end());
+    out.append_range(ev | std::views::as_rvalue);
     python_tracer_.reset();
   }
 
