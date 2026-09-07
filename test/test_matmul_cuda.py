@@ -3,7 +3,6 @@
 import contextlib
 import json
 import math
-import os
 import unittest
 import warnings
 from functools import partial

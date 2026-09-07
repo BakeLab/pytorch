@@ -133,18 +133,15 @@ inline __host__ __device__ uint32_t getAlignmentRoundUp(const void* p) {
 
 #if defined(USE_ROCM) || defined(CUDA_VERSION)
 
-#if defined(USE_ROCM)
 constexpr int32_t kWarpSize = 32;
 
+#if defined(USE_ROCM)
 template<typename T, uint32_t Rank>
 using VecT = T __attribute__((ext_vector_type(Rank)));
 
 static bool isGFX1201(int index) {
   return at::detail::getCUDAHooks().isGPUArch({"gfx1201"}, index);
 }
-
-#else
-constexpr int32_t kWarpSize = 32;
 #endif
 
 // f16 vector types
@@ -182,14 +179,6 @@ struct __align__(16) bf16x8 {
 };
 
 // bf162 vector types
-struct __align__(4) bf16x2x1 {
-  __nv_bfloat162 vals[1];
-};
-
-struct __align__(8) bf16x2x2 {
-  __nv_bfloat162 vals[2];
-};
-
 struct __align__(16) bf16x2x4 {
   __nv_bfloat162 vals[4];
 };
@@ -200,18 +189,6 @@ struct __align__(16) bf16x2x4_u32 {
 #else
   uint32_t vals[4];
 #endif
-};
-
-struct __align__(8) bf16x2x2_u32 {
-#if defined(USE_ROCM)
-  VecT<short, 4> val;
-#else
-  uint32_t vals[2];
-#endif
-};
-
-struct __align__(4) bf16x2x1_u32 {
-  uint32_t vals[1];
 };
 
 template <typename T, int N>
@@ -893,11 +870,7 @@ __launch_bounds__(Warps* kWarpSize) void tinygemm_m16n8k16_chunk_kernel(
   // FIXME: this likely doesn't need to be a true reduction tree, can just be a
   // serial sum, maybe (unless nvcc/ptxas goes back to its old ways)
   // smem_sum[warpId][laneId] = TreeReduce4<KTilesPerIteration>::reduce(c);
-#if defined(USE_ROCM)
   smem_sum[warpId][laneId] = c;
-#else
-  smem_sum[warpId][laneId] = c;
-#endif
 
   __syncthreads();
 

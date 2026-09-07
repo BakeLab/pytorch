@@ -1173,7 +1173,7 @@ if(USE_ROCM)
   message(INFO "USE_NVSHMEM=${USE_NVSHMEM} USE_ROCM=${USE_ROCM} rocshmem_FOUND=${rocshmem_FOUND} rocshmem_VERSION=${rocshmem_VERSION}")
   if(USE_NVSHMEM)
     if(rocshmem_FOUND AND rocshmem_VERSION VERSION_GREATER_EQUAL "3.3.0")
-      message(STATUS "rocSHMEM found, building with rocSHMEM support for gfx1201")
+      message(STATUS "rocSHMEM found, building with rocSHMEM support for ${PYTORCH_ROCM_ARCH}")
       message(STATUS "ROCSHMEM_INCLUDE_DIR: '${ROCSHMEM_INCLUDE_DIR}'")
       set(TORCH_ROCSHMEM_SRCS
           "${TORCH_SRC_DIR}/csrc/distributed/c10d/cuda/utils.cpp"
@@ -1198,7 +1198,7 @@ if(USE_ROCM)
         # torch_rocshmem is built with -fgpu-rdc, so its HIP link step performs
         # device linking and must carry the full arch list explicitly.
       set_target_properties(
-          torch_rocshmem PROPERTIES HIP_ARCHITECTURES "gfx1201")
+          torch_rocshmem PROPERTIES HIP_ARCHITECTURES "${PYTORCH_ROCM_ARCH}")
 
 
       target_compile_definitions(torch_hip PUBLIC USE_NVSHMEM)
@@ -1215,11 +1215,11 @@ if(USE_ROCM)
         # -amdgpu-internalize-symbols, which dead-strips the library symbols
         # before the consumer's references are ever seen.
       if(USE_ASAN)
-        set(_dev_bc "${ROCM_PATH}/lib/librocshmem_device_gfx1201.bc")
+        set(_dev_bc "${ROCM_PATH}/lib/librocshmem_device_${PYTORCH_ROCM_ARCH}.bc")
         if(EXISTS "${_dev_bc}")
           target_link_options(torch_rocshmem PRIVATE "SHELL:-Xoffload-linker ${_dev_bc}")
         else()
-          message(WARNING "rocSHMEM device bitcode not found for gfx1201: ${_dev_bc}")
+          message(WARNING "rocSHMEM device bitcode not found for ${PYTORCH_ROCM_ARCH}: ${_dev_bc}")
         endif()
       endif()
 

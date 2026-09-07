@@ -18,7 +18,6 @@ from torch.testing._internal.common_cuda import TEST_CUDA
 from torch.testing._internal.common_mps import mps_ops_modifier
 from numbers import Number
 from typing import Any
-from packaging import version
 from torch.testing._internal.common_cuda import \
     (SM80OrLater, TEST_MULTIGPU)
 from torch.testing._internal.common_device_type import \
