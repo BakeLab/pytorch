@@ -535,6 +535,9 @@ if(USE_ROCM)
   pytorch_hipify_source_list(Caffe2_CPU_SRCS ${Caffe2_CPU_SRCS})
   pytorch_hipify_source_list(Caffe2_HIP_SRCS ${Caffe2_HIP_SRCS})
   pytorch_hipify_source_list(Caffe2_HIP_TEST_SRCS ${Caffe2_HIP_TEST_SRCS})
+  set_source_files_properties(
+    ${TORCH_ROOT}/aten/src/ATen/DLConvertor.cpp
+    PROPERTIES COMPILE_DEFINITIONS USE_ROCM)
 endif()
 
 # NOTE [ Linking AVX and non-AVX files ]
@@ -1609,9 +1612,9 @@ if(BUILD_TEST)
     endforeach()
 
     get_property(caffe2_tests DIRECTORY PROPERTY TESTS)
-    set_tests_properties(${caffe2_tests} PROPERTIES
-      ENVIRONMENT_MODIFICATION
-        "LD_LIBRARY_PATH=path_list_prepend:${ROCM_PATH}/lib")
+    set_property(TEST ${caffe2_tests} PROPERTY ENVIRONMENT_MODIFICATION
+      "LD_LIBRARY_PATH=path_list_prepend:${CMAKE_BINARY_DIR}/lib"
+      "LD_LIBRARY_PATH=path_list_prepend:${ROCM_PATH}/lib")
   endif()
 endif()
 
