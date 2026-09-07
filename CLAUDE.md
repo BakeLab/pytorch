@@ -59,6 +59,25 @@ directory so you don't force a rebuild against the broken state.
   workflow generator, binary matrix, or Jinja templates and then regenerate.
 - Do not connect release workflows to PyTorch's official upload services.
   Private-index upload changes require explicit user review and approval.
+- A publishable Linux wheel must come from the manylinux 2.28 release pipeline;
+  do not upload a wheel produced directly on the development host. Build macOS
+  arm64 wheels with the macOS release workflow.
+- Internal accelerator variants use separate `cuda`, `rocm`, `xpu`, and `mps`
+  index channels while retaining the `torch` distribution name. Never expose
+  multiple accelerator variants on the same `torch` simple-index page because
+  pip cannot resolve packages from installed accelerator hardware.
+- Configure the appropriate install channel with
+  `python tools/packaging/accelerator_index.py configure`. The tool detects the
+  local accelerator; use `PYTORCH_ACCELERATOR` only when provisioning requires
+  an explicit override.
+- Publish a completed wheel with
+  `python tools/packaging/accelerator_index.py publish <wheel>`. The tool derives
+  the channel from the wheel's PEP 440 local version and rejects mixed-backend
+  uploads. Supply credentials through twine's environment or keyring support;
+  never place credentials in the repository or command history.
+- Publishing is a separate human-approved promotion step. Do not overwrite an
+  existing package version, and do not upload before the backend-specific wheel
+  tests have passed.
 
 See `.ci/RELEASE.md` for the release matrix, package naming, dependency policy,
 and local build configuration.

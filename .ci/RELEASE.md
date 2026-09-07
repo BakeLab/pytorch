@@ -33,6 +33,51 @@ runtime variant, and source commit are encoded in the PEP 440 local version:
 The commit component is the first eight hexadecimal digits of the checked-out
 commit used for the build.
 
+## Accelerator-specific indexes
+
+Internal releases use one package-index channel per accelerator while retaining
+the `torch` distribution name:
+
+```text
+https://bb-pypi.int.bb.pub/bakeai/dev/cuda
+https://bb-pypi.int.bb.pub/bakeai/dev/rocm
+https://bb-pypi.int.bb.pub/bakeai/dev/xpu
+https://bb-pypi.int.bb.pub/bakeai/dev/mps
+```
+
+Each channel exposes its PEP 503 install endpoint under `/simple`. Do not put
+multiple accelerator variants on the same `torch` simple page: pip cannot use
+CUDA, ROCm, XPU, or MPS hardware to resolve wheel versions and may select the
+wrong local version.
+
+Machine images and development environments configure their channel with the
+repository tool:
+
+```bash
+python tools/packaging/accelerator_index.py configure
+python -m pip install torch
+```
+
+Detection uses `/dev/kfd` for ROCm, the NVIDIA device or driver interface for
+CUDA, Intel DRM devices for XPU, and macOS arm64 for MPS. Set
+`PYTORCH_ACCELERATOR=cuda|rocm|xpu|mps` when provisioning needs to override
+automatic detection. Inside a virtual environment the command writes site
+configuration; otherwise it writes user configuration. Use `--scope` to select
+another pip configuration scope.
+
+Publish wheels with credentials supplied through twine's standard environment
+or keyring configuration:
+
+```bash
+python tools/packaging/accelerator_index.py publish \
+  dist/torch-2.15.0+rocm.10.0.gfx1201.g0123abcd-cp314-cp314-linux_x86_64.whl
+```
+
+The publish command derives the channel from the wheel's local version,
+rejects mixed-accelerator uploads, and uploads to the channel repository URL.
+It does not overwrite existing releases or embed credentials. Use `--base-url`
+for another internal repository.
+
 ## Wheel contents
 
 Release builds set `BUILD_TEST=0` and `INSTALL_TEST=0`. Packaging also excludes
@@ -105,9 +150,10 @@ must be built and repaired in the repository's manylinux 2.28 pipeline.
 ## Publishing
 
 Generated workflows currently build, test, and retain wheel artifacts only.
-They do not invoke PyTorch's official S3 or R2 upload workflow. Configure the
-company private index separately, require human approval for promotion, and do
-not overwrite an existing version.
+They do not invoke PyTorch's official S3 or R2 upload workflow. Promotion to
+the accelerator-specific company index is a separate, human-approved step
+using `tools/packaging/accelerator_index.py publish`. Do not overwrite an
+existing version.
 
 Set the `BINARY_RELEASE_REPOSITORY` GitHub repository variable to the canonical
 `owner/repository` name. Release jobs compare `github.repository` with this
