@@ -1607,6 +1607,11 @@ if(BUILD_TEST)
         install(TARGETS ${test_name} DESTINATION test)
       endif()
     endforeach()
+
+    get_property(caffe2_tests DIRECTORY PROPERTY TESTS)
+    set_tests_properties(${caffe2_tests} PROPERTIES
+      ENVIRONMENT_MODIFICATION
+        "LD_LIBRARY_PATH=path_list_prepend:${ROCM_PATH}/lib")
   endif()
 endif()
 
