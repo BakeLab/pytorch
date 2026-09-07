@@ -185,7 +185,7 @@ CudaIPCSentData::CudaIPCSentData(
     event_sync_required_ = false;
   }
 #else
-  // hipIpcGetEventHandle with HIP is not supported, so we have to sync
+  // cuIpcGetEventHandle with HIP is not supported, so we have to sync
   // stream instead of passing event
   auto stream = c10::cuda::getCurrentCUDAStream(device.index());
   at::cuda::stream_synchronize(stream);

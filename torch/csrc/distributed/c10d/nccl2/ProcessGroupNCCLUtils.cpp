@@ -261,7 +261,7 @@ void ProcessGroupNCCL::checkWorkQueue() {
 }
 
 // The timeout thread cannot make NCCL calls.  The only CUDA call it can make
-// it hipEventQuery.
+// it cudaEventQuery.
 void ProcessGroupNCCL::timeoutWatchdog() noexcept {
   TC_LOG(INFO, this) << "Timeout thread starting for rank: " << rank_;
 

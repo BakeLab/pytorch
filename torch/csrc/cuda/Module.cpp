@@ -1,4 +1,6 @@
 #include <ATen/core/TensorBody.h>
+#include <ATen/cuda/CUDABlasHandle.h>
+#include <ATen/cuda/CUDABlasWorkspace.h>
 #include <ATen/cuda/CUDAConfig.h>
 #include <ATen/cuda/CUDAContextLight.h>
 #include <ATen/native/ConvUtils.h>
@@ -259,7 +261,7 @@ static PyObject* THCPModule_getCompiledVersion(PyObject* self, PyObject* noargs)
 #if defined(USE_ROCM)
   return THPUtils_packInt64((int64_t)ROCM_VERSION);
 #else
-  return THPUtils_packInt64((int64_t)TORCH_HIP_VERSION);
+  return THPUtils_packInt64((int64_t)CUDA_VERSION);
 #endif
 }
 
@@ -1127,15 +1129,15 @@ static PyObject* THCPModule_cudaGetSyncDebugMode(PyObject* self, PyObject* noarg
 static void registerCudaDeviceProperties(PyObject* module) {
   // Add _cudaDeviceProperties class to torch._C
   auto m = py::handle(module).cast<py::module>();
-  // hipUUID is defined in either cuda.h or driver_types.h
+  // CUuuid is defined in either cuda.h or driver_types.h
   // hipified to hipUUID which is defined in hip_runtime_api.h
-  py::class_<hipUUID>(m, "_CUuuid")
+  py::class_<CUuuid>(m, "_CUuuid")
       .def_property_readonly(
           "bytes",
-          [](const hipUUID& uuid) {
+          [](const CUuuid& uuid) {
             return std::vector<uint8_t>(uuid.bytes, uuid.bytes + 16);
           })
-      .def("__str__", [](const hipUUID& uuid) {
+      .def("__str__", [](const CUuuid& uuid) {
         return uuid_to_string(uuid.bytes);
       });
   py::class_<cudaDeviceProp>(m, "_CudaDeviceProperties")
@@ -1669,7 +1671,7 @@ static PyObject* THCPModule_getCurrentBlasHandle_wrap(
     PyObject* self,
     PyObject* noargs) {
   HANDLE_TH_ERRORS
-  // Internal ATen operations restore this public handle to hipBLAS's default
+  // Internal ATen operations restore this public handle to cuBLAS's default
   // workspace before releasing their eager workspace allocations.
   cublasHandle_t handle = at::cuda::getCurrentCUDABlasHandle();
   return PyLong_FromVoidPtr(handle);

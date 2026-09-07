@@ -54,9 +54,9 @@ class CUDADeviceOpOverrides(DeviceOpOverrides):
 
     def kernel_header(self) -> str:
         source_codes = """
-        #include <c10/hip/HIPGuard.h>
-        #include <c10/hip/HIPStream.h>
-        #include <ATen/hip/EmptyTensor.h>
+        #include <c10/cuda/CUDAGuard.h>
+        #include <c10/cuda/CUDAStream.h>
+        #include <ATen/cuda/EmptyTensor.h>
         """
         return source_codes
 
@@ -149,7 +149,7 @@ class CUDADeviceOpOverrides(DeviceOpOverrides):
                     uint32_t numWarps,
                     uint32_t sharedMemBytes,
                     void* args[],
-                    hipStream_t stream,
+                    cudaStream_t stream,
                     bool launchPdl) {
                 if (!launchPdl) {
                     CUDA_DRIVER_CHECK(hipModuleLaunchKernel(
@@ -188,7 +188,7 @@ class CUDADeviceOpOverrides(DeviceOpOverrides):
                     uint32_t numWarps,
                     uint32_t sharedMemBytes,
                     void* args[],
-                    hipStream_t stream) {
+                    cudaStream_t stream) {
                 CUDA_DRIVER_CHECK(hipModuleLaunchKernel(
                     func, gridX, gridY, gridZ, __WARP_SIZE__*numWarps, 1, 1, sharedMemBytes, stream, args, nullptr
                 ));
@@ -457,7 +457,7 @@ class CUDADeviceOpOverrides(DeviceOpOverrides):
         """
 
     def cpp_stream_type(self) -> str:
-        return "hipStream_t"
+        return "cudaStream_t"
 
     def aoti_get_stream(self) -> str:
         return "aoti_torch_get_current_cuda_stream"

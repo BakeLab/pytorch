@@ -1290,9 +1290,9 @@ class CppWrapperGpu(CppWrapperCpu):
         if self.device == "cuda":
             # The fbcode JIT cpp_wrapper CUDA build links only the CUDA driver
             # (libcuda), not libcudart, so the runtime hipDeviceSynchronize symbol
-            # is undefined at dlopen -> use the driver-API hipCtxSynchronize there.
+            # is undefined at dlopen -> use the driver-API cuCtxSynchronize there.
             # On ROCm the driver-context sync hipCtxSynchronize returns
-            # hipErrorNotSupported at runtime, so keep the runtime hipDeviceSynchronize
+            # hipErrorNotSupported at runtime, so keep the runtime cudaDeviceSynchronize
             # (which hipifies to hipDeviceSynchronize and IS linked in the ROCm build).
             if torch.version.hip is not None:
                 buffer.writeline(
@@ -1383,7 +1383,7 @@ class CppWrapperGpu(CppWrapperCpu):
         if self._aoti_stream_helpers_emitted:
             return
         # The stream/event helpers in streams.h are CUDA-specific (hipEvent_t,
-        # hipStream_t, hipEventRecord, ...). Guarding here on the device type
+        # cudaStream_t, cudaEventRecord, ...). Guarding here on the device type
         # prevents the CUDA-only symbols from being emitted into XPU generated
         # code, where SYCL in-order queues handle event ordering implicitly.
         if self.device == "xpu":
