@@ -7,6 +7,7 @@
 #include <c10/util/ScopeExit.h>
 
 #include <atomic>
+#include <chrono>
 #include <thread>
 #include <vector>
 
