@@ -23,7 +23,6 @@ from torch.utils._ordered_set import OrderedSet
 
 from .. import config as inductor_config, distributed_autotune, lowering as L
 from ..codegen.cutlass.gemm_template import CUTLASS2xGemmTemplate, CUTLASS3xGemmTemplate
-from ..codegen.flydsl.flydsl_template import FlyDSLTemplate
 from ..codegen.rocm.ck_tile_universal_gemm_template import CKTileGemmTemplate
 from ..codegen.rocm.ck_universal_gemm_template import CKGemmTemplate
 from ..codegen.subgraph import SubgraphChoiceCaller, SubgraphTemplate
@@ -61,8 +60,6 @@ from ..utils import (
     _use_autotune_backend,
     _use_cutlass_for_op,
     ceildiv,
-    FOLDED_SCALED_MM_OUTPUT_SCALE,
-    GPU_ALIGN_BYTES,
     is_bf16x9_matmul,
     use_aten_gemm_kernels,
     use_ck_gemm_template,
@@ -70,7 +67,6 @@ from ..utils import (
     use_cpp_gemm_template,
     use_cutlass_template,
     use_decompose_k_choice,
-    use_flydsl_gemm_template,
     use_nv_universal_gemm_template,
     use_triton_blackwell_tma_template,
     use_triton_scaling_template,
@@ -80,7 +76,6 @@ from ..utils import (
 )
 from .decompose_k import decompose_k_subgraph_template
 from .mm_common import (
-    _fits_int32_buffer_span,
     _is_static_problem,
     _use_small_mm_pointwise,
     blackwell_persistent_mm_grid,
@@ -157,11 +152,6 @@ scaled_mm_device_tma_main_loop_scaling_template = TritonTemplate(
     name="scaled_mm_device_tma_main_loop_scaling",
     grid=persistent_mm_grid,
     source=load_kernel_template("triton_main_loop_scaled_mm"),
-)
-
-flydsl_mm_template = FlyDSLTemplate(
-    name="mm_flydsl",
-    source=load_kernel_template("flydsl_mm"),
 )
 
 blackwell_ws_persistent_tma_mm_template = TritonTemplate(
@@ -321,163 +311,6 @@ def check_supported_striding(mat_a, mat_b) -> None:
         is_col_major(mat_b.get_stride()) or has_zero_dim(mat_b.get_size()),
         lambda: f"mat_b must be col_major, got stride {mat_b.get_stride()}",
     )
-
-
-def get_flydsl_mm_template_kwargs(
-    layout,
-    mat1,
-    mat2,
-    static_shape,
-    is_nonzero,
-    *,
-    mxfp_format=None,
-    has_bias=False,
-) -> list[dict[str, Any]]:
-    """Return shape-compatible FlyDSL GEMM template configurations."""
-    # scaled_mm_v2_constraint forces MXFP to TN before lowering; non-TN layout
-    # handling is shared with dense mm, but currently unreachable for MXFP.
-    from ..heuristics.template.flydsl import (
-        get_gemm_configs,
-        is_gemm_config_valid_for_shape,
-    )
-
-    if not (static_shape and is_nonzero and use_flydsl_gemm_template(layout)):
-        return []
-
-    if len(mat1.get_size()) != 2 or len(mat2.get_size()) != 2:
-        return []
-
-    sizevars = V.graph.sizevars
-    mat1_stride = mat1.get_stride()
-    mat2_stride = mat2.get_stride()
-    out_stride = layout.stride
-
-    if sizevars.statically_known_equals(mat1_stride[1], 1):
-        a_is_transposed = False
-    elif sizevars.statically_known_equals(mat1_stride[0], 1):
-        a_is_transposed = True
-    else:
-        return []
-
-    # FlyDSL consumes aten.mm's logical [K, N] RHS view directly.
-    if sizevars.statically_known_equals(mat2_stride[0], 1):
-        b_is_transposed = True
-    elif sizevars.statically_known_equals(mat2_stride[1], 1):
-        b_is_transposed = False
-    else:
-        return []
-
-    if not sizevars.statically_known_equals(out_stride[1], 1):
-        return []
-
-    dtype = mat1.get_dtype()
-    if mxfp_format is None:
-        if mat2.get_dtype() != dtype or layout.dtype != dtype:
-            return []
-        if dtype not in (torch.float16, torch.bfloat16):
-            return []
-
-    a_leading_stride = mat1_stride[1] if a_is_transposed else mat1_stride[0]
-    b_leading_stride = mat2_stride[1] if b_is_transposed else mat2_stride[0]
-
-    # Require vectorized tensor origins and row increments to stay GPU-aligned.
-    itemsize = dtype.itemsize
-    aligned_byte_expressions = (
-        mat1.get_layout().offset * itemsize,
-        a_leading_stride * itemsize,
-        mat2.get_layout().offset * itemsize,
-        b_leading_stride * itemsize,
-    )
-    if (
-        is_unaligned(mat1)
-        or is_unaligned(mat2)
-        or any(
-            not sizevars.statically_known_multiple_of(expr, GPU_ALIGN_BYTES)
-            for expr in aligned_byte_expressions
-        )
-    ):
-        return []
-
-    m = mat1.get_size()[0]
-    _, n = mat2.get_size()
-    k = mat1.get_size()[1]
-    m_static = PythonWrapperCodegen.statically_known_int_or_none(m)
-    n_static = PythonWrapperCodegen.statically_known_int_or_none(n)
-    k_static = PythonWrapperCodegen.statically_known_int_or_none(k)
-    if m_static is None or n_static is None or k_static is None:
-        return []
-    if k_static % 32 != 0:
-        return []
-
-    tensor_spans = (
-        (
-            k_static if a_is_transposed else m_static,
-            a_leading_stride,
-            m_static if a_is_transposed else k_static,
-        ),
-        (
-            n_static if b_is_transposed else k_static,
-            b_leading_stride,
-            k_static if b_is_transposed else n_static,
-        ),
-        (m_static, out_stride[0], n_static),
-    )
-    if any(
-        not _fits_int32_buffer_span(
-            rows,
-            PythonWrapperCodegen.statically_known_int_or_none(stride),
-            cols,
-            span_itemsize,
-        )
-        for (rows, stride, cols), span_itemsize in zip(
-            tensor_spans, (itemsize, itemsize, layout.dtype.itemsize)
-        )
-    ):
-        return []
-
-    from .vendored_templates.flydsl.kernels import (
-        GEMM_DTYPE_BF16,
-        GEMM_DTYPE_FP16,
-        GEMM_DTYPE_MXFP4,
-        GEMM_DTYPE_MXFP8,
-    )
-
-    gemm_dtype_id = GEMM_DTYPE_FP16 if dtype == torch.float16 else GEMM_DTYPE_BF16
-    extra = {"IS_MXFP": mxfp_format is not None, "HAS_BIAS": has_bias}
-    validity = {}
-    if mxfp_format is not None:
-        gemm_dtype_id = GEMM_DTYPE_MXFP4 if mxfp_format == "mxfp4" else GEMM_DTYPE_MXFP8
-        k_static *= 2 if mxfp_format == "mxfp4" else 1
-        out_dtype_id = (
-            GEMM_DTYPE_FP16 if layout.dtype == torch.float16 else GEMM_DTYPE_BF16
-        )
-        extra["OUT_DTYPE_ID"] = out_dtype_id
-        validity["out_dtype_id"] = out_dtype_id
-        validity["has_bias"] = has_bias
-    # Filter shape-incompatible configs before autotuning.
-    return [
-        {
-            **gemm_config,
-            **extra,
-            "GEMM_DTYPE_ID": gemm_dtype_id,
-            "GEMM_M": m_static,
-            "GEMM_N": n_static,
-            "GEMM_K": k_static,
-            "A_IS_TRANSPOSED": a_is_transposed,
-            "B_IS_TRANSPOSED": b_is_transposed,
-        }
-        for gemm_config in get_gemm_configs(m_static, n_static, k_static, mxfp_format)
-        if is_gemm_config_valid_for_shape(
-            m_static,
-            n_static,
-            k_static,
-            gemm_dtype_id,
-            gemm_config,
-            a_is_transposed=a_is_transposed,
-            b_is_transposed=b_is_transposed,
-            **validity,
-        )
-    ]
 
 
 aten_bias_addmm = ExternKernelChoice(bias_addmm, None)
@@ -731,20 +564,6 @@ def tuned_mm(mat1, mat2, out_dtype=None, *, layout=None):
         CKGemmTemplate.add_ck_gemm_choices(choices, layout, kernel_inputs.nodes())
     if out_dtype is None and is_nonzero and use_ck_tile_gemm_template(layout, m, n, k):
         CKTileGemmTemplate.add_choices(choices, layout, kernel_inputs.nodes())
-
-    if out_dtype is None:
-        flydsl_configs = get_flydsl_mm_template_kwargs(
-            layout, mat1, mat2, static_shape, is_nonzero
-        )
-        if flydsl_configs:
-            flydsl_input_nodes = list(kernel_inputs.nodes())
-            for flydsl_kwargs in flydsl_configs:
-                flydsl_mm_template.maybe_append_choice(
-                    choices,
-                    input_nodes=flydsl_input_nodes,
-                    layout=layout,
-                    **flydsl_kwargs,
-                )
 
     if (
         out_dtype is None
