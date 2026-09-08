@@ -12,7 +12,6 @@ exclude_patterns = [
     'torch/_inductor/fx_passes/serialized_patterns/**',
     'torch/_inductor/autoheuristic/artifacts/**',
     'torch/_inductor/kernel/vendored_templates/cutedsl/dense_blockscaled_gemm_persistent.py',
-    'torch/_inductor/kernel/vendored_templates/flydsl/kernels/**',
     'torch/_vendor/**',
     'scripts/**',
     'test/test_torchfuzz_repros.py',
@@ -86,7 +85,6 @@ include_patterns = [
 ]
 exclude_patterns = [
     'torch/_inductor/kernel/vendored_templates/cutedsl/dense_blockscaled_gemm_persistent.py',
-    'torch/_inductor/kernel/vendored_templates/flydsl/kernels/**',
     'torch/_vendor/**',
 ]
 command = [
@@ -995,7 +993,6 @@ exclude_patterns = [
     'torch/_inductor/fx_passes/serialized_patterns/**',
     'torch/_inductor/autoheuristic/artifacts/**',
     'torch/_inductor/kernel/vendored_templates/cutedsl/dense_blockscaled_gemm_persistent.py',
-    'torch/_inductor/kernel/vendored_templates/flydsl/kernels/**',
     # Generated: mirrors the label names on GitHub verbatim
     'tools/linter/adapters/pytorch_labels.json',
 ]
@@ -1292,7 +1289,6 @@ exclude_patterns = [
     'torch/_inductor/fx_passes/serialized_patterns/**',
     'torch/_inductor/autoheuristic/artifacts/**',
     'torch/_inductor/kernel/vendored_templates/cutedsl/dense_blockscaled_gemm_persistent.py',
-    'torch/_inductor/kernel/vendored_templates/flydsl/kernels/**',
     'torch/_vendor/**',
     'test/cpython/**',
     'test/test_torchfuzz_repros.py',
@@ -1463,7 +1459,6 @@ include_patterns = [
 ]
 exclude_patterns = [
     'torch/_inductor/kernel/vendored_templates/cutedsl/dense_blockscaled_gemm_persistent.py',
-    'torch/_inductor/kernel/vendored_templates/flydsl/kernels/**',
 ]
 is_formatter = false
 
