@@ -946,12 +946,6 @@ class BundledShaderLibrary : public MetalShaderLibrary {
 #ifdef CAN_BUILD_METAL_41
           {"metal_41", has_metal_4_1},
 #endif
-#ifdef CAN_BUILD_METAL_4
-          // kernels_40.metallib is built with -mmacos-version-min=26.2 (MPP
-          // cooperative-tensor ABI); every kernel it defines shadows the
-          // metal_basic one when has_mpp() holds.
-          {"metal_40", has_mpp},
-#endif
       };
       for (const auto& [section, isSupported] : variantSections) {
         if (!isSupported()) {

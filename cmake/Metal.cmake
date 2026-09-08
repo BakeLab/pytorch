@@ -78,39 +78,29 @@ set(METAL_40_PROBE_CODE "
     ptr[idx] += ct_a[0];
   }
 ")
-if(NOT CAN_COMPILE_METAL_FOUND)
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/bfloat_inc.metal" "${BFLOAT_METAL_CODE}")
-    execute_process(COMMAND xcrun metal -std=metal3.2 bfloat_inc.metal
+# The sentinel names the probe, not just the fact that one ran: a tree
+# configured when the shaders were built for Metal 3 cached a CAN_COMPILE_METAL
+# that answered a different question, and must ask again.
+if(NOT CAN_COMPILE_METAL_40_FOUND)
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/bfloat_inc.metal" "${METAL_40_PROBE_CODE}")
+    # Same -std and deployment target the shaders are built with, so a toolchain
+    # whose SDK predates 27.0 fails here rather than on every shader.
+    execute_process(COMMAND xcrun metal -std=metal4.0 -mmacos-version-min=27.0 bfloat_inc.metal
                     WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
                     OUTPUT_VARIABLE XCRUN_OUTPUT
                     ERROR_VARIABLE XCRUN_OUTPUT
                     RESULT_VARIABLE XCRUN_RC)
     if(${XCRUN_RC} EQUAL 0)
-        message(STATUS "Machine can compile metal shaders")
-        set(CAN_COMPILE_METAL YES CACHE BOOL "Host can compile metal shaders")
+        message(STATUS "Machine can compile Metal 4.0 shaders")
+        set(CAN_COMPILE_METAL YES CACHE BOOL "Host can compile metal shaders" FORCE)
     else()
-        message(WARNING "Machine can not compile metal shaders, fails with ${XCRUN_OUTPUT}")
-        set(CAN_COMPILE_METAL NO CACHE BOOL "Host can compile metal shaders")
+        message(WARNING "Machine can not compile Metal 4.0 shaders, fails with ${XCRUN_OUTPUT}")
+        set(CAN_COMPILE_METAL NO CACHE BOOL "Host can compile metal shaders" FORCE)
     endif()
-    if(CAN_COMPILE_METAL)
-        file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/metal_40_probe.metal" "${METAL_40_PROBE_CODE}")
-        execute_process(COMMAND xcrun metal -std=metal4.0 -mmacos-version-min=26.2 -c metal_40_probe.metal -o /dev/null
-                        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-                        OUTPUT_VARIABLE XCRUN_OUTPUT
-                        ERROR_VARIABLE XCRUN_OUTPUT
-                        RESULT_VARIABLE XCRUN_RC)
-        if(${XCRUN_RC} EQUAL 0)
-            message(STATUS "Metal toolchain supports Metal 4.0")
-            set(CAN_COMPILE_METAL_40 YES CACHE BOOL "Host can compile Metal 4.0 shaders" FORCE)
-        else()
-            message(STATUS "Metal toolchain does not support Metal 4.0")
-            set(CAN_COMPILE_METAL_40 NO CACHE BOOL "Host can compile Metal 4.0 shaders" FORCE)
-        endif()
-    else()
-        set(CAN_COMPILE_METAL_40 NO CACHE BOOL "Host can compile Metal 4.0 shaders" FORCE)
-    endif()
-    set(CAN_COMPILE_METAL_FOUND YES CACHE INTERNAL "Run check for shader compiler")
+    set(CAN_COMPILE_METAL_40_FOUND YES CACHE INTERNAL "Run check for shader compiler")
 endif()
+
+set(CAN_COMPILE_METAL_40 ${CAN_COMPILE_METAL})
 
 # Metal 4.1 (macOS 27) adds native fp8 formats, which MPP matmul2d accepts as operands
 set(METAL_41_PROBE_CODE "

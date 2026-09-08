@@ -22,16 +22,15 @@
 namespace torch::mps {
 
 static PyObject* MPSModule_isInBadFork(
-    PyObject* /*self*/,
-    PyObject* /*noargs*/) {
+    PyObject* self [[maybe_unused]], PyObject* noargs [[maybe_unused]]) {
   HANDLE_TH_ERRORS
   return PyBool_FromLong(torch::utils::is_device_in_bad_fork(at::kMPS));
   END_HANDLE_TH_ERRORS
 }
 
 static PyObject* MPSModule_getDefaultMPSGenerator(
-    PyObject* /*_unused*/,
-    PyObject* /*noargs*/) {
+    PyObject* _unused [[maybe_unused]],
+    PyObject* noargs [[maybe_unused]]) {
   HANDLE_TH_ERRORS
   torch::utils::register_fork_handler_for_device_init(at::kMPS);
   return THPGenerator_initDefaultGenerator(
@@ -40,8 +39,7 @@ static PyObject* MPSModule_getDefaultMPSGenerator(
 }
 
 static PyObject* MPSModule_isAvailable(
-    PyObject* /*_unused*/,
-    PyObject* /*noargs*/) {
+    PyObject* _unused [[maybe_unused]], PyObject* noargs [[maybe_unused]]) {
   HANDLE_TH_ERRORS
   if (at::detail::getMPSHooks().hasMPS()) {
     torch::utils::register_fork_handler_for_device_init(at::kMPS);
@@ -53,8 +51,7 @@ static PyObject* MPSModule_isAvailable(
 }
 
 static PyObject* MPSModule_isMacOSorNewer(
-    PyObject* /*_unused*/,
-    PyObject* args) {
+    PyObject* _unused [[maybe_unused]], PyObject* args) {
   HANDLE_TH_ERRORS
   size_t major = 0;
   size_t minor = 0;
@@ -70,8 +67,8 @@ static PyObject* MPSModule_isMacOSorNewer(
 }
 
 static PyObject* MPSModule_deviceSynchronize(
-    PyObject* _unused,
-    PyObject* noargs) {
+    PyObject* _unused [[maybe_unused]],
+    PyObject* noargs [[maybe_unused]]) {
   HANDLE_TH_ERRORS {
     // Release GIL so Metal's completion thread can destroy Python-wrapped
     // objects (e.g. storages captured in MTLBuffer deallocator blocks).
@@ -83,8 +80,7 @@ static PyObject* MPSModule_deviceSynchronize(
 }
 
 static PyObject* MPSModule_emptyCache(
-    PyObject* /*_unused*/,
-    PyObject* /*noargs*/) {
+    PyObject* _unused [[maybe_unused]], PyObject* noargs [[maybe_unused]]) {
   HANDLE_TH_ERRORS
   at::detail::getMPSHooks().emptyCache();
   Py_RETURN_NONE;
@@ -92,7 +88,7 @@ static PyObject* MPSModule_emptyCache(
 }
 
 static PyObject* MPSModule_setMemoryFraction(
-    PyObject* /*_unused*/,
+    PyObject* _unused [[maybe_unused]],
     PyObject* args) {
   HANDLE_TH_ERRORS
   TORCH_CHECK(
@@ -104,8 +100,8 @@ static PyObject* MPSModule_setMemoryFraction(
 }
 
 static PyObject* MPSModule_currentAllocatedMemory(
-    PyObject* /*_unused*/,
-    PyObject* /*noargs*/) {
+    PyObject* _unused [[maybe_unused]],
+    PyObject* noargs [[maybe_unused]]) {
   HANDLE_TH_ERRORS
   return THPUtils_packUInt64(
       at::detail::getMPSHooks().getCurrentAllocatedMemory());
@@ -113,8 +109,8 @@ static PyObject* MPSModule_currentAllocatedMemory(
 }
 
 static PyObject* MPSModule_driverAllocatedMemory(
-    PyObject* /*_unused*/,
-    PyObject* /*noargs*/) {
+    PyObject* _unused [[maybe_unused]],
+    PyObject* noargs [[maybe_unused]]) {
   HANDLE_TH_ERRORS
   return THPUtils_packUInt64(
       at::detail::getMPSHooks().getDriverAllocatedMemory());
@@ -122,8 +118,8 @@ static PyObject* MPSModule_driverAllocatedMemory(
 }
 
 static PyObject* MPSModule_recommendedMaxMemory(
-    PyObject* /*_unused*/,
-    PyObject* /*noargs*/) {
+    PyObject* _unused [[maybe_unused]],
+    PyObject* noargs [[maybe_unused]]) {
   HANDLE_TH_ERRORS
   return THPUtils_packUInt64(
       at::detail::getMPSHooks().getRecommendedMaxMemory());
@@ -131,15 +127,15 @@ static PyObject* MPSModule_recommendedMaxMemory(
 }
 
 static PyObject* MPSModule_maxBufferLength(
-    PyObject* _unused,
-    PyObject* noargs) {
+    PyObject* _unused [[maybe_unused]],
+    PyObject* noargs [[maybe_unused]]) {
   HANDLE_TH_ERRORS
   return THPUtils_packUInt64(at::detail::getMPSHooks().getMaxBufferLength());
   END_HANDLE_TH_ERRORS
 }
 
 static PyObject* MPSModule_profilerStartTrace(
-    PyObject* /*_unused*/,
+    PyObject* _unused [[maybe_unused]],
     PyObject* args) {
   HANDLE_TH_ERRORS
   PyObject* mode_string_o = nullptr;
@@ -157,15 +153,16 @@ static PyObject* MPSModule_profilerStartTrace(
 }
 
 static PyObject* MPSModule_profilerStopTrace(
-    PyObject* /*_unused*/,
-    PyObject* /*noargs*/) {
+    PyObject* _unused [[maybe_unused]],
+    PyObject* noargs [[maybe_unused]]) {
   HANDLE_TH_ERRORS
   at::detail::getMPSHooks().profilerStopTrace();
   Py_RETURN_NONE;
   END_HANDLE_TH_ERRORS
 }
 
-static PyObject* MPSModule_acquireEvent(PyObject* /*_unused*/, PyObject* args) {
+static PyObject* MPSModule_acquireEvent(
+    PyObject* _unused [[maybe_unused]], PyObject* args) {
   HANDLE_TH_ERRORS
   const bool enable_timing = THPUtils_unpackBool(args);
   return THPUtils_packUInt32(
@@ -173,7 +170,8 @@ static PyObject* MPSModule_acquireEvent(PyObject* /*_unused*/, PyObject* args) {
   END_HANDLE_TH_ERRORS
 }
 
-static PyObject* MPSModule_releaseEvent(PyObject* /*_unused*/, PyObject* args) {
+static PyObject* MPSModule_releaseEvent(
+    PyObject* _unused [[maybe_unused]], PyObject* args) {
   HANDLE_TH_ERRORS
   const uint32_t event_id = THPUtils_unpackUInt32(args);
   at::detail::getMPSHooks().releaseEvent(event_id);
@@ -181,7 +179,8 @@ static PyObject* MPSModule_releaseEvent(PyObject* /*_unused*/, PyObject* args) {
   END_HANDLE_TH_ERRORS
 }
 
-static PyObject* MPSModule_recordEvent(PyObject* /*_unused*/, PyObject* args) {
+static PyObject* MPSModule_recordEvent(
+    PyObject* _unused [[maybe_unused]], PyObject* args) {
   HANDLE_TH_ERRORS
   PyObject* event_id_o = nullptr;
   PyObject* stream_id_o = nullptr;
@@ -195,7 +194,8 @@ static PyObject* MPSModule_recordEvent(PyObject* /*_unused*/, PyObject* args) {
   END_HANDLE_TH_ERRORS
 }
 
-static PyObject* MPSModule_waitForEvent(PyObject* /*_unused*/, PyObject* args) {
+static PyObject* MPSModule_waitForEvent(
+    PyObject* _unused [[maybe_unused]], PyObject* args) {
   HANDLE_TH_ERRORS
   PyObject* event_id_o = nullptr;
   PyObject* stream_id_o = nullptr;
@@ -210,8 +210,7 @@ static PyObject* MPSModule_waitForEvent(PyObject* /*_unused*/, PyObject* args) {
 }
 
 static PyObject* MPSModule_synchronizeEvent(
-    PyObject* /*_unused*/,
-    PyObject* args) {
+    PyObject* _unused [[maybe_unused]], PyObject* args) {
   HANDLE_TH_ERRORS
   const uint32_t event_id = THPUtils_unpackUInt32(args);
   {
@@ -223,7 +222,8 @@ static PyObject* MPSModule_synchronizeEvent(
   END_HANDLE_TH_ERRORS
 }
 
-static PyObject* MPSModule_queryEvent(PyObject* /*_unused*/, PyObject* args) {
+static PyObject* MPSModule_queryEvent(
+    PyObject* _unused [[maybe_unused]], PyObject* args) {
   HANDLE_TH_ERRORS
   const uint32_t event_id = THPUtils_unpackUInt32(args);
 
@@ -236,7 +236,7 @@ static PyObject* MPSModule_queryEvent(PyObject* /*_unused*/, PyObject* args) {
 }
 
 static PyObject* MPSModule_elapsedTimeOfEvents(
-    PyObject* /*_unused*/,
+    PyObject* _unused [[maybe_unused]],
     PyObject* args) {
   HANDLE_TH_ERRORS
   PyObject* start_event_o = nullptr;
@@ -252,7 +252,8 @@ static PyObject* MPSModule_elapsedTimeOfEvents(
 }
 
 #ifdef USE_MPS
-static PyObject* MPSModule_setStream(PyObject* _unused, PyObject* stream) {
+static PyObject* MPSModule_setStream(
+    PyObject* _unused [[maybe_unused]], PyObject* stream) {
   HANDLE_TH_ERRORS
   at::mps::MPSStream* mps_stream = nullptr;
   if (stream != Py_None) {

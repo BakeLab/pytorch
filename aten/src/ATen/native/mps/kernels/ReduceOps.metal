@@ -1352,7 +1352,7 @@ kernel void arg_reduction_innermost(
       MODE == ARG_COMBINE ? ::metal::numeric_limits<uint32_t>::max() : 0;
   for (uint i = simd_lane_id; i < span; i += simdgroup_size) {
     const TA val = static_cast<TA>(row_ptr[i]);
-    if IF_CONSTEXPR (MODE == ARG_COMBINE) {
+    if constexpr (MODE == ARG_COMBINE) {
       const uint32_t idx = static_cast<uint32_t>(idx_in[row * span + i]);
       if (arg_replace<OpFn>(val, idx, best_val, best_idx)) {
         best_val = val;
@@ -1366,7 +1366,7 @@ kernel void arg_reduction_innermost(
 
   auto rc = simd_arg_reduce<OpFn>(best_val, best_idx);
   if (simd_lane_id == 0) {
-    if IF_CONSTEXPR (split) {
+    if constexpr (split) {
       val_out[row] = static_cast<TI>(rc.first);
       idx_out[row] = static_cast<int>(seg_off + rc.second);
     } else {
@@ -1461,7 +1461,7 @@ kernel void arg_reduction_outer(
   }
 
   if (tid_tg.y == 0) {
-    if IF_CONSTEXPR (SPLIT) {
+    if constexpr (SPLIT) {
       val_out[col * num_segs + tg_pos.y] =
           static_cast<TI>(shared_vals[0][tid_tg.x]);
       idx_out[col * num_segs + tg_pos.y] =
