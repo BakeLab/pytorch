@@ -3,6 +3,7 @@
 #ifdef USE_C10D_NCCL
 #include <c10/util/irange.h>
 #include <fmt/format.h>
+#include <chrono>
 #include <thread>
 #include <utility>
 #include <vector>
