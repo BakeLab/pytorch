@@ -14,6 +14,7 @@
 #include <torch/csrc/distributed/c10d/nccl2/Logging.hpp>
 #include <torch/csrc/distributed/c10d/nccl2/NCCLCachingAllocatorHook.hpp>
 #include <algorithm>
+#include <chrono>
 #include <mutex>
 #include <optional>
 #include <string>
