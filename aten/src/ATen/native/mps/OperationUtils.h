@@ -699,6 +699,12 @@ inline bool supportedFloatingOrComplexType(const TensorBase& t) {
   return supportedFloatingOrComplexType(t.scalar_type());
 }
 
+inline bool needsGather(const TensorBase&) {
+  // The gather was only needed below macOS 15, which is below this backend's
+  // macOS 26 floor.
+  return false;
+}
+
 template <typename T>
 void MetalShaderLibrary::exec_unary_kernel_with_params(TensorIteratorBase& iter,
                                                        const std::string& name,
