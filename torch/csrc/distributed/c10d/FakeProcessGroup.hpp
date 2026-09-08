@@ -1,5 +1,7 @@
 #pragma once
 
+#include <chrono>
+
 #include <torch/csrc/distributed/c10d/Backend.hpp>
 
 namespace c10d {
