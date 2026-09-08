@@ -83,7 +83,7 @@ template <typename T,
   queries += batch_idx * q_batch_stride + head_idx * q_head_stride + q_seq_idx * q_seq_stride + qk_off;
   keys += batch_idx * k_batch_stride + kv_head_idx * k_head_stride + simd_gid * k_seq_stride + qk_off;
   values += batch_idx * v_batch_stride + kv_head_idx * v_head_stride + simd_gid * v_seq_stride + v_off;
-  if IF_CONSTEXPR (HAS_MASK) {
+  if constexpr (HAS_MASK) {
     mask += batch_idx * mask_batch_stride + head_idx * mask_head_stride + simd_gid * mask_kv_seq_stride +
         q_seq_idx * mask_q_seq_stride;
   }
@@ -106,7 +106,7 @@ template <typename T,
     bool use_key = true;
     if (is_causal) {
       use_key = int(i) <= q_seq_idx;
-    } else if IF_CONSTEXPR (is_bool_mask) {
+    } else if constexpr (is_bool_mask) {
       use_key = mask[0];
     }
     if (use_key) {
@@ -122,7 +122,7 @@ template <typename T,
       }
       score = simd_sum(score);
 
-      if IF_CONSTEXPR (is_additive_mask) {
+      if constexpr (is_additive_mask) {
         score += static_cast<U>(mask[0]);
       }
 
@@ -150,7 +150,7 @@ template <typename T,
     // Move the pointers to the next kv
     keys += inner_k_stride;
     values += inner_v_stride;
-    if IF_CONSTEXPR (HAS_MASK) {
+    if constexpr (HAS_MASK) {
       mask += BN * mask_kv_seq_stride;
     }
   }
@@ -263,7 +263,7 @@ template <typename T,
   values +=
       batch_idx * v_batch_stride + kv_head_idx * v_head_stride + (block_idx * BN + simd_gid) * v_seq_stride + v_off;
   out += o_offset * blocks * V + block_idx * V + v_off;
-  if IF_CONSTEXPR (HAS_MASK) {
+  if constexpr (HAS_MASK) {
     mask += batch_idx * mask_batch_stride + head_idx * mask_head_stride +
         (block_idx * BN + simd_gid) * mask_kv_seq_stride + q_seq_idx * mask_q_seq_stride;
   }
@@ -286,7 +286,7 @@ template <typename T,
     bool use_key = true;
     if (is_causal) {
       use_key = int(i) <= q_seq_idx;
-    } else if IF_CONSTEXPR (is_bool_mask) {
+    } else if constexpr (is_bool_mask) {
       use_key = mask[0];
     }
     if (use_key) {
@@ -302,7 +302,7 @@ template <typename T,
       }
       score = simd_sum(score);
 
-      if IF_CONSTEXPR (is_additive_mask) {
+      if constexpr (is_additive_mask) {
         score += static_cast<U>(mask[0]);
       }
 
@@ -330,7 +330,7 @@ template <typename T,
     // Move the pointers to the next kv
     keys += blocks * inner_k_stride;
     values += blocks * inner_v_stride;
-    if IF_CONSTEXPR (HAS_MASK) {
+    if constexpr (HAS_MASK) {
       mask += BN * blocks * mask_kv_seq_stride;
     }
   }

@@ -12,7 +12,7 @@
 
 #define MPS_ERROR_NOT_COMPILED "PyTorch code is not compiled with MPS enabled"
 #define MPS_ERROR_RUNTIME_TOO_LOW \
-  "The MPS backend is supported on macOS 26.0+. ", \
+  "The MPS backend is supported on macOS 27.0+. ", \
   "Current OS version can be queried using `sw_vers`"
 #define MPS_ERROR_DOUBLE_NOT_SUPPORTED "Cannot convert a MPS Tensor to float64 dtype " \
   "as the MPS framework doesn't support float64. Please use float32 instead."
@@ -20,7 +20,6 @@
 namespace at::detail {
 #if defined(__APPLE__) && __is_target_os(macOS)
 [[noreturn]] static void mps_unavailable_error() {
-  TORCH_CHECK(at::mps::is_macos_at_least(at::mps::MacOSVersion::MACOS_15_0), MPS_ERROR_RUNTIME_TOO_LOW);
   TORCH_CHECK(
       false,
       "MPS backend is unavailable: no supported Metal GPU was found. ",

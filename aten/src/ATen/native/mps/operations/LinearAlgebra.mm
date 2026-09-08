@@ -645,7 +645,7 @@ bool use_metal_mm(const Tensor& self, const Tensor& other, const Tensor& output)
     }
   }
 
-  // On Apple7/8, MPSGraph intermittently corrupts matmuls with a reduction
+  // On Apple8, MPSGraph intermittently corrupts matmuls with a reduction
   // dimension over 2^15 when both output dimensions use the matrix kernels;
   // whether a given call misbehaves depends on allocator/session state, and
   // fully contiguous operands are affected too. Apple9+ handles this
@@ -1180,13 +1180,9 @@ static Tensor& mm_out_mps_impl(const Tensor& self, const Tensor& other, Tensor& 
     });
     // MPS TODO:
     // Strided API doesn't play nice with complex data types (at least not in case of matmul).
-    // MPSGraph's matrixMultiplication produces incorrect results with stride-0 NDArray
-    // inputs (only every 16th row is computed) on macOS < 26.4, and again on macOS 27.0.0;
-    // 26.4+ and 27.0.1+ are fine. On affected versions, contiguify such tensors by disabling
-    // the strided API so they go through the gather/clone path first.
+    // macOS 27.0.0 has a stride-zero matmul bug fixed in 27.0.1.
     // See https://github.com/pytorch/pytorch/issues/180201
-    static const bool has_stride_zero_mm_bug = !is_macos_at_least(MacOSVersion::MACOS_26_4) ||
-        (is_macos_at_least(MacOSVersion::MACOS_27_0) && !is_macos_at_least(MacOSVersion::MACOS_27_0_1));
+    static const bool has_stride_zero_mm_bug = !is_macos_at_least(MacOSVersion::MACOS_27_0_1);
     auto hasZeroStride = [](const Tensor& t) {
       return std::ranges::any_of(t.strides(), [](auto s) { return s == 0; });
     };

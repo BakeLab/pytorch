@@ -19,10 +19,7 @@ namespace at::mps {
 
 // Helper enum to check if a MPSGraph op is supported in a given macOS version
 enum class MacOSVersion : uint32_t {
-  MACOS_26_2 = 0,
-  MACOS_26_4,
-  MACOS_27_0,
-  MACOS_27_0_1,
+  MACOS_27_0_1 = 0,
 };
 
 // Metal language version to compile shaders with
@@ -35,7 +32,6 @@ enum class MetalLanguageVersion : uint32_t {
 
 // Helper enum for GPU-family-gated workarounds
 enum class AppleGPUFamily : uint32_t {
-  APPLE_7_PLUS = 1007, // M1
   APPLE_8_PLUS = 1008, // M2
   APPLE_9_PLUS = 1009, // M3 / M4
   APPLE_10_PLUS = 1010, // M5
@@ -67,9 +63,6 @@ class TORCH_API MPSDevice {
   MTLDevice_t device() {
     return _mtl_device;
   }
-  /**
-   * Returns whether running on Ventura or newer
-   */
   bool isMacOS13Plus(MacOSVersion version) const;
 
   /**
