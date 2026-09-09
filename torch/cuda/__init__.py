@@ -367,8 +367,8 @@ DEVICE_REQUIREMENT: dict[int, _CompatSet | _CompatInterval] = {
 # Kept in sync with .ci/wheel/linux/build_env_setup.py by the validator in
 # .github/scripts/generate_binary_build_matrix.py.
 PYTORCH_RELEASES_CODE_CC: dict[str, dict[str, set[int]]] = {
-    "13.4": {
-        "x86_64": {89, 90, 100, 120},
+    "13.3": {
+        "x86_64": {120},
     },
 }
 

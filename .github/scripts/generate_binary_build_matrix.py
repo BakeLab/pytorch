@@ -24,8 +24,8 @@ SCRIPT_DIR = Path(__file__).absolute().parent
 REPO_ROOT = SCRIPT_DIR.parent.parent
 
 
-CUDA_ARCHES = ["13.4"]
-CUDA_STABLE = "13.4"
+CUDA_ARCHES = ["13.3"]
+CUDA_STABLE = "13.3"
 # CUDA versions built for Linux only. 13.0 is held on nightly for vLLM's cu130
 # lane (pytorch/test-infra#8989); nothing consumes a Windows cu130 nightly.
 CUDA_ARCHES_NO_WINDOWS = ["13.0"]
@@ -112,6 +112,15 @@ PYTORCH_EXTRA_INSTALL_REQUIREMENTS = {
         ),
     },
     # dependency on latest patch version for (major, minor)
+    "13.3": {"linux": (
+        "cuda-toolkit[nvrtc,cudart,cupti,cufft,cusolver,cusparse,cublas,cufile,nvjitlink,nvtx]==13.4.1; platform_system == 'Linux' | "
+        "cuda-bindings>=13.0.3,<14; platform_system == 'Linux' and python_version < '3.15' | "
+        "cupti-python==13.4.0; platform_system == 'Linux' and python_version < '3.15' | "
+        "nvidia-cudnn-cu13==9.26.0.51; platform_system == 'Linux' | "
+        "nvidia-cusparselt-cu13==0.8.1; platform_system == 'Linux' | "
+        "nvidia-nccl-cu13==2.32.3; platform_system == 'Linux' | "
+        "nvidia-nvshmem-cu13==3.7.2; platform_system == 'Linux'"
+    )},
     "10.0": ("rocm[libraries,device-all]==10.0.*"),
     "10.1": ("rocm[libraries,device-all]==10.1.*"),
 }
@@ -131,7 +140,7 @@ CUDA_NIGHTLY_SOURCE_MATRIX = {
     f"cuda-{major}.{minor}": dict(
         name=f"cuda-{major}.{minor}",
         index_url=f"{PYTORCH_NIGHTLY_PIP_INDEX_URL}/cu{major}{minor}",
-        supported_platforms=["Linux", "Windows"],
+        supported_platforms=["Linux"],
         accelerator="cuda",
     )
     for major, minor in (map(int, version.split(".")) for version in CUDA_ARCHES)
