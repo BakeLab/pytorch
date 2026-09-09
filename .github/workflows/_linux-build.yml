@@ -12,11 +12,6 @@ on:
         required: true
         type: string
         description: Name of the base docker image to build with.
-      ci-docker-hash:
-        required: false
-        type: string
-        default: ""
-        description: Deprecated no-op; this fork builds no CI docker images.
       build-generates-artifacts:
         required: false
         type: boolean
@@ -178,11 +173,11 @@ jobs:
     if: github.repository_owner == 'pytorch'
     runs-on: ${{ inputs.runner_prefix }}${{ inputs.runner }}
     container:
-      image: 308535385114.dkr.ecr.us-east-1.amazonaws.com/pytorch/${{ inputs.docker-image-name }}${{ inputs.ci-docker-hash && format('-{0}', inputs.ci-docker-hash) || '' }}
+      image: 308535385114.dkr.ecr.us-east-1.amazonaws.com/pytorch/${{ inputs.docker-image-name }}
     timeout-minutes: 480
     outputs:
-      docker-image: 308535385114.dkr.ecr.us-east-1.amazonaws.com/pytorch/${{ inputs.docker-image-name }}${{ inputs.ci-docker-hash && format('-{0}', inputs.ci-docker-hash) || '' }}
-      test-matrix: ${{ steps.filter.outputs.test-matrix }}
+      docker-image: 308535385114.dkr.ecr.us-east-1.amazonaws.com/pytorch/${{ inputs.docker-image-name }}
+      test-matrix: ${{ steps.map-runners.outputs.test-matrix }}
       build-environment: ${{ inputs.build-environment }}
     steps:
       - name: Setup Linux
@@ -276,7 +271,7 @@ jobs:
         uses: pytorch/pytorch/.github/actions/build-external-packages@main
         with:
           build-targets: ${{ inputs.build-external-packages }}
-          docker-image: 308535385114.dkr.ecr.us-east-1.amazonaws.com/pytorch/${{ inputs.docker-image-name }}${{ inputs.ci-docker-hash && format('-{0}', inputs.ci-docker-hash) || '' }}
+          docker-image: 308535385114.dkr.ecr.us-east-1.amazonaws.com/pytorch/${{ inputs.docker-image-name }}
           cuda-arch-list: ${{ inputs.cuda-arch-list }}
           output-dir: external
 

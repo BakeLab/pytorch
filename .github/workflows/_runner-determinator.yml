@@ -51,12 +51,6 @@ on:
       scale-config-label-type:
         description: Scale-config AMI variant prefix, e.g. "wincanary." (empty when none)
         value: ${{ jobs.runner-determinator.outputs.scale-config-label-type }}
-      lf-runners:
-        description: LF allowlist for --lf-runners; empty = unrestricted (ci-infra#1081).
-        value: ${{ jobs.runner-determinator.outputs.lf-runners }}
-      ci-docker-hash:
-        description: Deprecated no-op alias; this fork builds no CI docker images.
-        value: ${{ '' }}
 
 jobs:
   runner-determinator:
