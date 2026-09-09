@@ -62,11 +62,9 @@ from trymerge import (
     find_matching_merge_rule,
     format_failure_comment,
     get_classifications,
-    get_docker_build_checks,
     get_drci_classifications,
     get_native_stack_prs,
     get_prs_to_merge,
-    get_topmost_docker_pr,
     gh_get_pr_info,
     gh_get_team_members,
     GitHubPR,
@@ -77,7 +75,6 @@ from trymerge import (
     is_ai_not_related,
     is_authorized_without_greenlight,
     is_bot_initiated_codev_merge,
-    is_docker_affecting_files,
     iter_issue_timeline_until_comment,
     JobCheckState,
     main as trymerge_main,
@@ -2013,103 +2010,6 @@ class TestImportStatusCheck(TestCase):
                 self.assertNotIn(mandatory_check, IMPORT_STATUS_CHECKRUN_NAME)
 
 
-class TestDockerCiGates(TestCase):
-    """Unit tests for the docker-image merge gates."""
-
-    def test_is_docker_affecting_files(self) -> None:
-        self.assertTrue(is_docker_affecting_files([".ci/docker/build.sh"]))
-        self.assertTrue(
-            is_docker_affecting_files(["README.md", ".ci/docker/ubuntu/Dockerfile"])
-        )
-        # Exact directory path also counts
-        self.assertTrue(is_docker_affecting_files([".ci/docker"]))
-        # Unrelated files, including a lookalike prefix, don't count
-        self.assertFalse(is_docker_affecting_files(["torch/foo.py", "README.md"]))
-        self.assertFalse(is_docker_affecting_files([".ci/docker-something/x"]))
-        self.assertFalse(is_docker_affecting_files([]))
-
-    def test_get_docker_build_checks(self) -> None:
-        def check(name: str) -> JobCheckState:
-            return JobCheckState(name, "", "SUCCESS", None, None, None, None)
-
-        checks = {
-            name: check(name)
-            for name in (
-                "docker-builds / docker-build (pytorch-linux-jammy)",
-                "docker-builds",
-                "linux-build / build",
-                "docker-builds-nightly / x",
-            )
-        }
-        self.assertEqual(
-            set(get_docker_build_checks(checks)),
-            {
-                "docker-builds / docker-build (pytorch-linux-jammy)",
-                "docker-builds",
-            },
-        )
-
-    def test_get_topmost_docker_pr(self) -> None:
-        lower_docker_pr = mock.MagicMock()
-        lower_docker_pr.is_docker_affecting.return_value = True
-        middle_pr = mock.MagicMock()
-        middle_pr.is_docker_affecting.return_value = False
-        top_docker_pr = mock.MagicMock()
-        top_docker_pr.is_docker_affecting.return_value = True
-
-        self.assertIs(
-            get_topmost_docker_pr([lower_docker_pr, middle_pr]), lower_docker_pr
-        )
-        self.assertIs(
-            get_topmost_docker_pr([lower_docker_pr, middle_pr, top_docker_pr]),
-            top_docker_pr,
-        )
-        self.assertIsNone(get_topmost_docker_pr([middle_pr]))
-
-    @mock.patch("trymerge.check_docker_builds_ready")
-    @mock.patch("trymerge.get_ghstack_prs")
-    @mock.patch("trymerge.find_matching_merge_rule")
-    @mock.patch("trymerge.can_skip_internal_checks", return_value=False)
-    def test_merge_into_gates_lower_ghstack_docker_pr(
-        self,
-        _mock_can_skip_internal_checks: mock.MagicMock,
-        mock_find_matching_merge_rule: mock.MagicMock,
-        mock_get_ghstack_prs: mock.MagicMock,
-        mock_check_docker_builds_ready: mock.MagicMock,
-    ) -> None:
-        lower_pr = mock.MagicMock(spec=GitHubPR)
-        lower_pr.pr_num = 1000
-        lower_pr.is_closed.return_value = False
-        lower_pr.is_docker_affecting.return_value = True
-        top_pr = mock.MagicMock(spec=GitHubPR)
-        top_pr.org = "pytorch"
-        top_pr.project = "pytorch"
-        top_pr.pr_num = 1001
-        top_pr.is_ghstack_pr.return_value = True
-        top_pr.is_closed.return_value = False
-        top_pr.is_docker_affecting.return_value = False
-        top_pr.is_dependabot_pr.return_value = False
-        top_pr.merge_changes_locally.side_effect = RuntimeError("stop after gates")
-        repo = mock.MagicMock(spec=GitRepo)
-        ghstack_prs = [(lower_pr, "lower_rev"), (top_pr, "top_rev")]
-        mock_get_ghstack_prs.return_value = ghstack_prs
-        mock_find_matching_merge_rule.return_value = (None, [], [], {})
-
-        with self.assertRaisesRegex(RuntimeError, "stop after gates"):
-            GitHubPR.merge_into(top_pr, repo, comment_id=1)
-
-        mock_get_ghstack_prs.assert_called_once_with(repo, top_pr, open_only=False)
-        mock_check_docker_builds_ready.assert_called_once_with(lower_pr)
-        top_pr.merge_changes_locally.assert_called_once_with(
-            repo, False, 1, ghstack_prs=ghstack_prs, ignore_current_checks=None
-        )
-
-
-@mock.patch("trymerge.gh_graphql", side_effect=mocked_gh_graphql)
-@mock.patch(
-    "trymerge.get_drci_classifications", side_effect=mocked_drci_classifications
-)
-@mock.patch("trymerge.read_merge_rules", side_effect=mocked_read_merge_rules_greenlight)
 class TestAuthorizedWithoutGreenlight(TestCase):
     def setUp(self) -> None:
         # The answer is memoized for the lifetime of a merge command's process; each
@@ -2482,7 +2382,6 @@ class TestReviewAccessors(TestCase):
 class TestGreenlightGuardCallSite(TestCase):
     def setUp(self) -> None:
         for patcher in (
-            mock.patch("trymerge.check_docker_builds_ready"),
             mock.patch("trymerge.can_skip_internal_checks", return_value=False),
             mock.patch(
                 "trymerge.find_matching_merge_rule", return_value=(None, [], [], {})
@@ -2498,8 +2397,7 @@ class TestGreenlightGuardCallSite(TestCase):
         pr.pr_num = pr_num
         pr.is_ghstack_pr.return_value = ghstack
         pr.is_closed.return_value = False
-        pr.is_docker_affecting.return_value = False
-        pr.is_dependabot_pr.return_value = False
+            pr.is_dependabot_pr.return_value = False
         pr.get_approved_by.return_value = [GREENLIGHT_LOGIN]
         pr.get_changes_requested_by.return_value = []
         pr.get_labels.return_value = []
@@ -2757,11 +2655,10 @@ class TestGreenlightGuardWiring(TestCase):
         )
 
     @mock.patch("trymerge.check_greenlight_reviewed_head_sha")
-    @mock.patch("trymerge.check_docker_builds_ready")
     @mock.patch("trymerge.can_skip_internal_checks", return_value=True)
     @mock.patch("trymerge.find_matching_merge_rule", return_value=(None, [], [], {}))
     def test_merge_into_hands_the_guard_the_gate_it_just_ran(
-        self, _rule: Any, _skip: Any, _docker: Any, mock_check: Any
+        self, _rule: Any, _skip: Any, mock_check: Any
     ) -> None:
         pr = mock.MagicMock(spec=GitHubPR)
         pr.org = "pytorch"
@@ -2769,8 +2666,7 @@ class TestGreenlightGuardWiring(TestCase):
         pr.pr_num = 1
         pr.is_ghstack_pr.return_value = False
         pr.is_dependabot_pr.return_value = False
-        pr.is_docker_affecting.return_value = False
-        pr.merge_changes_locally.side_effect = RuntimeError("stop after gates")
+            pr.merge_changes_locally.side_effect = RuntimeError("stop after gates")
 
         with self.assertRaisesRegex(RuntimeError, "stop after gates"):
             GitHubPR.merge_into(
@@ -3160,7 +3056,6 @@ def stacked_pr(number: int) -> Any:
     pr.is_ghstack_pr.return_value = False
     pr.is_cross_repo.return_value = False
     pr.is_closed.return_value = False
-    pr.is_docker_affecting.return_value = False
     pr.is_dependabot_pr.return_value = False
     pr.has_invalid_submodule_updates.return_value = False
     pr.get_labels.return_value = []
@@ -3254,7 +3149,6 @@ class TestNativeStackMergeInto(NoNetworkTestCase):
         )
         self.patch("trymerge.can_skip_internal_checks", return_value=False)
         self.greenlight = self.patch("trymerge.check_greenlight_reviewed_head_sha")
-        self.docker = self.patch("trymerge.check_docker_builds_ready")
         self.record = self.patch("trymerge.save_merge_record")
         self.close = self.patch("trymerge.manually_close_merged_pr")
         self.patch("trymerge.time.sleep")
@@ -3301,14 +3195,6 @@ class TestNativeStackMergeInto(NoNetworkTestCase):
         self.assertStopsBeforeLanding()
         self.get_stack.assert_called_once_with("pytorch", "pytorch", 1002)
         self.assertIs(self.landing.call_args.args[3], current)
-
-    def test_greenlight_and_docker_gates_cover_every_landing_pr(self) -> None:
-        self.lower.is_docker_affecting.return_value = True
-        self.assertStopsBeforeLanding()
-        prs = [self.lower, self.top]
-        self.assertEqual(self.greenlight.call_args.args, (self.top, self.repo, prs))
-        self.docker.assert_called_once_with(self.lower)
-        self.assertIs(self.top.merge_native_stack_into.call_args.args[3], self.lower)
 
     def test_dependabot_pr_is_landed_by_the_bot(self) -> None:
         self.top.is_dependabot_pr.return_value = True
@@ -3365,17 +3251,11 @@ class TestMergeNativeStackInto(NoNetworkTestCase):
         self.build = self.patch(
             "trymerge.build_native_stack_commits", return_value="top-sha"
         )
-        self.skew = self.patch("trymerge.warn_on_docker_merge_skew")
 
-    def land(self, docker_pr: Any = None, dry_run: bool = False) -> list[GitHubPR]:
+    def land(self, dry_run: bool = False) -> list[GitHubPR]:
         return GitHubPR.merge_native_stack_into(
-            self.top, self.repo, NATIVE_STACK, self.native_prs, docker_pr, dry_run
+            self.top, self.repo, NATIVE_STACK, self.native_prs, dry_run
         )
-
-    def test_passes_docker_pr_and_dry_run_through(self) -> None:
-        self.land(docker_pr=self.lower, dry_run=True)
-        self.skew.assert_called_once_with(self.repo, self.lower)
-        self.repo.push.assert_called_once_with("main", True)
 
 
 class TestStartingMergeComment(NoNetworkTestCase):

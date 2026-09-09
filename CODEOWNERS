@@ -973,15 +973,9 @@
 # [infra_ci]
 # label: module: ci
 /.ci/ @pytorch/pytorch-dev-infra
-# label: module: ci, module: rocm
-/.ci/docker/ubuntu-rocm/ @jeffdaily
-/.ci/docker/common/install_roc*.sh @jeffdaily
-/.ci/docker/common/install_amdsmi.sh @jeffdaily
-/.ci/docker/ci_commit_pins/rocm-*.txt @jeffdaily
-# label: oncall: pt2, module: ci, module: inductor
-/.ci/docker/ci_commit_pins/triton.txt @desertfire @Chillee @eellison @jeffdaily @jataylo @jithunnair-amd @pruthvistony
-# label: module: ci, module: xpu
-/.ci/docker/ci_commit_pins/triton-xpu.txt @EikanWang @gujinghui
+/.ci/pins/rocm-*.txt @jeffdaily
+/.ci/pins/triton.txt @desertfire @Chillee @eellison @jeffdaily @jataylo @jithunnair-amd @pruthvistony
+/.ci/pins/triton-xpu.txt @EikanWang @gujinghui
 #
 # [infra_github_automation]
 # label: module: ci
@@ -992,7 +986,6 @@
 # /.ci/wheel/
 # /.coveragerc
 # /.ctags.d/
-# /.dockerignore
 # /.editorconfig
 # /.gdbinit
 # /.git-blame-ignore-revs
@@ -1002,7 +995,6 @@
 # /.spin/
 # /BUCK.oss
 # /CMakeLists.txt
-# /Dockerfile
 # /Makefile
 # /buckbuild.bzl
 # /build.bzl
@@ -1010,7 +1002,6 @@
 # /cmake/
 # /codex_setup.sh
 # /defs.bzl
-# /docker.Makefile
 # /mkldnn.bzl
 # /pt_ops.bzl
 # /pt_template_srcs.bzl

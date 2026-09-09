@@ -7,7 +7,7 @@ requires = [
     "pyyaml",
     # The floor usually names a minor release; this one needs the patch level
     # too. CI pins the exact version we test against in
-    # .ci/docker/requirements-ci.txt.
+    # .ci/requirements-ci.txt.
     "scikit-build-core>=1.1.1",
     # Imported by torchgen at build time (cmake/Codegen.cmake runs
     # `python -m torchgen.gen`, and torchgen/utils.py uses `Self` /
@@ -124,7 +124,7 @@ include = [
     "aten/src/ATen/native/quantized/cpu/qnnpack/deps/**",
     # NCCL is not shipped (see !third_party/nccl/** below); the configure step
     # clones it from this pin instead, so the pin must survive the .ci/** exclude.
-    ".ci/docker/ci_commit_pins/nccl*.txt",
+    ".ci/pins/nccl*.txt",
     "!**/.git",
     "!**/__pycache__/**",
     "!**/*.pyc",
@@ -156,7 +156,6 @@ exclude = [
     "third_party/flatbuffers/docs/source/CONTRIBUTING.md",
     "third_party/ittapi/rust/**",
     # Symlinks (see resolve-symlinks above).
-    ".dockerignore",
     "AGENTS.md",
     "docs/requirements.txt",
     "torch/distributed/AGENTS.md",
@@ -168,7 +167,7 @@ exclude = [
 
 [tool.scikit-build.sdist.force-include]
 # docs/requirements.txt is a symlink into the excluded .ci tree; ship its target.
-".ci/docker/requirements-docs.txt" = "docs/requirements.txt"
+".ci/requirements-docs.txt" = "docs/requirements.txt"
 
 [tool.scikit-build.install]
 # scikit-build-core auto-strips binaries in Release builds. PyTorch needs to

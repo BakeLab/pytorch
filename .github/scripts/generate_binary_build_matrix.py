@@ -29,26 +29,6 @@ CUDA_STABLE = "13.2"
 # CUDA versions built for Linux only. 13.0 is held on nightly for vLLM's cu130
 # lane (pytorch/test-infra#8989); nothing consumes a Windows cu130 nightly.
 CUDA_ARCHES_NO_WINDOWS = ["13.0"]
-# Only consumed by generate_docker_release_matrix.py, whose Dockerfile installs
-# an already-published torch nightly. A CUDA version belongs here only once its
-# wheels are on the download.pytorch.org index.
-CUDA_ARCHES_FULL_VERSION = {
-    "12.6": "12.6.3",
-    "13.0": "13.0.3",
-    "13.2": "13.2.2",
-    "13.4": "13.4.1",
-}
-# CUDA versions that can only produce the runtime docker image. The devel image
-# apt-installs cuda-toolkit-<major>-<minor> from NVIDIA's repo.
-# Drop an entry once its toolkit ships in the apt repo.
-CUDA_ARCHES_RUNTIME_IMAGE_ONLY = []
-CUDA_ARCHES_CUDNN_VERSION = {
-    "12.6": "9",
-    "13.0": "9",
-    "13.2": "9",
-    "13.4": "9",
-}
-
 ROCM_ARCHES = ["10.0", "10.1"]
 
 XPU_ARCHES = ["xpu"]
