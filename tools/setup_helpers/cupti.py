@@ -40,7 +40,7 @@ def find_cupti_header() -> Path | None:
     2. The CUDA toolkit at ``CUDA_HOME``, ``CUDA_PATH``, or ``/usr/local/cuda`` --
        prefer its headers so CUDA 13.4 binaries get the matching CUPTI field ids.
     3. ``/usr/local/cupti-headers-<major.minor>`` -- the CUPTI redist headers
-       staged into the CI Docker image by ``.ci/docker/common/install_cuda.sh``
+       staged into the CI Docker image by ``.ci/scripts/install_cuda.sh``
        (``install_cupti_headers``); the highest version present wins.
     4. The ``nvidia-cuda-cupti`` wheel (namespace package ``nvidia.cu13``) -- a
        convenience fallback for local builds where the wheel is already installed.

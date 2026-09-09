@@ -35,9 +35,9 @@ Our trunk health (Continuous Integration signals) can be found at [hud.pytorch.o
     - [Install Dependencies](#install-dependencies)
     - [Install PyTorch](#install-pytorch)
       - [Adjust Build Options (Optional)](#adjust-build-options-optional)
-  - [Docker Image](#docker-image)
-    - [Using pre-built images](#using-pre-built-images)
-    - [Building the image yourself](#building-the-image-yourself)
+  - [Building the Documentation](#building-the-documentation)
+    - [Troubleshooting CI Errors](#troubleshooting-ci-errors)
+    - [Building a PDF](#building-a-pdf)
   - [Previous Versions](#previous-versions)
 - [Getting Started](#getting-started)
 - [Resources](#resources)
@@ -401,39 +401,119 @@ not already set. The corollary: once a variable is in the cache, changing its en
 no longer affects it -- edit the cache directly (or delete `build/CMakeCache.txt`) to change it.
 The build type and compiler are the exception; the build always re-applies them.
 
-### Docker Image
+### Building the Documentation
 
-#### Using pre-built images
+To build documentation in various formats, you will need [Sphinx](https://www.sphinx-doc.org)
+and the `pytorch_sphinx_theme2`.
 
-You can also pull a pre-built docker image from Docker Hub and run with docker v23.0+
+Before you build the documentation locally, ensure `torch` is
+installed in your environment. For small fixes, you can install the
+nightly version as described in [Getting Started](https://pytorch.org/get-started/locally/).
 
-```bash
-docker run --gpus all --rm -ti --ipc=host pytorch/pytorch:latest
-```
-
-Please note that PyTorch uses shared memory to share data between processes, so if torch multiprocessing is used (e.g.
-for multithreaded data loaders) the default shared memory segment size that container runs with is not enough, and you
-should increase shared memory size either with `--ipc=host` or `--shm-size` command line options to `nvidia-docker run`.
-
-#### Building the image yourself
-
-**NOTE:** Must be built with a Docker version >= 23.0
-
-The Dockerfile is supplied to build images with CUDA 12.6 support and cuDNN v9.
-You can pass `PYTHON_VERSION=x.y` make variable to specify which Python version is to be used by Miniconda, or leave it
-unset to use the default, as the Dockerfile uses system Python.
+For more complex fixes, such as adding a new module and docstrings for
+the new module, you might need to install torch [from source](#from-source).
+See [Docstring Guidelines](https://github.com/pytorch/pytorch/wiki/Docstring-Guidelines)
+for docstring conventions.
 
 ```bash
-make -f docker.Makefile
-# images are tagged as docker.io/${your_docker_username}/pytorch
+cd docs/
+pip install -r requirements.txt
+make html
+make serve
 ```
 
-You can also pass the `CMAKE_VARS="..."` environment variable to specify additional CMake variables to be passed to CMake during the build.
-See [`cmake/EnvVarForwarding.cmake`](./cmake/EnvVarForwarding.cmake) for the list of available variables.
+Run `make` to get a list of all available output formats.
 
-```bash
-make -f docker.Makefile
+If you get a katex error run `npm install katex`.  If it persists, try
+`npm install -g katex`
+
+> [!NOTE]
+> If you see a numpy incompatibility error, run:
+> ```
+> pip install 'numpy<2'
+> ```
+
+
+#### Troubleshooting CI Errors
+Your build may show errors you didn't have locally - here's how to find the errors relevant to the docs.
+
+If the build has any errors, you will see something like this on the PR:
+
+<img width="781" height="400" alt="Monosnap Update installation instructions for doc build · Pull Request #169534 · pytorch:pytorch 2025-12-18 18-22-53" src="https://github.com/user-attachments/assets/49a3dfe7-81c2-4246-852b-bc3f807e95af" />
+
+Any doc-related errors will occur in jobs that include "doc" somewhere in the title. It doesn't look like any of these jobs are relevant to our docs.
+
+
+Let's take a look anyway. Click on the job to see the logs:
+
+<img width="1187" height="668" alt="Monosnap Update installation instructions for doc build · pytorch:pytorch@7380336 2025-12-18 18-24-15" src="https://github.com/user-attachments/assets/117df543-8356-4323-8e1c-ef02a95554ba" />
+
+And we can be sure that this job does not involve docs.
+
+Looking at this build, we can see these jobs are relevant to our docs - and they didn't have any errors:
+
+<img width="777" height="395" alt="Check the docs jobs" src="https://github.com/user-attachments/assets/5d7c196b-2d40-49ad-87e3-f57de6e14a5b" />
+
+You might also see a comment on the PR like this:
+
+<img width="651" height="246" alt="PR Comment" src="https://github.com/user-attachments/assets/27e0120a-ba33-4b1c-b4a5-bf3064520586" />
+
+We can see that some of these issues are relevant to our docs.
+
+Open the logs by clicking on the `gh` link:
+
+<img width="873" height="360" alt="View Logs" src="https://github.com/user-attachments/assets/ab5b862f-8026-489c-b95e-a6cd4257e4b7" />
+
+And here we can see there is a doc-related error:
+
+<img width="1117" height="433" alt="Doc Error" src="https://github.com/user-attachments/assets/0a275921-736d-43a7-ab0f-3e8854d43280" />
+
+You can always find the relevant doc builds by going to the `Checks` tab on your PR, and scrolling down to `pull`.
+
+<img width="481" height="561" alt="checks" src="https://github.com/user-attachments/assets/eef18f2b-7134-4e2e-bd90-bcdc12800132" />
+
+You can either click through or toggle the accordion to see all of the jobs here, where you can see the docs jobs highlighted:
+
+<img width="570" height="611" alt="jobs" src="https://github.com/user-attachments/assets/f62812ca-caee-421b-863c-54f38fd28d46" />
+
+If you click through, you'll see the doc jobs at the bottom, like this:
+
+<img width="354" height="312" alt="View Docs jobs" src="https://github.com/user-attachments/assets/8fadb935-5314-4c4b-a1b5-133781754f03" />
+
+
+#### Building a PDF
+
+To compile a PDF of all PyTorch documentation, ensure you have
+`texlive` and LaTeX installed. On macOS, you can install them using:
+
 ```
+brew install --cask mactex
+```
+
+To create the PDF:
+
+1. Run:
+
+   ```
+   make latexpdf
+   ```
+
+   This will generate the necessary files in the `build/latex` directory.
+
+2. Navigate to this directory and execute:
+
+   ```
+   make LATEXOPTS="-interaction=nonstopmode"
+   ```
+
+   This will produce a `pytorch.pdf` with the desired content. Run this
+   command one more time so that it generates the correct table
+   of contents and index.
+
+> [!NOTE]
+> To view the Table of Contents, switch to the **Table of Contents**
+> view in your PDF viewer.
+
 
 ### Previous Versions
 

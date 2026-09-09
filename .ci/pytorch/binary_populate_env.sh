@@ -71,7 +71,7 @@ fi
 export PYTORCH_BUILD_NUMBER=1
 
 # Set triton version as part of PYTORCH_EXTRA_INSTALL_REQUIREMENTS
-TRITON_VERSION=$(cat $PYTORCH_ROOT/.ci/docker/triton_version.txt)
+TRITON_VERSION=$(cat $PYTORCH_ROOT/.ci/pins/triton_version.txt)
 TRITON_CONSTRAINT="platform_system == 'Linux' and python_version < '3.16'"
 
 # Opt-in only: torchTLX needs FBTriton, but the default stays upstream triton /
@@ -117,13 +117,13 @@ fi
 
 # Set triton via PYTORCH_EXTRA_INSTALL_REQUIREMENTS for triton xpu package
 if [[ "$PACKAGE_TYPE" =~ .*wheel.* && -n "$PYTORCH_BUILD_VERSION" && "$PYTORCH_BUILD_VERSION" =~ .*xpu.* ]]; then
-    TRITON_VERSION=$(cat $PYTORCH_ROOT/.ci/docker/triton_xpu_version.txt)
+    TRITON_VERSION=$(cat $PYTORCH_ROOT/.ci/pins/triton_xpu_version.txt)
     # Matches the CUDA/ROCm triton requirements above. Applies to both Linux and
     # Windows xpu.
     XPU_TRITON_CONSTRAINT="python_version < '3.16'"
     TRITON_REQUIREMENT="triton-xpu~=${TRITON_VERSION}; ${XPU_TRITON_CONSTRAINT}"
     if [[ -n "$PYTORCH_BUILD_VERSION" && "$PYTORCH_BUILD_VERSION" =~ .*dev.* ]]; then
-        TRITON_SHORTHASH=$(cut -c1-8 $PYTORCH_ROOT/.ci/docker/ci_commit_pins/triton-xpu.txt)
+        TRITON_SHORTHASH=$(cut -c1-8 $PYTORCH_ROOT/.ci/pins/triton-xpu.txt)
         TRITON_REQUIREMENT="triton-xpu==${TRITON_VERSION}+git${TRITON_SHORTHASH}; ${XPU_TRITON_CONSTRAINT}"
     fi
     if [[ -z "${PYTORCH_EXTRA_INSTALL_REQUIREMENTS:-}" ]]; then
