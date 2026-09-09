@@ -79,8 +79,6 @@ GH_OUTPUT_KEY_AMI = "runner-ami"
 GH_OUTPUT_KEY_LABEL_TYPE = "label-type"
 GH_OUTPUT_KEY_AMD_SANDBOX_LABEL_TYPE = "amd-sandbox-label-type"
 GH_OUTPUT_KEY_AMD_DPX_LABEL_TYPE = "amd-dpx-label-type"
-GH_OUTPUT_KEY_SCALE_CONFIG_LABEL_TYPE = "scale-config-label-type"
-GH_OUTPUT_KEY_LF_RUNNERS = "lf-runners"
 OPT_OUT_LABEL = "no-runner-experiments"
 
 SETTING_EXPERIMENTS = "experiments"
@@ -95,12 +93,6 @@ LF_ALLOWLIST_MODES = ("all", "restricted")
 # Linux Foundation fleet. META_LABEL_PREFIX is also the fallback on error.
 META_LABEL_PREFIX = "mt-"
 LF_LABEL_PREFIX = "lf-"
-
-# Experiments naming a scale-config AMI variant, selected by prefixing the
-# runner type: wincanary.windows.12xlarge. Fleet experiments are excluded on
-# purpose -- lf rolls out over ALL workflows and would move Windows builds off
-# their fleet as a side effect.
-SCALE_CONFIG_VARIANT_EXPERIMENTS = frozenset({"wincanary", "wincanarylf"})
 
 AMD_SANDBOX_EXPERIMENT = "amd-sandbox"
 AMD_SANDBOX_LABEL_PREFIX = "amd-sandbox-"
@@ -137,8 +129,6 @@ class RunnerPrefixResult(NamedTuple):
     prefix: str
     amd_sandbox_prefix: str = ""
     amd_dpx_prefix: str = ""
-    scale_config_prefix: str = ""
-    lf_restrict_runners: bool = True
 
 
 class Settings(NamedTuple):
@@ -556,7 +546,6 @@ def get_runner_prefix(
     lf_restrict_runners = True
     amd_sandbox_prefix = ""
     amd_dpx_prefix = ""
-    scale_config_experiments: list[str] = []
     for experiment_name, experiment_settings in settings.experiments.items():
         if not experiment_settings.all_branches and is_exception_branch(branch):
             log.info(
@@ -681,12 +670,6 @@ def get_runner_prefix(
                 lf_enabled = True
                 lf_restrict_runners = experiment_settings.restrict_runners
                 log.info("lf experiment enabled. Using the Linux Foundation fleet.")
-            elif experiment_name in SCALE_CONFIG_VARIANT_EXPERIMENTS:
-                scale_config_experiments.append(experiment_name)
-                log.info(
-                    f"Experiment '{experiment_name}' enabled; offering it on "
-                    "scale-config-label-type."
-                )
             else:
                 log.info(
                     f"Experiment '{experiment_name}' enabled but no longer affects "
@@ -697,23 +680,10 @@ def get_runner_prefix(
     # switches to the Linux Foundation fleet.
     prefix = LF_LABEL_PREFIX if lf_enabled else META_LABEL_PREFIX
 
-    if len(scale_config_experiments) > 1:
-        log.error(
-            "Only one scale-config AMI variant can be enabled for a job at any time. "
-            f"Enabling {scale_config_experiments[0]} and ignoring the rest, which "
-            f"are {', '.join(scale_config_experiments[1:])}"
-        )
-        del scale_config_experiments[1:]
-    scale_config_prefix = (
-        f"{scale_config_experiments[0]}." if scale_config_experiments else ""
-    )
-
     return RunnerPrefixResult(
         prefix=prefix,
         amd_sandbox_prefix=amd_sandbox_prefix,
         amd_dpx_prefix=amd_dpx_prefix,
-        scale_config_prefix=scale_config_prefix,
-        lf_restrict_runners=lf_restrict_runners,
     )
 
 
@@ -827,8 +797,6 @@ def main() -> None:
     runner_label_prefix = META_LABEL_PREFIX
     amd_sandbox_label_prefix = ""
     amd_dpx_label_prefix = ""
-    scale_config_label_prefix = ""
-    lf_restrict_runners = True
 
     # no-runner-experiments means "use Meta, not LF": opt out of the lf
     # experiment, so the run stays on the default Meta fleet.
@@ -869,8 +837,6 @@ def main() -> None:
         runner_label_prefix = result.prefix
         amd_sandbox_label_prefix = result.amd_sandbox_prefix
         amd_dpx_label_prefix = result.amd_dpx_prefix
-        scale_config_label_prefix = result.scale_config_prefix
-        lf_restrict_runners = result.lf_restrict_runners
 
     except Exception as e:
         log.error(
@@ -884,8 +850,6 @@ def main() -> None:
     set_github_output(GH_OUTPUT_KEY_LABEL_TYPE, runner_label_prefix)
     set_github_output(GH_OUTPUT_KEY_AMD_SANDBOX_LABEL_TYPE, amd_sandbox_label_prefix)
     set_github_output(GH_OUTPUT_KEY_AMD_DPX_LABEL_TYPE, amd_dpx_label_prefix)
-    set_github_output(GH_OUTPUT_KEY_SCALE_CONFIG_LABEL_TYPE, scale_config_label_prefix)
-    set_github_output(GH_OUTPUT_KEY_LF_RUNNERS, lf_runners)
 
 
 if __name__ == "__main__":
