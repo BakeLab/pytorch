@@ -41,7 +41,6 @@ jobs:
       lf_runners: "${{ needs.get-label-type.outputs.lf-runners }}"
       build-environment: linux-jammy-py3.11-gcc11
       docker-image-name: ci-image:pytorch-linux-jammy-py3-gcc11-inductor-benchmarks
-      ci-docker-hash: ${{ needs.get-label-type.outputs.ci-docker-hash }}
       # Use metal host for benchmark jobs
       test-matrix: |
         { include: [
