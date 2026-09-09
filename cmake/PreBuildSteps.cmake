@@ -28,6 +28,9 @@ if(NOT DEFINED USE_SYSTEM_LIBS OR NOT USE_SYSTEM_LIBS)
       "${PROJECT_SOURCE_DIR}/third_party/cutlass"
     )
   endif()
+  if(DEFINED USE_ROCM AND NOT USE_ROCM)
+    list(FILTER _submodule_folders EXCLUDE REGEX "/third_party/aiter$")
+  endif()
 
   set(_all_missing TRUE)
   foreach(_dir IN LISTS _submodule_folders)
@@ -142,16 +145,10 @@ if(NOT USE_SYSTEM_NCCL)
           GIT_SHALLOW    TRUE
           SOURCE_DIR     "${_nccl_dir}"
         )
+        cmake_policy(PUSH)
+        cmake_policy(SET CMP0169 OLD)
         FetchContent_Populate(nccl)
-      else()
-        # Not fatal here: CUDA may still be turned off below. A CUDA build
-        # without NCCL sources fails in cmake/External/nccl.cmake instead.
-        message(WARNING
-          "Neither ${_nccl_dir} nor the pin file ${_nccl_pin_file} exists, so "
-          "NCCL cannot be cloned. A CUDA build needs the NCCL sources at "
-          "third_party/nccl, an installed NCCL with USE_SYSTEM_NCCL=1, or "
-          "USE_NCCL=0."
-        )
+        cmake_policy(POP)
       endif()
     endif()
   endif()
