@@ -105,6 +105,17 @@ with tempfile.TemporaryDirectory() as tmpdir:
             paths = torch.utils.cpp_extension.include_paths("cuda")
         self.assertNotIn("/usr/include", paths)
 
+    @unittest.skipUnless(TEST_ROCM, "ROCm is not available")
+    def test_rocm_sdk_devel_library_path(self):
+        devel_home = torch.utils.cpp_extension.ROCM_DEVEL_HOME
+        if devel_home is None:
+            self.skipTest("ROCm is not installed from split SDK wheels")
+
+        self.assertIn(
+            os.path.join(devel_home, "lib"),
+            torch.utils.cpp_extension.library_paths("cuda"),
+        )
+
 
 class _TestCppExtensionJITBase(common.TestCase):
     """Shared set up and tear down functions for device-specific test classes
