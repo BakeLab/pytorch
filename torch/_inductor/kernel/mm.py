@@ -26,7 +26,7 @@ from ..codegen.cutlass.gemm_template import CUTLASS2xGemmTemplate, CUTLASS3xGemm
 from ..codegen.rocm.ck_tile_universal_gemm_template import CKTileGemmTemplate
 from ..codegen.rocm.ck_universal_gemm_template import CKGemmTemplate
 from ..codegen.subgraph import SubgraphChoiceCaller, SubgraphTemplate
-from ..ir import Buffer, ChoiceCaller, IRNode, is_triton, Layout
+from ..ir import Buffer, ChoiceCaller, FallbackKernel, IRNode, is_triton, Layout
 from ..kernel_inputs import MMKernelInputs
 from ..lowering import (
     fallback_handler,
