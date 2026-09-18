@@ -78,8 +78,13 @@ inline Vectorized<double> mask_gather(
         const Vectorized<double>& src,
         const double* base_addr,
         const Vectorized<int64_t>& vindex,
-        const Vectorized<double>& mask) {
-  auto mask_ = _mm512_movepi64_mask(_mm512_castpd_si512(mask.values));
+        Vectorized<double>& mask) {
+  // `mask` contains an integer bit mask cast to the scalar type.  Comparing
+  // the floating-point representation is incorrect because an all-ones bit
+  // pattern is a NaN for both float and double, and NaN != NaN.
+  auto mask_i = _mm512_castpd_si512(mask.values);
+  auto all_ones = _mm512_set1_epi64(0xFFFFFFFFFFFFFFFF);
+  auto mask_ = _mm512_cmp_epi64_mask(mask_i, all_ones, _MM_CMPINT_EQ);
   return _mm512_mask_i64gather_pd(src, mask_, vindex, base_addr, scale);
 }
 
@@ -89,8 +94,10 @@ inline Vectorized<float> mask_gather(
         const Vectorized<float>& src,
         const float* base_addr,
         const Vectorized<int32_t>& vindex,
-        const Vectorized<float>& mask) {
-  auto mask_ = _mm512_movepi32_mask(_mm512_castps_si512(mask.values));
+        Vectorized<float>& mask) {
+  auto mask_i = _mm512_castps_si512(mask.values);
+  auto all_ones = _mm512_set1_epi32(0xFFFFFFFF);
+  auto mask_ = _mm512_cmp_epi32_mask(mask_i, all_ones, _MM_CMPINT_EQ);
   return _mm512_mask_i32gather_ps(src, mask_, vindex, base_addr, scale);
 }
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CONVERT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
