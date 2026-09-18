@@ -4369,6 +4369,54 @@ tensor(..., device='meta', size=(1,), requires_grad=True)""")
         with self.assertRaisesRegex(NotImplementedError, "affine_grid only supports 4D and 5D sizes"):
             F.affine_grid(theta, torch.Size([1, 1, 2, 2, 2, 2]), align_corners=False)
 
+    @parametrize_test('device', ['cpu'] + (['cuda'] if TEST_CUDA else []))
+    @parametrize_test('nd', [2, 3])
+    def test_affine_grid_backward_cl_cf_consistency(self, device, nd):
+        # Test based on reported issue: https://github.com/pytorch/pytorch/issues/124154
+
+        theta = torch.rand([6, nd, nd + 1], requires_grad=True, device=device)
+        size = [6, 3, 4, 5] if nd == 2 else [6, 3, 4, 5, 5]
+        grid = torch.nn.functional.affine_grid(theta, size, align_corners=False)
+
+        grad_tensor = torch.rand(grid.shape, device=device)
+
+        memory_format_cl = torch.channels_last if nd == 2 else torch.channels_last_3d
+        grad_tensor_cl = grad_tensor.contiguous(memory_format=memory_format_cl)
+
+        if theta.grad is not None:
+            raise AssertionError("expected theta.grad to be None")
+        grid.backward(grad_tensor_cl)
+        theta_grad_cl = theta.grad.clone().contiguous()
+
+        theta.grad.zero_()
+        grid.backward(grad_tensor)
+        theta_grad_cf = theta.grad
+
+        self.assertEqual(theta_grad_cf, theta_grad_cl)
+
+    @unittest.skipUnless(
+        os.environ.get("ATEN_CPU_CAPABILITY") == "avx512",
+        "regression test must run with ATEN_CPU_CAPABILITY=avx512",
+    )
+    def test_grid_sample_avx512_matches_cpu_fallback(self):
+        # Regression test for the AVX512 mask_gather path.  In particular,
+        # grid_sample used to return an all-zero tensor for this small input
+        # because the AVX512 implementation compared an all-ones bit pattern
+        # as a floating-point value (NaN == NaN is false).
+        input = torch.arange(12, dtype=torch.float32).reshape(1, 1, 3, 4)
+        grid = torch.tensor([[[[0.0, 0.0], [0.5, 0.5]]]])
+
+        output = F.grid_sample(input, grid, mode="nearest", align_corners=False)
+        fallback = torch._grid_sampler_2d_cpu_fallback(
+            input,
+            grid,
+            F.GRID_SAMPLE_INTERPOLATION_MODES["nearest"],
+            F.GRID_SAMPLE_PADDING_MODES["zeros"],
+            False,
+        )
+
+        self.assertEqual(output, fallback)
+
     @set_default_dtype(torch.double)
     def test_grid_sample(self):
         # Backward pass of native C++ and CUDA kernels branch depending on whether input requires gradient,
