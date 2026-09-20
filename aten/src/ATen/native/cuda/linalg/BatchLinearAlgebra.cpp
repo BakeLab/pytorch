@@ -282,7 +282,6 @@ namespace {
 #endif // USE_LINALG_SOLVER
 
 static void lu_factor(const Tensor& input, const Tensor& pivots, const Tensor& infos, bool compute_pivots) {
-  _warn_once_magma_deprecation("linalg.lu_factor");
 
   auto batch_size = batchCount(input);
   auto m = input.size(-2);
