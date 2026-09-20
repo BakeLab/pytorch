@@ -49,57 +49,6 @@ TORCH_LIB_PATH = os.path.join(_TORCH_PATH, 'lib')
 SUBPROCESS_DECODE_ARGS = ()
 MINIMUM_GCC_VERSION = (5, 0, 0)
 
-VersionRange = tuple[tuple[int, ...], tuple[int, ...]]
-VersionMap = dict[str, VersionRange]
-# The following values were taken from the following GitHub gist that
-# summarizes the minimum valid major versions of g++/clang++ for each supported
-# CUDA version: https://gist.github.com/ax3l/9489132
-# Or from include/crt/host_config.h in the CUDA SDK
-# The second value is the exclusive(!) upper bound, i.e. min <= version < max
-CUDA_GCC_VERSIONS: VersionMap = {
-    '11.0': (MINIMUM_GCC_VERSION, (10, 0)),
-    '11.1': (MINIMUM_GCC_VERSION, (11, 0)),
-    '11.2': (MINIMUM_GCC_VERSION, (11, 0)),
-    '11.3': (MINIMUM_GCC_VERSION, (11, 0)),
-    '11.4': ((6, 0, 0), (12, 0)),
-    '11.5': ((6, 0, 0), (12, 0)),
-    '11.6': ((6, 0, 0), (12, 0)),
-    '11.7': ((6, 0, 0), (12, 0)),
-    '12.0': ((6, 0, 0), (13, 0)),
-    '12.1': ((6, 0, 0), (13, 0)),
-    '12.2': ((6, 0, 0), (13, 0)),
-    '12.3': ((6, 0, 0), (14, 0)),
-    '12.4': ((6, 0, 0), (14, 0)),
-    '12.5': ((6, 0, 0), (14, 0)),
-    '12.6': ((6, 0, 0), (14, 0)),
-    '12.7': ((6, 0, 0), (14, 0)),
-    '12.8': ((6, 0, 0), (15, 0)),
-    '12.9': ((6, 0, 0), (15, 0)),
-    '13.0': ((6, 0, 0), (16, 0)),
-}
-
-MINIMUM_CLANG_VERSION = (3, 3, 0)
-CUDA_CLANG_VERSIONS: VersionMap = {
-    '11.1': (MINIMUM_CLANG_VERSION, (11, 0)),
-    '11.2': (MINIMUM_CLANG_VERSION, (12, 0)),
-    '11.3': (MINIMUM_CLANG_VERSION, (12, 0)),
-    '11.4': (MINIMUM_CLANG_VERSION, (13, 0)),
-    '11.5': (MINIMUM_CLANG_VERSION, (13, 0)),
-    '11.6': (MINIMUM_CLANG_VERSION, (14, 0)),
-    '11.7': (MINIMUM_CLANG_VERSION, (14, 0)),
-    '12.0': ((7, 0), (15, 0)),
-    '12.1': ((7, 0), (15, 0)),
-    '12.2': ((7, 0), (16, 0)),
-    '12.3': ((7, 0), (16, 0)),
-    '12.4': ((7, 0), (17, 0)),
-    '12.5': ((7, 0), (18, 0)),
-    '12.6': ((7, 0), (18, 0)),
-    '12.7': ((7, 0), (19, 0)),
-    '12.8': ((7, 0), (19, 0)),
-    '12.9': ((7, 0), (19, 0)),
-    '13.0': ((7, 0), (21, 0)),
-}
-
 __all__ = ["get_default_build_root", "check_compiler_ok_for_platform", "get_compiler_abi_compatibility_and_version", "BuildExtension",  # noqa: F822, RUF100
            "CppExtension", "CUDAExtension", "SyclExtension", "include_paths", "library_paths", "load", "load_inline", "is_ninja_available",
            "verify_ninja_availability", "remove_extension_h_precompiler_headers", "get_cxx_compiler", "check_compiler_is_gcc"]
@@ -604,13 +553,7 @@ def get_compiler_abi_compatibility_and_version(compiler) -> tuple[bool, TorchVer
     return (False, TorchVersion('.'.join(numeric_version)))
 
 
-def _windows_nvcc_host_preprocessor_flags() -> list[str]:
-    # Match CMake's Windows CUDA flags: nvcc forwards /Zc:preprocessor to cl.
-    # Required by CUDA 13.2+ CCCL; safe on older CUDA with VS2019+.
-    return ['-Xcompiler', '/Zc:preprocessor']
-
-
-def _check_cuda_version(compiler_name: str, compiler_version: TorchVersion) -> None:
+def _check_cuda_version() -> None:
     if not CUDA_HOME:
         raise RuntimeError(CUDA_NOT_FOUND_MESSAGE)
 
@@ -625,6 +568,8 @@ def _check_cuda_version(compiler_name: str, compiler_version: TorchVersion) -> N
 
     cuda_str_version = cuda_version.group(1)
     cuda_ver = Version(cuda_str_version)
+    if cuda_ver < Version("13.4"):
+        raise RuntimeError(f"PyTorch requires CUDA 13.4 or above; found {cuda_str_version}")
     if torch.version.cuda is None:
         return
 
@@ -636,38 +581,6 @@ def _check_cuda_version(compiler_name: str, compiler_version: TorchVersion) -> N
         if cuda_ver.major != torch_cuda_version.major:
             raise RuntimeError(CUDA_MISMATCH_MESSAGE, cuda_str_version, torch.version.cuda)
         logger.warning(CUDA_MISMATCH_WARN, cuda_str_version, torch.version.cuda)
-
-    if not (sys.platform.startswith('linux') and
-            os.environ.get('TORCH_DONT_CHECK_COMPILER_ABI') not in ['ON', '1', 'YES', 'TRUE', 'Y'] and
-            _is_binary_build()):
-        return
-
-    cuda_compiler_bounds: VersionMap = CUDA_CLANG_VERSIONS if compiler_name.startswith('clang') else CUDA_GCC_VERSIONS
-
-    if cuda_str_version not in cuda_compiler_bounds:
-        logger.warning('There are no %s version bounds defined for CUDA version %s', compiler_name, cuda_str_version)
-    else:
-        min_compiler_version, max_excl_compiler_version = cuda_compiler_bounds[cuda_str_version]
-        # Special case for 11.4.0, which has lower compiler bounds than 11.4.1
-        if "V11.4.48" in cuda_version_str and cuda_compiler_bounds == CUDA_GCC_VERSIONS:
-            max_excl_compiler_version = (11, 0)
-        min_compiler_version_str = '.'.join(map(str, min_compiler_version))
-        max_excl_compiler_version_str = '.'.join(map(str, max_excl_compiler_version))
-
-        version_bound_str = f'>={min_compiler_version_str}, <{max_excl_compiler_version_str}'
-
-        if compiler_version < TorchVersion(min_compiler_version_str):
-            raise RuntimeError(
-                f'The current installed version of {compiler_name} ({compiler_version}) is less '
-                f'than the minimum required version by CUDA {cuda_str_version} ({min_compiler_version_str}). '
-                f'Please make sure to use an adequate version of {compiler_name} ({version_bound_str}).'
-            )
-        if compiler_version >= TorchVersion(max_excl_compiler_version_str):
-            raise RuntimeError(
-                f'The current installed version of {compiler_name} ({compiler_version}) is greater '
-                f'than the maximum required version by CUDA {cuda_str_version}. '
-                f'Please make sure to use an adequate version of {compiler_name} ({version_bound_str}).'
-            )
 
 
 # Specify Visual Studio C runtime library for hipcc
@@ -781,7 +694,7 @@ class BuildExtension(_LazyBuildExt):
                 raise AssertionError("ninja is required to build sycl extensions.")
 
         if cuda_ext and not IS_HIP_EXTENSION:
-            _check_cuda_version(compiler_name, compiler_version)
+            _check_cuda_version()
 
         for extension in self.extensions:
             # Ensure at least an empty list of flags for 'cxx', 'nvcc' and 'sycl' when
@@ -1234,18 +1147,18 @@ def CUDAExtension(name, sources, *args, **kwargs):
     You can override the default behavior using `TORCH_CUDA_ARCH_LIST` to explicitly specify which
     CCs you want the extension to support:
 
-    ``TORCH_CUDA_ARCH_LIST="8.9 9.0" python build_my_extension.py``
-    ``TORCH_CUDA_ARCH_LIST="8.9 9.0 10.0 12.0+PTX" python build_my_extension.py``
+    ``TORCH_CUDA_ARCH_LIST="10.0 12.0" python build_my_extension.py``
+    ``TORCH_CUDA_ARCH_LIST="10.0 12.0+PTX" python build_my_extension.py``
 
     The +PTX option causes extension kernel binaries to include PTX instructions for the specified
     CC. PTX is an intermediate representation that allows kernels to runtime-compile for any CC >=
-    the specified CC (for example, 8.9+PTX generates PTX that can runtime-compile for any GPU with
-    CC >= 8.9). This improves your binary's forward compatibility. However, relying on older PTX to
-    provide forward compat by runtime-compiling for newer CCs can modestly reduce performance on
-    those newer CCs. If you know exact CC(s) of the GPUs you want to target, you're always better
-    off specifying them individually. For example, if you want your extension to run on 8.9 and 9.0,
-    "8.9+PTX" would work functionally because it includes PTX that can runtime-compile for 9.0, but
-    "8.9 9.0" would be better.
+    the specified CC (for example, 10.0+PTX generates PTX that can runtime-compile for any GPU
+    with CC >= 10.0). This improves your binary's forward compatibility. However, relying on older
+    PTX to provide forward compat by runtime-compiling for newer CCs can modestly reduce
+    performance on those newer CCs. If you know exact CC(s) of the GPUs you want to target, you're
+    always better off specifying them individually. For example, if you want your extension to run
+    on 10.0 and 12.0, "10.0+PTX" would work functionally because it includes PTX that can
+    runtime-compile for 12.0, but "10.0 12.0" would be better.
 
     Note that while it's possible to include all supported archs, the more archs get included the
     slower the building process will be, as it will build a separate kernel image for each arch.
@@ -1375,8 +1288,8 @@ def CUDAExtension(name, sources, *args, **kwargs):
         extra_compile_args_dlink += [f'-L{x}' for x in library_dirs]
         extra_compile_args_dlink += [f'-l{x}' for x in dlink_libraries]
 
-        if (torch.version.cuda is not None) and TorchVersion(torch.version.cuda) >= '11.2':
-            extra_compile_args_dlink += ['-dlto']   # Device Link Time Optimization started from cuda 11.2
+        if torch.version.cuda is not None:
+            extra_compile_args_dlink += ['-dlto']
 
         extra_compile_args['nvcc_dlink'] = extra_compile_args_dlink
 
@@ -2393,14 +2306,12 @@ def _get_cuda_arch_flags(cflags: list[str] | None = None) -> list[str]:
     # Note: keep combined names ("arch1+arch2") above single names, otherwise
     # string replacement may not do the right thing
     named_arches = collections.OrderedDict([
-        ('Ada', '8.9+PTX'),
-        ('Hopper', '9.0+PTX'),
         ('Blackwell+Tegra', '11.0'),
         ('Blackwell', '10.0;10.3;12.0;12.1+PTX'),
         ('Rubin', '10.7+PTX'),
     ])
 
-    supported_arches = ['8.9', '9.0', '9.0a', '10.0', '10.0a', '11.0', '11.0a',
+    supported_arches = ['10.0', '10.0a', '11.0', '11.0a',
                         '10.3', '10.3a', '10.7', '10.7a', '12.0', '12.0a', '12.1', '12.1a']
     valid_arch_strings = supported_arches + [s + "+PTX" for s in supported_arches]
 

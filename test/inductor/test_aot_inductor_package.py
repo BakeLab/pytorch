@@ -29,8 +29,10 @@ from torch.export.pt2_archive._package import (
     load_pt2,
     load_weights_to_pt2_contents,
 )
-from torch.testing._internal.common_cuda import requires_triton_ptxas_compat
-from torch.testing._internal.common_utils import HardwareClassification, IS_FBCODE
+from torch.testing._internal.common_utils import (
+    HardwareClassification,
+    IS_FBCODE,
+)
 from torch.testing._internal.inductor_utils import GPU_TYPE, HAS_GPU
 from torch.utils import _pytree as pytree
 
@@ -506,7 +508,6 @@ model(torch.ones(2))
         self.check_model(Model(), example_inputs)
 
     @unittest.skipIf(IS_FBCODE, "cmake won't work in fbcode")
-    @requires_triton_ptxas_compat
     def test_compile_after_package(self):
         self.check_package_cpp_only()
 
@@ -554,7 +555,6 @@ model(torch.ones(2))
                 actual = optimized(*example_inputs)
                 self.assertTrue(torch.allclose(actual, expected))
 
-    @requires_triton_ptxas_compat
     @unittest.skipIf(IS_FBCODE, "cmake won't work in fbcode")
     def test_compile_after_package_multi_arch(self):
         if self.device != GPU_TYPE:
@@ -598,7 +598,6 @@ model(torch.ones(2))
                 self.assertTrue(torch.allclose(actual, expected))
 
     @unittest.skipIf(IS_FBCODE, "cmake won't work in fbcode")
-    @requires_triton_ptxas_compat
     @torch._inductor.config.patch("test_configs.use_libtorch", True)
     def test_compile_after_package_static(self):
         # compile_standalone will set package_cpp_only=True
@@ -657,7 +656,6 @@ model(torch.ones(2))
                 self.cmake_compile(model, example_inputs, options, "")
 
     @unittest.skipIf(IS_FBCODE, "cmake won't work in fbcode")
-    @requires_triton_ptxas_compat
     @torch._inductor.config.patch("test_configs.use_libtorch", True)
     def test_compile_standalone_cos(self):
         # compile_standalone will set package_cpp_only=True
@@ -690,7 +688,6 @@ model(torch.ones(2))
                 self.assertTrue(a_path.exists())
 
     @unittest.skipIf(IS_FBCODE, "cmake won't work in fbcode")
-    @requires_triton_ptxas_compat
     @torch._inductor.config.patch("test_configs.use_libtorch", True)
     def test_compile_with_exporter(self):
         self.check_package_cpp_only()
@@ -739,7 +736,6 @@ model(torch.ones(2))
                     )
                     self.assertTrue(expected_result in out_str)
 
-    @requires_triton_ptxas_compat
     @unittest.skipIf(IS_FBCODE, "cmake won't work in fbcode")
     @torch._inductor.config.patch("test_configs.use_libtorch", True)
     def test_compile_with_exporter_weights(self):

@@ -123,19 +123,17 @@ def _cuda_graph_tools_id_available():
 
 TEST_CUDA_GRAPH_TOOLS_ID = LazyVal(_cuda_graph_tools_id_available)
 
-SM53OrLater = LazyVal(lambda: torch.cuda.is_available() and torch.cuda.get_device_capability() >= (5, 3))
-SM60OrLater = LazyVal(lambda: torch.cuda.is_available() and torch.cuda.get_device_capability() >= (6, 0))
-SM70OrLater = LazyVal(lambda: torch.cuda.is_available() and torch.cuda.get_device_capability() >= (7, 0))
-SM75OrLater = LazyVal(lambda: torch.cuda.is_available() and torch.cuda.get_device_capability() >= (7, 5))
-SM80OrLater = LazyVal(lambda: torch.cuda.is_available() and torch.cuda.get_device_capability() >= (8, 0))
-SM89OrLater = LazyVal(lambda: torch.cuda.is_available() and torch.cuda.get_device_capability() >= (8, 9))
-SM90OrLater = LazyVal(lambda: torch.cuda.is_available() and torch.cuda.get_device_capability() >= (9, 0))
-SM100OrLater = LazyVal(lambda: torch.cuda.is_available() and torch.cuda.get_device_capability() >= (10, 0))
+# sm_100 is this build's floor, so every OrLater up to SM100 holds on any
+# device that can load the built kernels; only the capability query for
+# SM120OrLater still depends on the device.
+SM80OrLater = LazyVal(torch.cuda.is_available)
+SM89OrLater = LazyVal(torch.cuda.is_available)
+SM90OrLater = LazyVal(torch.cuda.is_available)
+SM100OrLater = LazyVal(torch.cuda.is_available)
 SM120OrLater = LazyVal(lambda: torch.cuda.is_available() and torch.cuda.get_device_capability() >= (12, 0))
 BF16X9_API_SUPPORTED = LazyVal(
     lambda: TEST_CUDA
     and not TEST_WITH_ROCM
-    and _get_torch_cuda_version() >= (12, 9)
 )
 BF16X9_SUPPORTED = LazyVal(
     lambda: BF16X9_API_SUPPORTED
@@ -143,8 +141,7 @@ BF16X9_SUPPORTED = LazyVal(
 )
 
 IS_THOR = LazyVal(lambda: torch.cuda.is_available() and torch.version.cuda is not None and
-                  ((torch.cuda.get_device_capability() == (11, 0) and int(torch.version.cuda[:2]) >= 13) or
-                   (torch.cuda.get_device_capability() == (10, 1) and int(torch.version.cuda[:2]) < 13)))
+                  torch.cuda.get_device_capability() == (11, 0))
 IS_JETSON = LazyVal(lambda: torch.cuda.is_available() and (torch.cuda.get_device_capability() in [(7, 2), (8, 7)] or IS_THOR))
 # These exact-match SM predicates identify specific NVIDIA architectures and must
 # be False on ROCm, where torch.cuda.get_device_capability() returns the gfx-arch
@@ -314,22 +311,19 @@ def evaluate_platform_supports_fp8():
     return True
 
 def evaluate_platform_supports_fp8_grouped_gemm():
-    if torch.cuda.is_available():
-        if torch.version.hip:
-            return evaluate_gfx_arch_within(["gfx1201"])
-        else:
-            return SM90OrLater and not SM100OrLater
+    # sm_100 is this build's floor, so the SM90-but-not-SM100 window the CUDA
+    # branch used to gate on is empty; only ROCm gfx1201 qualifies.
+    if torch.cuda.is_available() and torch.version.hip:
+        return evaluate_gfx_arch_within(["gfx1201"])
     return False
 
 def evaluate_platform_supports_mx_gemm():
     if torch.cuda.is_available():
         if torch.version.hip:
             return False
-        else:
-            return SM100OrLater
-    if torch.xpu.is_available():
+        # sm_100 is this build's floor, so every CUDA device qualifies.
         return True
-    return False
+    return torch.xpu.is_available()
 
 def evaluate_platform_supports_mxfp8_grouped_gemm():
     if torch.cuda.is_available() and not torch.version.hip:
@@ -627,12 +621,6 @@ def xfailIfSM89(func):
 def xfailIfSM90(func):
     return func if not IS_SM90 else unittest.expectedFailure(func)
 
-def xfailIfSM89PreCUDA13(func):
-    """xfail on SM89 only for CUDA < 13. On CUDA 13+, test should pass on all architectures."""
-    if IS_SM89 and _get_torch_cuda_version() < (13, 0):
-        return unittest.expectedFailure(func)
-    return func
-
 def xfailIfSM100OrLater(func):
     # SMxxx LazyVals are derived from torch.cuda.get_device_capability(), which
     # on ROCm reports the gfx-arch major version (e.g. (12, 0) for gfx1200). That
@@ -665,13 +653,6 @@ def xfailCUDAIfSM89OrLaterOnWindows(test_fn):
         else test_fn
     )
 
-
-# When using nvcc from the CUDA toolkit its version must be at least the one from ptxas bundled with Triton
-TRITON_PTXAS_VERSION = (12, 8)
-requires_triton_ptxas_compat = unittest.skipIf(not torch.version.xpu
-                                               and torch.version.hip is None
-                                               and _get_torch_cuda_version() < TRITON_PTXAS_VERSION,
-                                               "Requires CUDA {}.{} to match Tritons ptxas version".format(*TRITON_PTXAS_VERSION))
 
 # Importing this module should NOT eagerly initialize CUDA
 if not CUDA_ALREADY_INITIALIZED_ON_IMPORT:
