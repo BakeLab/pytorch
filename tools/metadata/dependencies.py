@@ -34,10 +34,6 @@ BASE_DEPENDENCIES = [
     "networkx>=2.5.1",
     "jinja2",
     "tqdm",
-    # The trimmed branch builds CUDA distributed support unconditionally.  The
-    # wheel's torch_nvshmem extension has a DT_NEEDED entry for this package's
-    # libnvshmem_host.so.3, and its RPATH resolves it from site-packages.
-    "nvidia-nvshmem-cu13==3.4.5",
 ]
 
 
