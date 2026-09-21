@@ -1,9 +1,10 @@
-from typing import Any, TypeVar
+from typing import Any, Final, TypeVar
 
 
 __all__ = [
     "annotate",
     "export",
+    "Final",
     "ignore",
     "is_tracing",
     "script",
