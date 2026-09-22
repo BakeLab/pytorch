@@ -599,7 +599,8 @@ endif()
 # lld, not the default bfd: it links a library the size of libtorch_cuda.so in
 # a fraction of the time, and it is the linker that implements --icf. Skip it
 # when the toolchain has no ld.lld rather than failing the configure.
-if(NOT DEFINED CMAKE_LINKER_TYPE AND NOT APPLE)
+if(NOT DEFINED CMAKE_LINKER_TYPE AND NOT APPLE
+   AND DEFINED CMAKE_CXX_USING_LINKER_LLD)
   find_program(LLD_EXECUTABLE NAMES ld.lld)
   if(LLD_EXECUTABLE)
     set(CMAKE_LINKER_TYPE LLD)
