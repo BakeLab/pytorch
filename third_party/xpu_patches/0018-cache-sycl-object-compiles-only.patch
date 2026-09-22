@@ -8,12 +8,3 @@ diff --git a/cmake/Modules/FindSYCL.cmake b/cmake/Modules/FindSYCL.cmake
 @@ -327 +330 @@
 -      COMMAND ${CMAKE_SYCL_COMPILER_LAUNCHER} ${SYCL_EXECUTABLE}
 +      COMMAND ${SYCL_EXECUTABLE}
-diff --git a/cmake/Modules/FindSYCL/run_sycl.cmake b/cmake/Modules/FindSYCL/run_sycl.cmake
---- a/cmake/Modules/FindSYCL/run_sycl.cmake
-+++ b/cmake/Modules/FindSYCL/run_sycl.cmake
-@@ -35,0 +36 @@
-+set(SYCL_compiler_launcher @SYCL_compiler_launcher@) # list
-@@ -128 +129,2 @@
--  COMMAND "${SYCL_executable}"
-+  COMMAND ${SYCL_compiler_launcher}
-+  "${SYCL_executable}"

@@ -1,0 +1,9 @@
+diff --git a/src/ATen/native/xpu/sycl/ScanUtils.h b/src/ATen/native/xpu/sycl/ScanUtils.h
+--- a/src/ATen/native/xpu/sycl/ScanUtils.h
++++ b/src/ATen/native/xpu/sycl/ScanUtils.h
+@@ -588,1 +588,1 @@
+-  for (int offset = 1; offset < rx; offset <<= 1) {
++  for (size_t offset = 1; offset < rx; offset <<= 1) {
+@@ -647,1 +647,1 @@
+-  for (int offset = 1; offset < ry; offset <<= 1) {
++  for (size_t offset = 1; offset < ry; offset <<= 1) {

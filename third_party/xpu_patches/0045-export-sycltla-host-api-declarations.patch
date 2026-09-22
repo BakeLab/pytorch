@@ -1,0 +1,23 @@
+diff --git a/src/ATen/native/transformers/xpu/flash_attn/sycltla/flash_api.h b/src/ATen/native/transformers/xpu/flash_attn/sycltla/flash_api.h
+index b2ddf96..e2053db 100644
+--- a/src/ATen/native/transformers/xpu/flash_attn/sycltla/flash_api.h
++++ b/src/ATen/native/transformers/xpu/flash_attn/sycltla/flash_api.h
+@@ -14,7 +14,7 @@
+ 
+ namespace sycltla {
+ 
+-std::tuple<
++__attribute__((visibility("default"))) std::tuple<
+     at::Tensor,
+     at::Tensor,
+     at::Tensor,
+@@ -84,7 +84,8 @@ flash_attention_forward_sycltla(
+     const float scale);
+ 
+ // Deprecated: Use mha_bwd instead.
+-std::tuple<at::Tensor, at::Tensor, at::Tensor> flash_attention_backward_sycltla(
++__attribute__((visibility("default"))) std::tuple<at::Tensor, at::Tensor, at::Tensor>
++flash_attention_backward_sycltla(
+     const at::Tensor& grad_out,
+     const at::Tensor& query,
+     const at::Tensor& key,

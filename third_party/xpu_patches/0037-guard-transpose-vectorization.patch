@@ -1,0 +1,22 @@
+diff --git a/src/ATen/native/xpu/sycl/TransposeKernel.cpp b/src/ATen/native/xpu/sycl/TransposeKernel.cpp
+--- a/src/ATen/native/xpu/sycl/TransposeKernel.cpp
++++ b/src/ATen/native/xpu/sycl/TransposeKernel.cpp
+@@ -16,0 +17 @@
++#include <ATen/native/xpu/sycl/MemoryAccess.h>
+@@ -174,9 +175,7 @@ static void dispatch_transpose(
+-  int vec_size = 1;
+-  if constexpr (kMaxVec >= 4) {
+-    if (cols % 4 == 0 && rows % 4 == 0)
+-      vec_size = 4;
+-    else if (cols % 2 == 0 && rows % 2 == 0)
+-      vec_size = 2;
+-  } else if constexpr (kMaxVec >= 2) {
+-    if (cols % 2 == 0 && rows % 2 == 0)
+-      vec_size = 2;
++  int vec_size = std::min(
++      {kMaxVec,
++       memory::can_vectorize_up_to<scalar_t>(
++           reinterpret_cast<const char*>(src)),
++       memory::can_vectorize_up_to<scalar_t>(reinterpret_cast<char*>(dst))});
++  while (vec_size > 1 && (cols % vec_size != 0 || rows % vec_size != 0)) {
++    vec_size /= 2;

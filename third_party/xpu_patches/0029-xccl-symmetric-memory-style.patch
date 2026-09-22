@@ -1,0 +1,6 @@
+diff --git a/src/xccl/XPUSymmetricMemory.hpp b/src/xccl/XPUSymmetricMemory.hpp
+--- a/src/xccl/XPUSymmetricMemory.hpp
++++ b/src/xccl/XPUSymmetricMemory.hpp
+@@ -45,1 +45,1 @@ class XPUSymmetricMemory : public SymmetricMemory {
+-  ~XPUSymmetricMemory() override{};
++  ~XPUSymmetricMemory() override = default;

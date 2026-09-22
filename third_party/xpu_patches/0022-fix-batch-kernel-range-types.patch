@@ -1,0 +1,21 @@
+diff --git a/src/ATen/native/xpu/sycl/BatchKernel.h b/src/ATen/native/xpu/sycl/BatchKernel.h
+--- a/src/ATen/native/xpu/sycl/BatchKernel.h
++++ b/src/ATen/native/xpu/sycl/BatchKernel.h
+@@ -192,3 +192,3 @@
+-    size_t wg_num = (cfg_.glb_range_x_ / cfg_.wg_range_x_) *
++    int64_t wg_num = (cfg_.glb_range_x_ / cfg_.wg_range_x_) *
+         (cfg_.glb_range_y_ / cfg_.wg_range_y_);
+-    size_t wg_size = cfg_.wg_range_x_ * cfg_.wg_range_y_;
++    int64_t wg_size = cfg_.wg_range_x_ * cfg_.wg_range_y_;
+@@ -232,2 +232,3 @@
+     if (prefer_wg_size_ != 0 && prefer_wg_size_ % sg_size == 0 &&
+-        prefer_wg_size_ <= at::xpu::getDeviceMaxWorkGroupSize()) {
++        prefer_wg_size_ <=
++            static_cast<size_t>(at::xpu::getDeviceMaxWorkGroupSize())) {
+@@ -249,2 +250,4 @@
+-    auto range_bound_x = problem_along_x_ ? problem_ : problem_batch_;
+-    auto range_bound_y = problem_along_x_ ? problem_batch_ : problem_;
++    auto range_bound_x =
++        static_cast<size_t>(problem_along_x_ ? problem_ : problem_batch_);
++    auto range_bound_y =
++        static_cast<size_t>(problem_along_x_ ? problem_batch_ : problem_);

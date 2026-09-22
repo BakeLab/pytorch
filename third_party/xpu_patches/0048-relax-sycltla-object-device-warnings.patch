@@ -1,0 +1,19 @@
+diff --git a/src/BuildOnLinux.cmake b/src/BuildOnLinux.cmake
+index 6ca5bf4..472f275 100644
+--- a/src/BuildOnLinux.cmake
++++ b/src/BuildOnLinux.cmake
+@@ -77,6 +77,14 @@ if(BUILD_SEPARATE_OPS)
+     install(TARGETS ${sycl_lib} DESTINATION "${TORCH_INSTALL_LIB_DIR}")
+   endforeach()
+ else()
++  if(USE_SYCLTLA)
++    list(APPEND SYCL_COMPILE_FLAGS
++      -Wno-error=newline-eof
++      -Wno-error=logical-op-parentheses
++      -Wno-error=deprecated-copy
++      -Wno-error=uninitialized
++      -Wno-error=unused-but-set-variable)
++  endif()
+   sycl_add_library(
+     torch_xpu_ops
+     OBJECT
