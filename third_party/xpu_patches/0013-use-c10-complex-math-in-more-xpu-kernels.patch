@@ -45,18 +45,18 @@ index b8eef080..0dbe4ffe 100644
    PowChalfTensorScalarFunctor(opmath_t exp) : exp_(exp) {}
 
 diff --git a/src/ATen/native/xpu/sycl/RangeFactoriesKernel.cpp b/src/ATen/native/xpu/sycl/RangeFactoriesKernel.cpp
-index f126d1fb..db1de716 100644
+index ce185b96..c857edb4 100644
 --- a/src/ATen/native/xpu/sycl/RangeFactoriesKernel.cpp
 +++ b/src/ATen/native/xpu/sycl/RangeFactoriesKernel.cpp
-@@ -13,6 +13,7 @@
- #include <ATen/OpMathType.h>
+@@ -14,6 +14,7 @@
  #include <ATen/core/Tensor.h>
  #include <ATen/detail/FunctionTraits.h>
+ #include <ATen/native/RangeUtils.h>
 +#include <c10/util/complex.h>
  #include <comm/SYCLContext.h>
  #include <comm/xpu_aten.h>
 
-@@ -244,9 +245,10 @@ struct LogspaceFunctor {
+@@ -278,9 +279,10 @@ struct LogspaceFunctor {
    scalar_t operator()(int64_t ind) const {
      if constexpr (c10::is_complex<step_type>::value) {
        if (ind < halfway_) {
@@ -69,7 +69,7 @@ index f126d1fb..db1de716 100644
      } else {
        using opmath_t = at::opmath_type<step_type>;
        if (ind < halfway_) {
-@@ -302,7 +304,7 @@ Tensor& logspace_kernel(
+@@ -336,7 +338,7 @@ Tensor& logspace_kernel(
      // skip
    } else if (steps == 1) {
      if (isComplexType(r.scalar_type())) {
@@ -79,7 +79,7 @@ index f126d1fb..db1de716 100644
        r.fill_(std::pow(base, start.to<double>()));
      }
 diff --git a/src/ATen/native/xpu/sycl/SharedReduceOps.h b/src/ATen/native/xpu/sycl/SharedReduceOps.h
-index 4e576508..a8d55bfa 100644
+index 5e109875..fe611956 100644
 --- a/src/ATen/native/xpu/sycl/SharedReduceOps.h
 +++ b/src/ATen/native/xpu/sycl/SharedReduceOps.h
 @@ -18,6 +18,7 @@
@@ -108,7 +108,7 @@ index 4e576508..a8d55bfa 100644
    }
 
    inline acc_t combine(acc_t a, acc_t b) const {
-@@ -183,7 +184,7 @@ struct NormOps {
+@@ -189,7 +190,7 @@ struct NormOps {
    acc_t norm_;
 
    inline acc_t reduce(acc_t acc, scalar_t data, int64_t /*idx*/) const {
@@ -117,7 +117,7 @@ index 4e576508..a8d55bfa 100644
    }
 
    inline acc_t combine(acc_t a, acc_t b) const {
-@@ -233,7 +234,7 @@ struct NormZeroOps {
+@@ -243,7 +244,7 @@ struct NormZeroOps {
  template <typename scalar_t, typename acc_t = scalar_t, typename out_t = acc_t>
  struct NormOneOps {
    inline acc_t reduce(acc_t acc, scalar_t data, int64_t /*idx*/) const {
@@ -126,7 +126,7 @@ index 4e576508..a8d55bfa 100644
    }
 
    inline acc_t combine(acc_t a, acc_t b) const {
-@@ -259,12 +260,12 @@ inline acc_t abs_if_complex(scalar_t data, AbsSwitch<acc_t>) {
+@@ -269,12 +270,12 @@ inline acc_t abs_if_complex(scalar_t data, AbsSwitch<acc_t>) {
 
  template <typename scalar_t, typename acc_t>
  inline acc_t abs_if_complex(std::complex<scalar_t> data, AbsSwitch<acc_t>) {

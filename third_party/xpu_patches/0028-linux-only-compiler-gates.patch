@@ -1,0 +1,15 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -68,1 +68,1 @@ option(USE_SYCLTLA "Build with SYCL-TLA support" ON)
+-if(WIN32 OR
++if(
+diff --git a/cmake/BuildFlags.cmake b/cmake/BuildFlags.cmake
+--- a/cmake/BuildFlags.cmake
++++ b/cmake/BuildFlags.cmake
+@@ -34,1 +34,1 @@ macro(set_build_flags)
+- set(_TORCH_XPU_OPS_SUPPORTED_COMPILERS "GNU" "Clang" "MSVC")
++ set(_TORCH_XPU_OPS_SUPPORTED_COMPILERS "GNU" "Clang")
+@@ -36,1 +36,1 @@ macro(set_build_flags)
+-    message(WARNING "Not compiling with XPU. Currently only support GCC/Clang compiler on Linux and MSVC compiler on Windows as CXX compiler.")
++    message(WARNING "Not compiling with XPU. Only Clang or GCC on Linux is supported.")

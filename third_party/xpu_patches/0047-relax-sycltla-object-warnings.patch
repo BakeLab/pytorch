@@ -1,0 +1,17 @@
+diff --git a/src/BuildOnLinux.cmake b/src/BuildOnLinux.cmake
+index ae3da83..6ca5bf4 100644
+--- a/src/BuildOnLinux.cmake
++++ b/src/BuildOnLinux.cmake
+@@ -87,6 +87,12 @@ else()
+     target_compile_definitions(torch_xpu_ops PRIVATE ${SYCLTLA_COMPILE_DEFINITIONS})
+     target_include_directories(torch_xpu_ops PRIVATE ${SYCLTLA_INCLUDE_DIRS})
+     target_include_directories(torch_xpu_ops PRIVATE ${ATen_XPU_FLASH_ATTN_DIRS})
++    target_compile_options(torch_xpu_ops PRIVATE
++      -Wno-error=newline-eof
++      -Wno-error=logical-op-parentheses
++      -Wno-error=deprecated-copy
++      -Wno-error=uninitialized
++      -Wno-error=unused-but-set-variable)
+   endif()
+   if(USE_C10D_XCCL)
+     target_compile_definitions(torch_xpu_ops PRIVATE USE_C10D_XCCL)

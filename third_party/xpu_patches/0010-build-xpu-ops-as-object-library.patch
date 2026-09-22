@@ -69,7 +69,7 @@ index 01bc5f3e..5369236b 100644
 -    STATIC
 +    OBJECT
      CXX_SOURCES  ${ATen_XPU_MKL_SRCS} ${ATen_XPU_NATIVE_CPP_SRCS} ${ATen_XPU_XCCL_SRCS}
-     SYCL_SOURCES ${ATen_XPU_SYCL_SRCS})
+     SYCL_SOURCES ${ATen_XPU_SYCL_SRCS} ${ATen_XPU_SYCL_COMM_SRCS})
    if(USE_C10D_XCCL)
 @@ -71,6 +71,5 @@ else()
      target_compile_definitions(torch_xpu_ops PRIVATE USE_SYCLTLA)
