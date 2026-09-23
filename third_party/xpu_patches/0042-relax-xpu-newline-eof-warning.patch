@@ -1,0 +1,5 @@
+diff --git a/cmake/BuildFlags.cmake b/cmake/BuildFlags.cmake
+--- a/cmake/BuildFlags.cmake
++++ b/cmake/BuildFlags.cmake
+@@ -81,0 +82,1 @@
++    list(APPEND SYCL_HOST_FLAGS -Wno-error=newline-eof)
