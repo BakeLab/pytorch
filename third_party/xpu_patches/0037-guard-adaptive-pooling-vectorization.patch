@@ -1,0 +1,12 @@
+diff --git a/src/ATen/native/xpu/sycl/AdaptiveAveragePooling2dKernels.cpp b/src/ATen/native/xpu/sycl/AdaptiveAveragePooling2dKernels.cpp
+--- a/src/ATen/native/xpu/sycl/AdaptiveAveragePooling2dKernels.cpp
++++ b/src/ATen/native/xpu/sycl/AdaptiveAveragePooling2dKernels.cpp
+@@ -764,3 +764,5 @@ void launch_adaptive_avg_pool2d_kernel_cl(const Tensor& input, Tensor& output) {
+-           8,
+-           memory::can_vectorize_up_to<scalar_t>(
+-               (char*)output.mutable_data_ptr<scalar_t>()));
++           {8,
++            memory::can_vectorize_up_to<scalar_t>(
++                (char*)output.mutable_data_ptr<scalar_t>()),
++            memory::can_vectorize_up_to<scalar_t>(
++                (char*)input.const_data_ptr<scalar_t>())});
