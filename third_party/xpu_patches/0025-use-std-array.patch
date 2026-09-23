@@ -333,11 +333,11 @@ index 85a88435..cd99eeec 100644
 -#include <ATen/core/Array.h>
 +#include <array>
 @@ -66 +66 @@ struct WeightNormKernelFunctor : public __SYCL_KER_CONFIG_CONVENTION__ {
--          item, shared_, vec_t(value), ReduceAdd<accscalar_t>())[0];
-+          item, shared_, vec_t{value}, ReduceAdd<accscalar_t>())[0];
+-        item, shared_ptr, vec_t(value), ReduceAdd<accscalar_t>())[0];
++        item, shared_ptr, vec_t{value}, ReduceAdd<accscalar_t>())[0];
 @@ -69 +69 @@ struct WeightNormKernelFunctor : public __SYCL_KER_CONFIG_CONVENTION__ {
--          item, shared_, vec_t(value), ReduceAdd<accscalar_t>())[0];
-+          item, shared_, vec_t{value}, ReduceAdd<accscalar_t>())[0];
+-        item, shared_ptr, vec_t(value), ReduceAdd<accscalar_t>())[0];
++        item, shared_ptr, vec_t{value}, ReduceAdd<accscalar_t>())[0];
 @@ -115 +115 @@ static inline void launch_weight_norm_reduce_kernel(
 -  using vec_t = at::detail::Array<accscalar_t, 1>;
 +  using vec_t = std::array<accscalar_t, 1>;
@@ -345,32 +345,26 @@ index 85a88435..cd99eeec 100644
 -  using vec_t = at::detail::Array<accscalar_t, 1>;
 +  using vec_t = std::array<accscalar_t, 1>;
 @@ -281 +281 @@ struct WeightNormReduceKernelFunctor
--          item, shared_, vec_t(value), ReduceAdd<accscalar_t>())[0];
-+          item, shared_, vec_t{value}, ReduceAdd<accscalar_t>())[0];
+-        item, shared_ptr, vec_t(value), ReduceAdd<accscalar_t>())[0];
++        item, shared_ptr, vec_t{value}, ReduceAdd<accscalar_t>())[0];
 @@ -284 +284 @@ struct WeightNormReduceKernelFunctor
--          item, shared_, vec_t(value), ReduceAdd<accscalar_t>())[0];
-+          item, shared_, vec_t{value}, ReduceAdd<accscalar_t>())[0];
+-        item, shared_ptr, vec_t(value), ReduceAdd<accscalar_t>())[0];
++        item, shared_ptr, vec_t{value}, ReduceAdd<accscalar_t>())[0];
 @@ -357 +357 @@ static inline void weight_norm(
 -  using vec_t = at::detail::Array<accscalar_t, 1>;
 +  using vec_t = std::array<accscalar_t, 1>;
 @@ -487 +487 @@ struct WeightNormBackwardReduceKernelFunctor
--          item, shared_, vec_t(value), ReduceAdd<accscalar_t>())[0];
-+          item, shared_, vec_t{value}, ReduceAdd<accscalar_t>())[0];
+-        item, shared_ptr, vec_t(value), ReduceAdd<accscalar_t>())[0];
++        item, shared_ptr, vec_t{value}, ReduceAdd<accscalar_t>())[0];
 @@ -490 +490 @@ struct WeightNormBackwardReduceKernelFunctor
--          item, shared_, vec_t(value), ReduceAdd<accscalar_t>())[0];
-+          item, shared_, vec_t{value}, ReduceAdd<accscalar_t>())[0];
-@@ -537 +537 @@ static inline void launch_weight_norm_backward_reduce_kernel(
--  using vec_t = at::detail::Array<accscalar_t, 1>;
-+  using vec_t = std::array<accscalar_t, 1>;
-@@ -567 +567 @@ static inline void weight_norm_backward_reduce(
--  using vec_t = at::detail::Array<accscalar_t, 1>;
-+  using vec_t = std::array<accscalar_t, 1>;
+-        item, shared_ptr, vec_t(value), ReduceAdd<accscalar_t>())[0];
++        item, shared_ptr, vec_t{value}, ReduceAdd<accscalar_t>())[0];
 @@ -767 +767 @@ struct WeightNormBackwardKernelFunctor
--          item, shared_, vec_t(value), ReduceAdd<accscalar_t>())[0];
-+          item, shared_, vec_t{value}, ReduceAdd<accscalar_t>())[0];
+-        item, shared_ptr, vec_t(value), ReduceAdd<accscalar_t>())[0];
++        item, shared_ptr, vec_t{value}, ReduceAdd<accscalar_t>())[0];
 @@ -770 +770 @@ struct WeightNormBackwardKernelFunctor
--          item, shared_, vec_t(value), ReduceAdd<accscalar_t>())[0];
-+          item, shared_, vec_t{value}, ReduceAdd<accscalar_t>())[0];
+-        item, shared_ptr, vec_t(value), ReduceAdd<accscalar_t>())[0];
++        item, shared_ptr, vec_t{value}, ReduceAdd<accscalar_t>())[0];
 @@ -862 +862 @@ static inline void weight_norm_backward(
 -  using vec_t = at::detail::Array<accscalar_t, 1>;
 +  using vec_t = std::array<accscalar_t, 1>;
