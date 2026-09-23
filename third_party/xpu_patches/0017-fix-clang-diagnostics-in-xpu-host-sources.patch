@@ -40,27 +40,6 @@ diff --git a/src/ATen/native/sparse/xpu/SparseBinaryOpIntersection.cpp b/src/ATe
 +    &xpu::sparse_mask_projection_kernel)
 
  } // namespace at::native
-diff --git a/src/ATen/native/sparse/xpu/SparseCsrTensorMath.cpp b/src/ATen/native/sparse/xpu/SparseCsrTensorMath.cpp
---- a/src/ATen/native/sparse/xpu/SparseCsrTensorMath.cpp
-+++ b/src/ATen/native/sparse/xpu/SparseCsrTensorMath.cpp
-@@ -48,7 +48,7 @@ TORCH_IMPL_FUNC(_convert_indices_from_coo_to_csr_structured_xpu)
-  const Tensor& result) {
-   xpu::convert_indices_from_coo_to_csr_structured_kernel(
-       input, size, out_int32, result);
--}
-+}
-
- TORCH_IMPL_FUNC(_convert_indices_from_csr_to_coo_structured_xpu)
- (const Tensor& crow_indices,
-@@ -58,7 +58,7 @@ TORCH_IMPL_FUNC(_convert_indices_from_csr_to_coo_structured_xpu)
-  const Tensor& result) {
-   xpu::convert_indices_from_csr_to_coo_structured_kernel(
-       crow_indices, col_indices, out_int32, transpose, result);
--}
-+}
-
- Tensor _sparse_csr_sum_xpu(
-     const Tensor& input,
 diff --git a/src/ATen/native/sparse/xpu/SparseTensor.cpp b/src/ATen/native/sparse/xpu/SparseTensor.cpp
 --- a/src/ATen/native/sparse/xpu/SparseTensor.cpp
 +++ b/src/ATen/native/sparse/xpu/SparseTensor.cpp
