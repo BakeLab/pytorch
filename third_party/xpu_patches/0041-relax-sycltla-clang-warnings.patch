@@ -1,0 +1,12 @@
+diff --git a/cmake/BuildFlags.cmake b/cmake/BuildFlags.cmake
+--- a/cmake/BuildFlags.cmake
++++ b/cmake/BuildFlags.cmake
+@@ -240,0 +241,8 @@ macro(set_build_flags)
++    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|IntelLLVM")
++      list(APPEND SYCL_HOST_FLAGS_ONLY_FOR_SYCL
++        -Wno-error=newline-eof
++        -Wno-error=logical-op-parentheses
++        -Wno-error=deprecated-copy
++        -Wno-error=uninitialized
++        -Wno-error=unused-but-set-variable)
++    endif()
