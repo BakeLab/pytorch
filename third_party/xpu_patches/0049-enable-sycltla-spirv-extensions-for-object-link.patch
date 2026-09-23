@@ -1,0 +1,13 @@
+diff --git a/src/BuildOnLinux.cmake b/src/BuildOnLinux.cmake
+index 472f275..af3eece 100644
+--- a/src/BuildOnLinux.cmake
++++ b/src/BuildOnLinux.cmake
+@@ -78,6 +78,8 @@ if(BUILD_SEPARATE_OPS)
+   endforeach()
+ else()
+   if(USE_SYCLTLA)
++    list(APPEND SYCL_DEVICE_LINK_FLAGS
++      "-Xspirv-translator;-spirv-ext=+SPV_INTEL_split_barrier,+SPV_INTEL_2d_block_io,+SPV_INTEL_subgroup_matrix_multiply_accumulate")
+     list(APPEND SYCL_COMPILE_FLAGS
+       -Wno-error=newline-eof
+       -Wno-error=logical-op-parentheses
