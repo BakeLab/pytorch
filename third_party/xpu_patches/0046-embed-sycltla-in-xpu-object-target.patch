@@ -1,25 +1,33 @@
 diff --git a/src/BuildOnLinux.cmake b/src/BuildOnLinux.cmake
+index 7ff25da..e5f4f2f 100644
 --- a/src/BuildOnLinux.cmake
 +++ b/src/BuildOnLinux.cmake
-@@ -8,6 +8,12 @@
+@@ -8,6 +8,9 @@
+ 
  # Build on Linux
  
-+# Keep SYCL-TLA host entry points in the main XPU object target so they are
-+# available from libtorch_xpu without cross-shared-library symbol resolution.
 +if(USE_SYCLTLA)
 +  set(BUILD_SEPARATE_OPS OFF)
 +endif()
-+
+ 
  set(TORCH_XPU_OPS_LIBRARIES)
-@@ -79,7 +85,8 @@ else()
+ set(SYCL_LINK_LIBRARIES_KEYWORD PRIVATE)
+@@ -78,7 +81,8 @@ else()
+     torch_xpu_ops
      OBJECT
      CXX_SOURCES  ${ATen_XPU_MKL_SRCS} ${ATen_XPU_NATIVE_CPP_SRCS} ${ATen_XPU_XCCL_SRCS}
 -    SYCL_SOURCES ${ATen_XPU_SYCL_SRCS} ${ATen_XPU_SYCL_COMM_SRCS})
 +    SYCL_SOURCES ${ATen_XPU_SYCL_SRCS} ${ATen_XPU_SYCL_COMM_SRCS}
 +                 ${ATen_XPU_SYCLTLA_SRCS})
-@@ -91,7 +98,7 @@ else()
+   if(USE_C10D_XCCL)
+     target_compile_definitions(torch_xpu_ops PRIVATE USE_C10D_XCCL)
+     target_link_libraries(torch_xpu_ops  PUBLIC torch::xccl)
+@@ -92,7 +96,7 @@ else()
    list(APPEND TORCH_XPU_OPS_LIBRARIES torch_xpu_ops)
  endif()
  
 -if(USE_SYCLTLA)
 +if(USE_SYCLTLA AND BUILD_SEPARATE_OPS)
+   set(REPLACE_FLAGS_FOR_SYCLTLA TRUE)
+   set_build_flags()
+ 
