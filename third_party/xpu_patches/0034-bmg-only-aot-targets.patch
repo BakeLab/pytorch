@@ -1,0 +1,6 @@
+diff --git a/cmake/BuildFlags.cmake b/cmake/BuildFlags.cmake
+--- a/cmake/BuildFlags.cmake
++++ b/cmake/BuildFlags.cmake
+@@ -259,1 +259,1 @@ macro(set_build_flags)
+-      set(SYCL_TARGETS_OPTION -fsycl-targets=spir64_gen,spir64)
++      set(SYCL_TARGETS_OPTION -fsycl-targets=spir64_gen)
