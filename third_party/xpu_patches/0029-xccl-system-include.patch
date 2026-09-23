@@ -1,0 +1,9 @@
+# Fix XCCL host compilation with strict Clang diagnostics.
+diff --git a/cmake/XCCL.cmake b/cmake/XCCL.cmake
+--- a/cmake/XCCL.cmake
++++ b/cmake/XCCL.cmake
+@@ -116,3 +116,1 @@ if(NOT __XCCL_INCLUDED)
+-  set_property(
+-    TARGET torch_xccl PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+-    ${XCCL_INCLUDE_DIR})
++  target_include_directories(torch_xccl SYSTEM INTERFACE ${XCCL_INCLUDE_DIR})
