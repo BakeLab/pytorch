@@ -1,18 +1,19 @@
 diff --git a/src/BuildOnLinux.cmake b/src/BuildOnLinux.cmake
-index 7ff25da..e5f4f2f 100644
+index 042fdb6..41f1c57 100644
 --- a/src/BuildOnLinux.cmake
 +++ b/src/BuildOnLinux.cmake
-@@ -8,6 +8,9 @@
+@@ -8,6 +8,10 @@
  
  # Build on Linux
  
 +if(USE_SYCLTLA)
 +  set(BUILD_SEPARATE_OPS OFF)
 +endif()
- 
++
  set(TORCH_XPU_OPS_LIBRARIES)
  set(SYCL_LINK_LIBRARIES_KEYWORD PRIVATE)
-@@ -78,7 +81,8 @@ else()
+ 
+@@ -77,7 +81,8 @@ else()
      torch_xpu_ops
      OBJECT
      CXX_SOURCES  ${ATen_XPU_MKL_SRCS} ${ATen_XPU_NATIVE_CPP_SRCS} ${ATen_XPU_XCCL_SRCS}
@@ -22,7 +23,7 @@ index 7ff25da..e5f4f2f 100644
    if(USE_C10D_XCCL)
      target_compile_definitions(torch_xpu_ops PRIVATE USE_C10D_XCCL)
      target_link_libraries(torch_xpu_ops  PUBLIC torch::xccl)
-@@ -92,7 +96,7 @@ else()
+@@ -91,7 +96,7 @@ else()
    list(APPEND TORCH_XPU_OPS_LIBRARIES torch_xpu_ops)
  endif()
  
