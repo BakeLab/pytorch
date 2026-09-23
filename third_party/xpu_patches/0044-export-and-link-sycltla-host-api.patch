@@ -1,0 +1,17 @@
+diff --git a/src/BuildOnLinux.cmake b/src/BuildOnLinux.cmake
+--- a/src/BuildOnLinux.cmake
++++ b/src/BuildOnLinux.cmake
+@@ -97,4 +97,5 @@ if(USE_SYCLTLA)
+     SHARED
+     SYCL_SOURCES ${ATen_XPU_SYCLTLA_SRCS})
+-  target_link_libraries(torch_xpu_ops PUBLIC ${sycl_lib})
++  target_link_libraries(
++    torch_xpu_ops PUBLIC "-Wl,--no-as-needed" ${sycl_lib} "-Wl,--as-needed")
+   list(APPEND TORCH_XPU_OPS_LIBRARIES ${sycl_lib})
+@@ -106,5 +106,6 @@ if(USE_SYCLTLA)
+ 
+   # Set Compile options for sycltla kernels
+   target_compile_definitions(${sycl_lib} PRIVATE ${SYCLTLA_COMPILE_DEFINITIONS})
++  target_compile_options(${sycl_lib} PRIVATE -fvisibility=default)
+   target_include_directories(${sycl_lib} PRIVATE ${SYCLTLA_INCLUDE_DIRS})
+   target_include_directories(${sycl_lib} PRIVATE ${ATen_XPU_FLASH_ATTN_DIRS})
