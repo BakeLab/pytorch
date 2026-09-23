@@ -1,0 +1,6 @@
+diff --git a/src/ATen/native/xpu/sycl/SummaryOpsKernels.cpp b/src/ATen/native/xpu/sycl/SummaryOpsKernels.cpp
+--- a/src/ATen/native/xpu/sycl/SummaryOpsKernels.cpp
++++ b/src/ATen/native/xpu/sycl/SummaryOpsKernels.cpp
+@@ -218,1 +218,1 @@ Tensor _histc_template(
+-    AT_ERROR("bins must be > 0");
++    TORCH_CHECK(false, "bins must be > 0");
