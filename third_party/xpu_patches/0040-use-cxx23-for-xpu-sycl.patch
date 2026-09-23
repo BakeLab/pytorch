@@ -1,0 +1,6 @@
+diff --git a/cmake/BuildFlags.cmake b/cmake/BuildFlags.cmake
+--- a/cmake/BuildFlags.cmake
++++ b/cmake/BuildFlags.cmake
+@@ -60,1 +60,1 @@ macro(set_build_flags)
+-  set(CPP_STD c++20)
++  set(CPP_STD c++23)
