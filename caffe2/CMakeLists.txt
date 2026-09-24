@@ -727,7 +727,6 @@ endif()
 if(USE_ROCM)
   list(APPEND Caffe2_HIP_SRCS ${GENERATED_CXX_TORCH_CUDA})
   add_library(torch_hip ${Caffe2_HIP_SRCS})
-  add_dependencies(torch_hip pytorch_bundled_miopen)
   target_compile_options(torch_hip PRIVATE
     "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-include ${PROJECT_SOURCE_DIR}/cmake/hip_host_compiler_compat.h>")
   # HIP device code is compiled with -fno-gpu-rdc, so there is no device link

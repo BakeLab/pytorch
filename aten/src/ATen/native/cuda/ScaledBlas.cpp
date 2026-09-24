@@ -936,9 +936,9 @@ _scaled_rowwise_rowwise(
   return out;
 }
 
-#ifndef USE_ROCM
 void
 _check_deepseek_support() {
+#ifndef USE_ROCM
   auto dprops = at::cuda::getCurrentDeviceProperties();
   if (dprops->major != 9) {
     // Only on Hopper GPUs
@@ -946,8 +946,11 @@ _check_deepseek_support() {
       dprops->major == 9,
       "DeepSeek style (1x128, 128x128) scaling only supported in CUDA for SM90")
   }
-}
+#else
+  TORCH_CHECK_NOT_IMPLEMENTED(
+      false, "1x128 and 128x128 scaling not available with ROCm");
 #endif
+}
 
 Tensor&
 _scaled_block1x128_block1x128(
