@@ -8,7 +8,9 @@
 #include <c10/macros/Macros.h>
 #include <c10/util/Exception.h>
 
-#ifndef __HIPCC__
+#ifdef __HIPCC__
+#include <numeric>
+#else
 #include <cuda/std/numeric>
 #endif
 
