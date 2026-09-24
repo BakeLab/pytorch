@@ -19,6 +19,13 @@
 
 namespace at::cuda {
 
+#if defined(USE_ROCM)
+// Defined by CublasHandlePool.cpp; HIP graph capture must prepare and release
+// its per-capture rocBLAS workspaces around the capture lifetime.
+void prepareCaptureCublasHandles();
+void releaseCaptureCublasWorkspaces(CaptureId_t capture_id);
+#endif
+
 // To support stream capture across multiple threads, we use a global
 // hashmap mapping cuda stream capture IDs to CUDAGraph objects. This
 // was originally a thread_local std::stack<CUDAGraph*>, but that was

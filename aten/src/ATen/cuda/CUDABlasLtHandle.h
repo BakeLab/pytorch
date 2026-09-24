@@ -5,6 +5,7 @@
 
 #include <cublasLt.h>
 #include <c10/cuda/CUDAGraphsC10Utils.h>
+#include <cstddef>
 
 #include <torch/headeronly/macros/Export.h>
 
@@ -20,7 +21,7 @@ TORCH_CUDA_CPP_API cublasLtHandle_t getCurrentCUDABlasLtHandleIfAvailable();
 // hipblaslt handles are pooled per (device, stream) and cannot be created
 // while stream capture is active. Pre-stock the shared free list so other
 // threads (e.g. autograd workers) can reserve one mid-capture.
-TORCH_CUDA_CPP_API void ensureCublasLtHandlesAvailable(size_t n);
+TORCH_CUDA_CPP_API void ensureCublasLtHandlesAvailable(std::size_t n);
 // Under capture, getCurrentCUDABlasHandle() returns a capture handle: one per
 // (thread, device), with no rocBLAS arena, shared by every stream the thread
 // uses in the capture. Each request points it at the current stream and binds
