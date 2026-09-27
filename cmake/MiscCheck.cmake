@@ -144,16 +144,4 @@ if(CPU_INTEL)
         "__AVX2__/__FMA__ with the selected flags "
         "(TORCH_X86_BASELINE=${TORCH_X86_BASELINE}, USE_NATIVE_ARCH=${USE_NATIVE_ARCH}).")
   endif()
-
-  # Same idea, used to pick the single SLEEF ISA tier to bundle (see
-  # aten/src/ATen/CMakeLists.txt): a baseline that already reaches AVX512F
-  # needs no separate AVX2 fallback build of SLEEF alongside it.
-  cmake_push_check_state()
-  set(CMAKE_REQUIRED_FLAGS "${CMAKE_CXX_FLAGS}")
-  check_cxx_source_compiles("
-    #if !defined(__AVX512F__)
-    #error no avx512f
-    #endif
-    int main() { return 0; }" TORCH_X86_BASELINE_HAS_AVX512F)
-  cmake_pop_check_state()
 endif()
