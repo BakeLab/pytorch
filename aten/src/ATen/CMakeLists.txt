@@ -673,10 +673,18 @@ if(NOT USE_SYSTEM_SLEEF)
   set(SLEEF_BUILD_SCALAR_LIB OFF CACHE BOOL "libsleefscalar will be built." FORCE)
   set(SLEEF_DISABLE_OPENMP ON CACHE BOOL "OpenMP only used by sleef DFT and tests, both disabled" FORCE)
   if(CPU_INTEL)
-    # PyTorch's x86 baseline is AVX2, and ATen directly uses only the AVX2 and
-    # AVX-512 vector APIs. Limit bundled SLEEF at its target-generation source
-    # instead of maintaining a collection of legacy per-ISA disable switches.
-    set(_sleef_x86_extensions AVX512F AVX2)
+    # TORCH_X86_BASELINE is a single pinned -march per build here (see
+    # cmake/MiscCheck.cmake), not a portable floor a runtime dispatcher climbs
+    # above -- callers like breadkernel build one wheel per exact CPU
+    # generation. So bundled SLEEF only needs the one ISA tier that baseline
+    # actually reaches: AVX512F already implies AVX2, and a baseline that
+    # doesn't reach AVX512F can never use an AVX512F SLEEF variant regardless
+    # of the runtime CPU.
+    if(TORCH_X86_BASELINE_HAS_AVX512F)
+      set(_sleef_x86_extensions AVX512F)
+    else()
+      set(_sleef_x86_extensions AVX2)
+    endif()
     set(SLEEF_ALL_SUPPORTED_EXTENSIONS "${_sleef_x86_extensions}" CACHE STRING
         "SIMD architectures checked by bundled SLEEF" FORCE)
     set(SLEEF_SUPPORTED_LIBM_EXTENSIONS "${_sleef_x86_extensions}" CACHE STRING
@@ -689,6 +697,11 @@ if(NOT USE_SYSTEM_SLEEF)
     foreach(_sleef_legacy_isa IN ITEMS SSE2 SSE4 AVX FMA4 AVX2128 AVX512FNOFMA)
       unset(COMPILER_SUPPORTS_${_sleef_legacy_isa} CACHE)
     endforeach()
+    if(TORCH_X86_BASELINE_HAS_AVX512F)
+      unset(COMPILER_SUPPORTS_AVX2 CACHE)
+    else()
+      unset(COMPILER_SUPPORTS_AVX512F CACHE)
+    endif()
     unset(_sleef_x86_extensions)
   endif()
   if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
