@@ -1,0 +1,311 @@
+diff --git a/fbgemm_gpu/cmake/Hip.cmake b/fbgemm_gpu/cmake/Hip.cmake
+index 445dd99d2..5c8bd4c5f 100644
+--- a/fbgemm_gpu/cmake/Hip.cmake
++++ b/fbgemm_gpu/cmake/Hip.cmake
+@@ -92,13 +92,13 @@ if(HIP_FOUND)
+     list(APPEND HIP_CXX_FLAGS "--gcc-toolchain=${FBGEMM_HIP_GCC_TOOLCHAIN}")
+   endif()
+ 
+-  set(HIP_HCC_FLAGS ${HIP_CXX_FLAGS})
++  set(HIP_CLANG_FLAGS ${HIP_CXX_FLAGS})
+   # Ask hcc to generate device code during compilation so we can use
+   # host linker to link.
+-  list(APPEND HIP_HCC_FLAGS -fno-gpu-rdc)
+-  list(APPEND HIP_HCC_FLAGS -Wno-defaulted-function-deleted)
++  list(APPEND HIP_CLANG_FLAGS -fno-gpu-rdc)
++  list(APPEND HIP_CLANG_FLAGS -Wno-defaulted-function-deleted)
+   foreach(fbgemm_rocm_arch ${PYTORCH_ROCM_ARCH})
+-    list(APPEND HIP_HCC_FLAGS --offload-arch=${fbgemm_rocm_arch})
++    list(APPEND HIP_CLANG_FLAGS --offload-arch=${fbgemm_rocm_arch})
+   endforeach()
+ 
+   set(FBGEMM_HIP_INCLUDE ${ROCM_PATH}/include ${FBGEMM_HIP_INCLUDE})
+diff --git a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/bf16_grouped/bf16_grouped_gemm.hip b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/bf16_grouped/bf16_grouped_gemm.hip
+index cdd9b0e44..ab927b315 100644
+--- a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/bf16_grouped/bf16_grouped_gemm.hip
++++ b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/bf16_grouped/bf16_grouped_gemm.hip
+@@ -23,9 +23,6 @@
+ #include "ck/tensor_operation/gpu/device/impl/device_grouped_gemm_multiple_d_xdl_cshuffle_tile_loop.hpp"
+ #include "kernels/bf16_grouped_kernel_manifest.h"
+ 
+-#ifdef HIPIFY_V2
+-#define getCurrentHIPStream getCurrentCUDAStream
+-#endif
+ 
+ namespace fbgemm_gpu {
+ 
+@@ -186,7 +183,7 @@ void set_static_kernel_args(
+     at::TensorList B,
+     at::Tensor output) {
+   // Get current cuda stream.
+-  auto stream = at::cuda::getCurrentHIPStream().stream();
++  auto stream = at::cuda::getCurrentCUDAStream().stream();
+   int64_t group_count = A.size();
+   // When group count is large, we can more efficiently initialize
+   // by doing host setup and a memcpy. This is only viable if cuda
+@@ -322,7 +319,7 @@ void set_dynamic_kernel_args(
+     at::Tensor output,
+     at::Tensor zero_start_index_M) {
+   // Get current cuda stream.
+-  auto stream = at::cuda::getCurrentHIPStream().stream();
++  auto stream = at::cuda::getCurrentCUDAStream().stream();
+   int group_count = A.size(0);
+   // Confirm M is on the proper device.
+   TORCH_CHECK(
+@@ -360,7 +357,7 @@ at::Tensor get_stacked_kernel_args(
+     at::Tensor Y,
+     at::Tensor M_sizes) {
+   // Get current cuda stream.
+-  auto stream = at::cuda::getCurrentHIPStream().stream();
++  auto stream = at::cuda::getCurrentCUDAStream().stream();
+ 
+   int group_count = M_sizes.size(0);
+   // Get space on device for the kernel argument tensor.
+diff --git a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/bf16_grouped/kernels/bf16_grouped_common.h b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/bf16_grouped/kernels/bf16_grouped_common.h
+index e314ca98f..d2e03e09f 100644
+--- a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/bf16_grouped/kernels/bf16_grouped_common.h
++++ b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/bf16_grouped/kernels/bf16_grouped_common.h
+@@ -9,9 +9,6 @@
+ #include <ATen/ATen.h>
+ #include <c10/hip/HIPStream.h>
+ 
+-#ifdef HIPIFY_V2
+-#define getCurrentHIPStream getCurrentCUDAStream
+-#endif
+ 
+ #include "ck/ck.hpp"
+ #include "ck/tensor_operation/gpu/device/gemm_specialization.hpp"
+@@ -191,7 +188,7 @@ OutputType bf16_grouped_impl(
+   gemm.SetDeviceKernelArgs(argument, kernel_args.data_ptr());
+ 
+   // Get hip graph stream if it exists.
+-  auto stream = at::cuda::getCurrentHIPStream().stream();
++  auto stream = at::cuda::getCurrentCUDAStream().stream();
+   invoker.Run(argument, StreamConfig{stream, false});
+ 
+   return Y;
+diff --git a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/ck_utility.hip b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/ck_utility.hip
+index b25cff544..24c004028 100644
+--- a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/ck_utility.hip
++++ b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/ck_utility.hip
+@@ -17,9 +17,6 @@
+ #include <ATen/ATen.h>
+ #include <c10/hip/HIPStream.h>
+ 
+-#ifdef HIPIFY_V2
+-#define getCurrentHIPStream getCurrentCUDAStream
+-#endif
+ 
+ #if defined(USE_ROCM)
+ 
+@@ -36,7 +33,7 @@ void flush_icache_ck()
+     hip_check_error(hipGetDeviceProperties(&deviceProps, 0));
+     int32_t gpu_block3 = deviceProps.multiProcessorCount * 60;
+ 
+-    auto stream = at::cuda::getCurrentHIPStream().stream();
++    auto stream = at::cuda::getCurrentCUDAStream().stream();
+ 
+     ck::flush_icache<<<dim3(gpu_block3), dim3(64), 0, stream>>>();
+     hip_check_error(hipGetLastError());
+diff --git a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_blockwise_gemm.hip b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_blockwise_gemm.hip
+index a930195cd..efecfe020 100644
+--- a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_blockwise_gemm.hip
++++ b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_blockwise_gemm.hip
+@@ -14,9 +14,6 @@
+ #include <ATen/ATen.h>
+ #include <c10/hip/HIPStream.h>
+ 
+-#ifdef HIPIFY_V2
+-#define getCurrentHIPStream getCurrentCUDAStream
+-#endif
+ 
+ #include "ck/ck.hpp"
+ #include "ck/tensor_operation/gpu/device/gemm_specialization.hpp"
+@@ -197,7 +194,7 @@ at::Tensor f8f8bf16_blockwise_impl(
+       b_element_op,
+       cde_element_op);
+ 
+-  auto stream = at::cuda::getCurrentHIPStream().stream();
++  auto stream = at::cuda::getCurrentCUDAStream().stream();
+   invoker.Run(argument, StreamConfig{stream, false});
+ 
+   return Y;
+diff --git a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_rowwise/kernels/fp8_rowwise_common.h b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_rowwise/kernels/fp8_rowwise_common.h
+index 2fc64f7bb..d234c3bca 100644
+--- a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_rowwise/kernels/fp8_rowwise_common.h
++++ b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_rowwise/kernels/fp8_rowwise_common.h
+@@ -11,9 +11,6 @@
+ #include <ATen/ATen.h>
+ #include <c10/hip/HIPStream.h>
+ 
+-#ifdef HIPIFY_V2
+-#define getCurrentHIPStream getCurrentCUDAStream
+-#endif
+ 
+ #include "ck/ck.hpp"
+ #include "ck/tensor_operation/gpu/device/gemm_specialization.hpp"
+@@ -209,7 +206,7 @@ at::Tensor f8f8_rowwise_impl(
+               << K << "}" << std::endl;
+   }
+ 
+-  auto stream = at::cuda::getCurrentHIPStream().stream();
++  auto stream = at::cuda::getCurrentCUDAStream().stream();
+   invoker.Run(argument, StreamConfig{stream, false});
+ 
+   return Y;
+diff --git a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_rowwise_batched/kernels/fp8_rowwise_batched_common.h b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_rowwise_batched/kernels/fp8_rowwise_batched_common.h
+index eca720ebd..cbdc6e26c 100644
+--- a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_rowwise_batched/kernels/fp8_rowwise_batched_common.h
++++ b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_rowwise_batched/kernels/fp8_rowwise_batched_common.h
+@@ -9,9 +9,6 @@
+ #include <ATen/ATen.h>
+ #include <c10/hip/HIPStream.h>
+ 
+-#ifdef HIPIFY_V2
+-#define getCurrentHIPStream getCurrentCUDAStream
+-#endif
+ 
+ #include "ck/ck.hpp"
+ #include "ck/tensor_operation/gpu/device/gemm_specialization.hpp"
+@@ -176,7 +173,7 @@ at::Tensor f8f8bf16_rowwise_batched_impl(
+       b_element_op,
+       cde_element_op);
+ 
+-  auto stream = at::cuda::getCurrentHIPStream().stream();
++  auto stream = at::cuda::getCurrentCUDAStream().stream();
+   invoker.Run(argument, StreamConfig{stream, false});
+ 
+   return Y;
+diff --git a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_rowwise_grouped/fp8_rowwise_grouped_gemm.hip b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_rowwise_grouped/fp8_rowwise_grouped_gemm.hip
+index 4c3ae85d2..7bed67801 100644
+--- a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_rowwise_grouped/fp8_rowwise_grouped_gemm.hip
++++ b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_rowwise_grouped/fp8_rowwise_grouped_gemm.hip
+@@ -14,9 +14,6 @@
+ #include <ATen/core/Tensor.h>
+ #include <c10/hip/HIPStream.h>
+ 
+-#ifdef HIPIFY_V2
+-#define getCurrentHIPStream getCurrentCUDAStream
+-#endif
+ 
+ #include "ck/ck.hpp"
+ #include "ck/tensor_operation/gpu/device/impl/device_grouped_gemm_multiple_d_xdl_cshuffle_tile_loop.hpp"
+@@ -111,7 +108,7 @@ void set_static_kernel_args(
+     at::TensorList w_scale,
+     OutputType output) {
+   // Get current cuda stream.
+-  auto stream = at::cuda::getCurrentHIPStream().stream();
++  auto stream = at::cuda::getCurrentCUDAStream().stream();
+   int64_t group_count = XQ.size();
+   // Declare variables for loop.
+   EDataType* output_ptr;
+@@ -392,7 +389,7 @@ void set_dynamic_kernel_args(
+     std::optional<at::Tensor> M_sizes,
+     bool zeroing_output_tensor) {
+   // Get current cuda stream.
+-  auto stream = at::cuda::getCurrentHIPStream().stream();
++  auto stream = at::cuda::getCurrentCUDAStream().stream();
+   int64_t group_count;
+   // Check provided tensors are valid.
+   TORCH_CHECK(
+@@ -817,7 +814,7 @@ at::Tensor f8f8bf16_rowwise_grouped_mm(
+       {static_cast<long>(G * sizeof(KernelArguments))},
+       XQ.options().dtype(at::kByte));
+ 
+-  auto stream = at::cuda::getCurrentHIPStream().stream();
++  auto stream = at::cuda::getCurrentCUDAStream().stream();
+   set_kernel_args<<<1, G, 0, stream>>>(
+       reinterpret_cast<KernelArguments*>(kernel_args.data_ptr()),
+       reinterpret_cast<ADataType*>(XQ.data_ptr()),
+diff --git a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_rowwise_grouped/kernels/fp8_rowwise_grouped_common.h b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_rowwise_grouped/kernels/fp8_rowwise_grouped_common.h
+index 2f6a6ac3f..514b9b03d 100644
+--- a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_rowwise_grouped/kernels/fp8_rowwise_grouped_common.h
++++ b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_rowwise_grouped/kernels/fp8_rowwise_grouped_common.h
+@@ -9,9 +9,6 @@
+ #include <ATen/ATen.h>
+ #include <c10/hip/HIPStream.h>
+ 
+-#ifdef HIPIFY_V2
+-#define getCurrentHIPStream getCurrentCUDAStream
+-#endif
+ 
+ #include "ck/ck.hpp"
+ #include "ck/tensor_operation/gpu/device/gemm_specialization.hpp"
+@@ -217,7 +214,7 @@ struct DeviceGemmHelper {
+     gemm.SetDeviceKernelArgs(argument, kernel_args.data_ptr());
+ 
+     // Get hip graph stream if it exists.
+-    auto stream = at::cuda::getCurrentHIPStream().stream();
++    auto stream = at::cuda::getCurrentCUDAStream().stream();
+     invoker.Run(argument, StreamConfig{stream, false});
+ 
+     return Y;
+diff --git a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_rowwise_preshuffle/kernels/fp8_rowwise_preshuffle_common.h b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_rowwise_preshuffle/kernels/fp8_rowwise_preshuffle_common.h
+index 3784db7e5..389185750 100644
+--- a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_rowwise_preshuffle/kernels/fp8_rowwise_preshuffle_common.h
++++ b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_rowwise_preshuffle/kernels/fp8_rowwise_preshuffle_common.h
+@@ -11,9 +11,6 @@
+ #include <ATen/ATen.h>
+ #include <c10/hip/HIPStream.h>
+ 
+-#ifdef HIPIFY_V2
+-#define getCurrentHIPStream getCurrentCUDAStream
+-#endif
+ 
+ #include "ck/ck.hpp"
+ #include "ck/tensor_operation/gpu/device/gemm_specialization.hpp"
+@@ -209,7 +206,7 @@ at::Tensor f8f8bf16_rowwise_preshuffle_impl(
+               << K << "}" << std::endl;
+   }
+ 
+-  auto stream = at::cuda::getCurrentHIPStream().stream();
++  auto stream = at::cuda::getCurrentCUDAStream().stream();
+   invoker.Run(argument, StreamConfig{stream, false});
+ 
+   return Y;
+diff --git a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_tensorwise_gemm.hip b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_tensorwise_gemm.hip
+index b53e0df2a..e02622f29 100644
+--- a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_tensorwise_gemm.hip
++++ b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fp8_tensorwise_gemm.hip
+@@ -14,9 +14,6 @@
+ #include <ATen/ATen.h>
+ #include <c10/hip/HIPStream.h>
+ 
+-#ifdef HIPIFY_V2
+-#define getCurrentHIPStream getCurrentCUDAStream
+-#endif
+ 
+ #include "ck/ck.hpp"
+ #include "ck/tensor_operation/gpu/device/gemm_specialization.hpp"
+@@ -189,7 +186,7 @@ f8f8bf16_tensorwise_impl(at::Tensor XQ, at::Tensor WQ, double scale) {
+       b_element_op,
+       c_element_op);
+ 
+-  auto stream = at::cuda::getCurrentHIPStream().stream();
++  auto stream = at::cuda::getCurrentCUDAStream().stream();
+   invoker.Run(argument, StreamConfig{stream, false});
+ 
+   return Y;
+diff --git a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fused_moe/fused_moe_kernel.hip b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fused_moe/fused_moe_kernel.hip
+index e92d242ce..fc6f4e630 100644
+--- a/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fused_moe/fused_moe_kernel.hip
++++ b/fbgemm_gpu/experimental/gen_ai/src/quantize/ck_extensions/fused_moe/fused_moe_kernel.hip
+@@ -15,9 +15,6 @@
+ 
+ #include <c10/hip/HIPStream.h>
+ 
+-#ifdef HIPIFY_V2
+-#define getCurrentHIPStream getCurrentCUDAStream
+-#endif
+ #
+ #include <atomic>
+ #include <cassert>
+@@ -139,7 +136,7 @@ at::Tensor fused_moe_impl(
+       static_cast<int>(stride)};
+ 
+   // Call kernel with default stream config
+-  auto stream = at::cuda::getCurrentHIPStream().stream();
++  auto stream = at::cuda::getCurrentCUDAStream().stream();
+   ck_tile::stream_config stream_cfg{stream};
+   fused_moe(traits, args, stream_cfg);
+ 
