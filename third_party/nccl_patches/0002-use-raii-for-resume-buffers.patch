@@ -124,7 +124,7 @@ index b3bc36c..66e1e44 100644
    }
 
    /*
-@@ -918,26 +892,14 @@ ncclResult_t ncclCommMemResume(struct ncclComm* comm) {
+@@ -918,25 +892,13 @@ ncclResult_t ncclCommMemResume(struct ncclComm* comm) {
           restoredLocalCount, restoredPeerCount, restoredLocalBytes, restoredPeerBytes);
      ret = bootstrapBarrier(comm->bootstrap, comm->rank, comm->nRanks, 0xCAFE);
      if (ret != ncclSuccess) {
