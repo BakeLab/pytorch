@@ -414,6 +414,7 @@ class Vectorized16 {
   }
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wignored-qualifiers"
+#pragma clang diagnostic ignored "-Wignored-attributes"
 
   Vectorized<T> map(SLEEF_CONST __m512 (*SLEEF_CONST_OLD vop)(__m512)) const {
     __m512 lo, hi;
