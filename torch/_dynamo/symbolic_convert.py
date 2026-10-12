@@ -4176,10 +4176,6 @@ class InstructionTranslatorBase(
 
     def MAKE_FUNCTION(self, inst: Instruction) -> None:
         code = self.pop()
-        if not hasattr(code.value, "co_qualname"):  # type: ignore[attr-defined]
-            raise AssertionError(
-                'expected hasattr(code.value, "co_qualname") to be true'
-            )
         fn_name = VariableTracker.build(self, code.value.co_qualname)  # type: ignore[attr-defined]
         defaults = None
         closure = None
@@ -4281,41 +4277,9 @@ class InstructionTranslatorBase(
     def POP_TOP(self, inst: Instruction) -> None:
         self.pop()
 
-    def ROT_TWO(self, inst: Instruction) -> None:
-        a = self.pop()
-        b = self.pop()
-        self.push(a)
-        self.push(b)
-
-    def ROT_THREE(self, inst: Instruction) -> None:
-        a = self.pop()
-        b = self.pop()
-        c = self.pop()
-        self.push(a)
-        self.push(c)
-        self.push(b)
-
-    def ROT_FOUR(self, inst: Instruction) -> None:
-        a = self.pop()
-        b = self.pop()
-        c = self.pop()
-        d = self.pop()
-        self.push(a)
-        self.push(d)
-        self.push(c)
-        self.push(b)
-
     def DUP_TOP(self, inst: Instruction) -> None:
         a = self.pop()
         self.push(a)
-        self.push(a)
-
-    def DUP_TOP_TWO(self, inst: Instruction) -> None:
-        a = self.pop()
-        b = self.pop()
-        self.push(b)
-        self.push(a)
-        self.push(b)
         self.push(a)
 
     def _convert_value(self, value: VariableTracker, flag: int) -> VariableTracker:

@@ -1634,10 +1634,8 @@ class TestPrecompilePackage(torch._inductor.test_case.TestCase):
 
         # A co_filename is not always a path: an exec-generated frame records
         # <string>, and so does a def exec'd under it, so realpath would resolve
-        # both against the cwd and waive a def whose bind no checksum covers
-        # (on 3.10 the <string> a fields-only dataclass compiles __init__ in
-        # collides the same way; from 3.11 co_qualname refuses it first). Only
-        # absolute filenames compare; a relative one, spelled so that it does
+        # both against the cwd and waive a def whose bind no checksum covers.
+        # Only absolute filenames compare; a relative one, spelled so that it does
         # resolve to this file from the cwd, and an embedded NUL on either side
         # fail closed instead of raising.
         pseudo = _stack("<string>")
@@ -1675,9 +1673,8 @@ class TestPrecompilePackage(torch._inductor.test_case.TestCase):
         # nothing else fails closed, as does a class with no method of its own
         # and one whose only methods are generated: a fields-only dataclass's
         # and a NamedTuple's are defs of a factory (__create_fn__, namedtuple),
-        # so their code objects' own qualname carries <locals>. (on 3.10, where
-        # only co_name exists, the <string> or stdlib file they compile in
-        # refuses them), and an Enum's arrive under Enum. qualnames the key
+        # so their code objects' own qualname carries <locals>, and an Enum's
+        # arrive under Enum. qualnames the key
         # rule refuses. Members are unwrapped by type, never probed with
         # getattr: a torch.classes proxy answers any attribute read by raising
         # RuntimeError, and a class holding one is still judged.
@@ -1824,8 +1821,7 @@ class TestPrecompilePackage(torch._inductor.test_case.TestCase):
         # stores the function under its own name, is pinned last.
         def minted(key, qualname):
             code = _user_op.__code__.replace(co_name=qualname.rpartition(".")[2])
-            if sys.version_info >= (3, 11):
-                code = code.replace(co_qualname=qualname)
+            code = code.replace(co_qualname=qualname)
             fn = types.FunctionType(code, globals(), "__annotate__")
             fn.__qualname__ = qualname
             return type("Cfg", (), {key: fn})
