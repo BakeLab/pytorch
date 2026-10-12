@@ -19,7 +19,6 @@ from io import UnsupportedOperation
 from pathlib import Path
 from typing import Any, cast, Final, IO
 
-# introduced as collections.abc.Buffer in Python 3.12
 from collections.abc import Buffer
 
 import torch
