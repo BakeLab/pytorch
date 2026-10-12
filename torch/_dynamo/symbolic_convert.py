@@ -3037,43 +3037,42 @@ class InstructionTranslatorBase(
                     from_exc=raised_exception,
                 )
 
-            if sys.version_info >= (3, 11):
-                exn_tab_entry = self.current_instruction.exn_tab_entry
-                if exn_tab_entry:
-                    # Implementation is based on https://github.com/python/cpython/blob/3.11/Objects/exception_handling_notes.txt
+            exn_tab_entry = self.current_instruction.exn_tab_entry
+            if exn_tab_entry:
+                # Implementation is based on https://github.com/python/cpython/blob/3.11/Objects/exception_handling_notes.txt
 
-        exn_tab_entry = self.current_instruction.exn_tab_entry
-        if exn_tab_entry:
-            # Implementation is based on https://github.com/python/cpython/blob/3.11/Objects/exception_handling_notes.txt
+                # 1) pop values from the stack until it matches the stack depth
+                # for the handler
+                while len(self.stack) > exn_tab_entry.depth:
+                    self.pop()
 
-            # 1) pop values from the stack until it matches the stack depth
-            # for the handler
-            while len(self.stack) > exn_tab_entry.depth:
-                self.pop()
+                # 2) if 'lasti' is true, then push the offset that the exception was raised at
+                if exn_tab_entry.lasti:
+                    self.push(
+                        VariableTracker.build(self, self.current_instruction.offset)
+                    )
 
-            # 2) if 'lasti' is true, then push the offset that the exception was raised at
-            if exn_tab_entry.lasti:
-                self.push(
-                    VariableTracker.build(self, self.current_instruction.offset)
-                )
+                # 3) push the exception to the stack
+                self.push(self.exn_vt_stack.get_raised_exception())
 
-            # 3) push the exception to the stack
-            self.push(self.exn_vt_stack.get_raised_exception())
+                # 4) jump to the handler
+                self.jump(exn_tab_entry)  # type: ignore[arg-type]
+            else:
+                # No handler found. Bubble the exception to the parent
+                # instruction translator. We use special exception for this.
+                self.stack.clear()
 
-            # 4) jump to the handler
-            self.jump(exn_tab_entry)  # type: ignore[arg-type]
-        else:
-            # No handler found. Bubble the exception to the parent
-            # instruction translator. We use special exception for this.
-            self.stack.clear()
+                # attach traceback to the exception and set it as current exception
+                curr_exc = self.exn_vt_stack.get_raised_exception()
+                self._attach_traceback_to_exception(curr_exc)
 
-            # attach traceback to the exception and set it as current exception
-            curr_exc = self.exn_vt_stack.get_raised_exception()
-            self._attach_traceback_to_exception(curr_exc)
-
-            if type(self) is InstructionTranslator:
-                bubble_exception_to_interpreter()
-            raise raised_exception
+                if type(self) is InstructionTranslator:
+                    bubble_exception_to_interpreter(raised_exception)
+                raise raised_exception
+        finally:
+            # This frame is on `raised_exception`'s traceback whenever the
+            # exception escapes, so drop the reference to avoid a cycle.
+            del raised_exception
 
     def PUSH_EXC_INFO(self, inst: Instruction) -> None:
         # https://docs.python.org/3/library/dis.html#opcode-PUSH_EXC_INFO
