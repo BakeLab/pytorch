@@ -5705,10 +5705,6 @@ class SourcelessBuilder:
             (
                 types.GenericAlias,
                 types.UnionType,
-                # `typing.Any | X` (and `typing.Union[...]`) evaluates to a
-                # `typing._UnionGenericAlias` on Python <= 3.10, not a
-                # `types.UnionType`
-                typing._UnionGenericAlias,  # type: ignore[attr-defined]
             ),
         ):
             return TypingVariable(value)

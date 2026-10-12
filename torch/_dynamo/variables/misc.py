@@ -2568,8 +2568,7 @@ class NumpyVariable(VariableTracker):
 
     def as_proxy(self) -> Any:
         if config.trace_numpy:
-            # Can replace with EnumType once we drop 3.10 support
-            if isinstance(self.value, enum.EnumMeta):
+            if isinstance(self.value, enum.EnumType):
                 # This is mostly for np._CopyMode
                 return self.value
             if isinstance(self.value, type):

@@ -209,12 +209,8 @@ def create_dup_top() -> Instruction:
 
 def create_rot_n(n: int) -> list[Instruction]:
     """
-    Returns a "simple" sequence of instructions that rotates TOS to the n-th
-    position in the stack. For Python < 3.11, returns a single ROT_*
-    instruction. If no such instruction exists, an error is raised and the
-    caller is expected to generate an equivalent sequence of instructions.
-    For Python >= 3.11, any rotation can be expressed as a simple sequence of
-    swaps.
+    Return a sequence of SWAP instructions that rotates TOS to the n-th
+    position in the stack.
     """
     if n <= 1:
         # don't rotate
@@ -395,7 +391,6 @@ def create_setup_with(target: Instruction) -> Instruction:
 
 def create_swap(n: int) -> list[Instruction]:
     return [create_instruction("SWAP", arg=n)]
-    # in Python < 3.11, SWAP is a macro that expands to multiple instructions
 
 
 def get_call_callable_depth(opname: str, arg: int) -> int:
@@ -413,20 +408,14 @@ def get_call_callable_depth(opname: str, arg: int) -> int:
       CALL (3.13+):            callable  NULL  arg0 ... argN-1
       CALL (3.11-3.12):        NULL  callable  arg0 ... argN-1
       CALL_KW (3.13+):         callable  NULL  arg0 ... argN-1  kw_names
-      CALL_FUNCTION (3.10):    callable  arg0 ... argN-1
-      CALL_FUNCTION_KW (3.10): callable  arg0 ... argN-1  kw_names
       CALL_FUNCTION_EX:
         3.14+:                 callable  NULL  args_tuple  kwargs_or_null
         3.13:                  callable  NULL  args_tuple [kwargs_dict]
         3.11-3.12:             NULL  callable  args_tuple [kwargs_dict]
-        3.10:                  callable  args_tuple [kwargs_dict]
     """
     if opname in ("CALL", "CALL_KW"):
         kw_extra = 1 if opname == "CALL_KW" else 0
         return arg + 2 + kw_extra
-    elif opname in ("CALL_FUNCTION", "CALL_FUNCTION_KW"):
-        kw_extra = 1 if opname == "CALL_FUNCTION_KW" else 0
-        return arg + 1 + kw_extra
     elif opname == "CALL_FUNCTION_EX":
         return 4
     else:

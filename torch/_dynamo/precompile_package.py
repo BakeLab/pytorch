@@ -741,9 +741,8 @@ def _defined_where_read(
     pass`` fails closed. So does a class statement whose only functions are
     generated: a fields-only ``@dataclass``'s and a ``NamedTuple``'s are defs
     of a factory (dataclasses' ``__create_fn__``, ``namedtuple``), so their
-    code objects' own qualname carries the factory's ``<locals>.`` prefix (on
-    3.10, where only ``co_name`` exists, the ``<string>`` or stdlib file they
-    compile in refuses them instead), and an ``Enum``'s arrive in the subclass
+    code objects' own qualname carries the factory's ``<locals>.`` prefix, and
+    an ``Enum``'s arrive in the subclass
     ``__dict__`` under ``Enum.`` qualnames the key rule refuses; so a plain
     config dataclass read as a global is reported. The one function the
     compiler itself puts in a class ``__dict__``, the PEP 649 annotate function
@@ -756,9 +755,7 @@ def _defined_where_read(
     the reader's module the same way. A ``co_filename`` is not always a path:
     an exec records ``<string>``, a REPL ``<stdin>``, and ``_norm`` would
     resolve either against the cwd, so a def exec'd under ``<string>`` and read
-    from an exec-generated frame would collide with it and be waived (on 3.10 a
-    fields-only dataclass too, whose ``__init__`` compiles in ``<string>``
-    under a ``co_name`` that cannot tell it from a class statement's def). Only
+    from an exec-generated frame would collide with it and be waived. Only
     absolute filenames on both sides compare; anything else fails closed. What this
     cannot see is a same-name fork inside the reading file -- ``try: from x
     import impl as op`` / ``except ImportError: def op``, or a class statement
@@ -771,12 +768,9 @@ def _defined_where_read(
     if value.__qualname__ != global_name:
         return False
 
-    # functools.wraps copies __qualname__ but not the code object's own name:
-    # co_qualname from 3.11, before that co_name, its last component only.
+    # functools.wraps copies __qualname__ but not the code object's own name.
     def compiled_as(fn: types.FunctionType, qualname: str) -> bool:
-        if sys.version_info >= (3, 11):
-            return fn.__code__.co_qualname == qualname
-        return fn.__code__.co_name == qualname.rpartition(".")[2]
+        return fn.__code__.co_qualname == qualname
 
     if isinstance(value, type):
         # 3.14 stores the PEP 649 annotate function under __annotate_func__

@@ -5082,7 +5082,7 @@ class GuardsStatePickler(FunctionPicklerBase):
             code = obj.__code__
             log.debug(
                 "dropping the annotations of %s (%s:%d): %s",
-                getattr(code, "co_qualname", code.co_name),
+                code.co_qualname,
                 code.co_filename,
                 code.co_firstlineno,
                 e,
