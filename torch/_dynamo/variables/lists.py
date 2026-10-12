@@ -1398,11 +1398,7 @@ class DequeVariable(BaseListVariable):
     _index_not_found_msg = (
         'deque.index(x): x not in deque'
     )
-    _remove_not_found_msg = (
-        "deque.remove(x): x not in deque"
-        if sys.version_info >= (3, 14)
-        else "{!r} is not in deque"
-    )
+    _remove_not_found_msg = "deque.remove(x): x not in deque"
 
     _nonvar_fields = {
         "state",
@@ -2057,11 +2053,7 @@ class ByteArrayVariable(VariableTracker):
     # PyByteArray_Type: https://github.com/python/cpython/blob/v3.13.0/Objects/bytearrayobject.c
     # Missing slots: tp_as_sequence.sq_ass_item, tp_as_mapping.mp_ass_subscript
     _cpython_type = bytearray
-    _index_not_found_msg = (
-        "bytearray.index(x): x not in bytearray"
-        if sys.version_info >= (3, 14)
-        else "{!r} is not in bytearray"
-    )
+    _index_not_found_msg = "bytearray.index(x): x not in bytearray"
 
     _nonvar_fields = {
         "data",

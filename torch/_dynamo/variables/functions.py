@@ -5879,12 +5879,10 @@ class PropertyVariable(VariableTracker):
     }
 
     def _name_getter(self, tx: "InstructionTranslatorBase") -> VariableTracker:
-        # property.__name__ only exists from 3.13
-        if sys.version_info >= (3, 13):
-            name = getattr(self.descriptor, "__name__", None)
-            if name is not None:
-                source = self.source and AttrSource(self.source, "__name__")
-                return VariableTracker.build(tx, name, source)
+        name = getattr(self.descriptor, "__name__", None)
+        if name is not None:
+            source = self.source and AttrSource(self.source, "__name__")
+            return VariableTracker.build(tx, name, source)
         raise_attribute_error(
             tx, f"'{self.python_type_name()}' object has no attribute '__name__'"
         )

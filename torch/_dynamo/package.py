@@ -356,14 +356,12 @@ class FunctionPicklerBase(pickle.Pickler):
         # proxy in an f-string, `()[0]`), which the guards.py caller explains --
         # and both are left raising here: whether the set can be dropped is the
         # caller's question, and each caller logs the drop it takes.
-        if sys.version_info >= (3, 14):
-            import annotationlib
+        import annotationlib
 
-            fmt = annotationlib.Format
-            return annotationlib.get_annotations(
-                obj, format=fmt.VALUE if evaluate else fmt.FORWARDREF
-            )
-        return obj.__annotations__
+        fmt = annotationlib.Format
+        return annotationlib.get_annotations(
+            obj, format=fmt.VALUE if evaluate else fmt.FORWARDREF
+        )
 
     def _reduce_cell(self, cell: types.CellType) -> tuple[Any, ...]:
         try:
