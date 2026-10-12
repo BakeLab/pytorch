@@ -959,8 +959,7 @@ class OrderedDictVariable(ConstDictVariable):
         return self._ordered_dict_repr(items)
 
     def tp_repr_impl(self, tx: "InstructionTranslatorBase") -> VariableTracker:
-        # Python < 3.12 uses the historical list-of-pairs form, while 3.12+
-        # uses dict-style formatting.
+        # Match OrderedDict's dict-style formatting.
         items = [
             (tracked_repr(tx, key.vt), tracked_repr(tx, value))
             for key, value in self.items.items()

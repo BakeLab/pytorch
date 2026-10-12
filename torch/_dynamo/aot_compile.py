@@ -105,8 +105,7 @@ def _picklable_unnamed_scope(scope: dict[str, Any]) -> dict[str, Any]:
     # exec inserts the LIVE builtins dict under __builtins__ into a namespace
     # that lacks one, and used_globals records an inlined frame's unnamed scope
     # whole. By value that is every builtin plus whatever extension modules
-    # stash there (pybind11 < 2.13 on CPython < 3.12 keeps its internals in a
-    # PyCapsule), while nothing at load reads it: the artifact only subscripts
+    # stash there, while nothing at load reads it: the artifact only subscripts
     # the dict. Send the guards pickler's stand-in, which loads as the live one.
     from .guards import _live_builtins
 

@@ -282,8 +282,6 @@ class FunctionPicklerBase(pickle.Pickler):
         # there rebakes, so restore what the reducer captured.
         fn.__doc__ = doc
         fn.__annotations__ = annotations
-        # On Python < 3.12 there is no __type_params__ slot, so both a live
-        # function's __type_params__ and the write below land in __dict__.
         # Assign __dict__ first so the reducer's (possibly pruned) type_params
         # wins over whatever the carried __dict__ holds under that key.
         fn.__dict__ = attributes
