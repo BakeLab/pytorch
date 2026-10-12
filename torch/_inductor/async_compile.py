@@ -1108,9 +1108,6 @@ class AsyncCompile:
             try:
                 kernel = result.result(timeout=wait_timeout)
             except FuturesTimeoutError as e:
-                # concurrent.futures.TimeoutError became an alias of the
-                # builtin TimeoutError in Python 3.11; on 3.10 it is a
-                # distinct class, so catch it explicitly.
                 raise RuntimeError(
                     f"Inductor compile-worker future for {key!r} did not "
                     f"complete within {wait_timeout}s. Override with "

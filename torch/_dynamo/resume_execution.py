@@ -366,7 +366,6 @@ class ContinueExecutionCache:
                 pop_nested_resume_result,
             )
 
-        is_py311_plus = True
         meta = ResumeFunctionMetadata(code)
 
         def update(
@@ -384,19 +383,18 @@ class ContinueExecutionCache:
             code_options["co_name"] = (
                 f"{TORCH_DYNAMO_RESUME_IN_PREFIX}_{code_options['co_name']}_at_{lineno}"
             )
-            if is_py311_plus:
-                qualified_path = code_options["co_qualname"].rsplit(".", maxsplit=1)
-                if len(qualified_path) == 1:
-                    code_options["co_qualname"] = code_options["co_name"]
-                else:
-                    if len(qualified_path) != 2:
-                        raise AssertionError(
-                            f"Expected qualified path to have 2 parts, got {len(qualified_path)}"
-                        )
-                    module_name, co_name = qualified_path
-                    code_options["co_qualname"] = (
-                        f"{module_name}.{TORCH_DYNAMO_RESUME_IN_PREFIX}_{co_name}_at_{lineno}"
+            qualified_path = code_options["co_qualname"].rsplit(".", maxsplit=1)
+            if len(qualified_path) == 1:
+                code_options["co_qualname"] = code_options["co_name"]
+            else:
+                if len(qualified_path) != 2:
+                    raise AssertionError(
+                        f"Expected qualified path to have 2 parts, got {len(qualified_path)}"
                     )
+                module_name, co_name = qualified_path
+                code_options["co_qualname"] = (
+                    f"{module_name}.{TORCH_DYNAMO_RESUME_IN_PREFIX}_{co_name}_at_{lineno}"
+                )
             code_options["co_firstlineno"] = lineno
             code_options["co_cellvars"] = ()
             code_options["co_freevars"] = freevars
@@ -415,12 +413,9 @@ class ContinueExecutionCache:
             target = next(i for i in instructions if i.offset == resume_offset)
 
             prefix = []
-            if is_py311_plus:
-                if freevars:
-                    prefix.append(
-                        create_instruction("COPY_FREE_VARS", arg=len(freevars))
-                    )
-                prefix.append(create_instruction("RESUME", arg=0))
+            if freevars:
+                prefix.append(create_instruction("COPY_FREE_VARS", arg=len(freevars)))
+            prefix.append(create_instruction("RESUME", arg=0))
 
             # Set is_tracing_resume_prologue to prevent graph breaks.
             # This doesn't really do anything at runtime, but dynamo will trace this
@@ -465,18 +460,16 @@ class ContinueExecutionCache:
                     hook = hooks.pop(i)
                     hook_insts, exn_target = hook(code_options, cleanup)
                     prefix.extend(hook_insts)
-                    if is_py311_plus:
-                        hook_target_offset = hook_target_offsets.pop(i)
-                        old_hook_target = offset_to_inst[hook_target_offset]
-                        meta.prefix_block_target_offset_remap.append(hook_target_offset)
-                        old_hook_target_remap[old_hook_target] = exn_target
+                    hook_target_offset = hook_target_offsets.pop(i)
+                    old_hook_target = offset_to_inst[hook_target_offset]
+                    meta.prefix_block_target_offset_remap.append(hook_target_offset)
+                    old_hook_target_remap[old_hook_target] = exn_target
 
-            if is_py311_plus:
-                # reverse the mapping since targets of later/nested contexts are inserted
-                # into the mapping later, but show up earlier in the prefix.
-                meta.prefix_block_target_offset_remap = list(
-                    reversed(meta.prefix_block_target_offset_remap)
-                )
+            # Reverse the mapping since targets of later/nested contexts are inserted
+            # into the mapping later, but show up earlier in the prefix.
+            meta.prefix_block_target_offset_remap = list(
+                reversed(meta.prefix_block_target_offset_remap)
+            )
 
             if hooks:
                 raise AssertionError(f"Unprocessed hooks remaining: {hooks}")
@@ -585,9 +578,6 @@ class ContinueExecutionCache:
 
             # remap original instructions' exception table entries
             if old_hook_target_remap:
-                # pyrefly: ignore [unbound-name]
-                if not is_py311_plus:
-                    raise AssertionError("old_hook_target_remap requires Python 3.11+")
                 for inst in instructions:
                     if (
                         inst.exn_tab_entry

@@ -5053,14 +5053,6 @@ class AlgorithmSelectorCache(PersistentCache):
         if num_workers <= 0:
             return no_op
 
-        # https://github.com/python/cpython/issues/106905
-        if (
-            sys.version_info.major == 3
-            and sys.version_info.minor == 11
-            and sys.version_info.micro <= 8
-        ):
-            return no_op
-
         # check local and global cache before precompiling
         timings = self.lookup(
             choices,
