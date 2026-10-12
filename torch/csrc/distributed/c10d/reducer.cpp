@@ -1618,15 +1618,9 @@ void Reducer::finalize_bucket_dense(Bucket& bucket) {
   // When batched_grad_copy_ is enabled, the per-parameter copies from the
   // reduced bucket back into each .grad are deferred and flushed as a single
   // _foreach_copy_ below. Only safe when grads are the parameters' own .grad
-  // tensors, i.e. not under distributed autograd (which manages grads through
-  // an rpc context and writes them back per callback).
-#ifdef _WIN32
-  const bool in_rpc_context = false;
-#else
-  const bool in_rpc_context = rpc_context_.context_ptr.load() != nullptr;
-#endif
+  // tensors.
   const bool batch_copy_out = batched_grad_copy_ && !gradient_as_bucket_view_ &&
-      !optim_in_backward_ && !in_rpc_context;
+      !optim_in_backward_;
   std::vector<at::Tensor> batched_grad_dsts;
   std::vector<at::Tensor> batched_grad_srcs;
   if (batch_copy_out) {
