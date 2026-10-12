@@ -9,6 +9,7 @@ import types
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from functools import cached_property
+from types import NotImplementedType
 from typing import Any, ClassVar, Concatenate, final, Generic, TYPE_CHECKING
 from typing import ParamSpec, TypeVar
 
@@ -22,12 +23,6 @@ from torch._C import (
 )
 from torch._functorch.pyfunctorch import dispatch_functorch, TransformType
 from torch.utils._python_dispatch import TorchDispatchMode
-
-
-try:
-    from types import NotImplementedType  # Python 3.10+
-except ImportError:  # pragma: no cover
-    NotImplementedType = type(NotImplemented)  # type: ignore[misc]
 
 
 if TYPE_CHECKING:
