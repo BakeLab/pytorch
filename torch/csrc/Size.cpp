@@ -176,7 +176,6 @@ static PySequenceMethods THPSize_as_sequence = {
     nullptr /* sq_contains */
 };
 
-#if PY_MAJOR_VERSION >= 3 && PY_MINOR_VERSION >= 14
 static Py_hash_t THPSize_hash(PyObject* self) {
   /*
   Python 3.14 introduced a caching mechanism for tuple hashing which is stored
@@ -191,7 +190,6 @@ static Py_hash_t THPSize_hash(PyObject* self) {
   v->ob_hash = sentinel;
   return PyTuple_Type.tp_hash(self);
 }
-#endif
 
 static PyMappingMethods THPSize_as_mapping = {
     nullptr, /* mp_length */
@@ -255,11 +253,7 @@ PyTypeObject THPSizeType = {
     &THPSize_as_number, /* tp_as_number */
     &THPSize_as_sequence, /* tp_as_sequence */
     &THPSize_as_mapping, /* tp_as_mapping */
-#if PY_MAJOR_VERSION >= 3 && PY_MINOR_VERSION >= 14
     &THPSize_hash, /* tp_hash  */
-#else
-    nullptr, /* tp_hash */
-#endif
     nullptr, /* tp_call */
     nullptr, /* tp_str */
     nullptr, /* tp_getattro */
@@ -269,12 +263,8 @@ PyTypeObject THPSizeType = {
     nullptr, /* tp_doc */
     nullptr, /* tp_traverse */
     nullptr, /* tp_clear */
-#if PY_MAJOR_VERSION >= 3 && PY_MINOR_VERSION >= 14
     // if tp_hash is defined, one must also defines tp_richcompare
     PyTuple_Type.tp_richcompare, /* tp_richcompare */
-#else
-    nullptr, /* tp_richcompare */
-#endif
     0, /* tp_weaklistoffset */
     nullptr, /* tp_iter */
     nullptr, /* tp_iternext */

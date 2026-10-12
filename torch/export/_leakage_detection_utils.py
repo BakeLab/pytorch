@@ -13,8 +13,8 @@ These functions are used to detect potential fake tensor leakage when using PT2 
 See NOTE [export non-strict fake tensor leak detection]
 
 There are some complications that made this logic overly complicated:
-1) Python 3.10 and Python 3.12 have different ways of implementing referrer so
-   we need to account for whether it is ref.__dict__ or the real ref object
+1) Garbage collection can report an object's attribute dictionary or its owner
+   as a referrer, so both forms need to be handled
 
 2) There are some internal PT2 references to fake tensors like `TrackedFake`
 3) closures, generators, and bound methods can hold fake tensors.
@@ -50,8 +50,7 @@ def _is_gm_meta_like_dict(d: dict, o: typing.Any) -> bool:
 
 def _dict_is_attr_of_tracked_fake(d: dict) -> bool:
     """
-    Python 3.10 quirk: sometimes the referrer is obj.__dict__ instead of obj.
-    Check if this dict is exactly the __dict__ of a TrackedFake.
+    Check whether this dict is exactly the __dict__ of a TrackedFake.
     """
     for parent in gc.get_referrers(d):
         if (
@@ -101,7 +100,7 @@ def find_legit_leaks_from_referrers(
                 # TrackedFake should be ignored
                 continue
 
-            # Handle dicts carefully (Python 3.10 sometimes shows __dict__)
+            # Handle dict referrers carefully.
             if isinstance(r, dict):
                 if _is_gm_meta_like_dict(r, act):
                     continue

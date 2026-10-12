@@ -1347,49 +1347,45 @@ class TorchInGraphFunctionVariable(BaseTorchVariable):
                     kwargs,
                 )
 
-        if hasattr(math, "sumprod"):  # Python 3.12+
-
-            @register(math.sumprod)
-            def handle_sumprod(
-                self,
-                tx: "InstructionTranslatorBase",
-                *args: VariableTracker,
-                **kwargs: VariableTracker,
-            ) -> VariableTracker | None:
-                no_keywords(tx, "math.sumprod", kwargs)
-                check_positional(tx, "sumprod", len(args), 2, 2)
-                if check_unspec_or_constant_args(args, kwargs):
-                    return None
-                # Lists/tuples with any non-constant element use plain accumulation
-                # for the whole call. Other iterables are materialized first so
-                # lists of constants still fold with CPython's float path.
-                if all(isinstance(a, (ListVariable, TupleVariable)) for a in args):
-                    fn = polyfills.sumprod_generic
-                else:
-                    fn = polyfills.sumprod
-                return tx.inline_user_function_return(
-                    VariableTracker.build(tx, fn), list(args), {}
-                )
-
-        if hasattr(math, "fma"):  # Python 3.13+
-
-            @register(math.fma)
-            def handle_fma(
-                self,
-                tx: "InstructionTranslatorBase",
-                *args: VariableTracker,
-                **kwargs: VariableTracker,
-            ) -> VariableTracker | None:
-                if len(args) != 3 or kwargs:
-                    return None
-
-                if all(arg.is_tensor() for arg in args):
-                    x, y, z = args
-                    addcmul_fn = _create_internal_torch_function(torch.addcmul)
-                    return addcmul_fn.call_function(tx, [z, x, y], {})
-
-                # Use math.fma if constants
+        @register(math.sumprod)
+        def handle_sumprod(
+            self,
+            tx: "InstructionTranslatorBase",
+            *args: VariableTracker,
+            **kwargs: VariableTracker,
+        ) -> VariableTracker | None:
+            no_keywords(tx, "math.sumprod", kwargs)
+            check_positional(tx, "sumprod", len(args), 2, 2)
+            if check_unspec_or_constant_args(args, kwargs):
                 return None
+            # Lists/tuples with any non-constant element use plain accumulation
+            # for the whole call. Other iterables are materialized first so
+            # lists of constants still fold with CPython's float path.
+            if all(isinstance(a, (ListVariable, TupleVariable)) for a in args):
+                fn = polyfills.sumprod_generic
+            else:
+                fn = polyfills.sumprod
+            return tx.inline_user_function_return(
+                VariableTracker.build(tx, fn), list(args), {}
+            )
+
+        @register(math.fma)
+        def handle_fma(
+            self,
+            tx: "InstructionTranslatorBase",
+            *args: VariableTracker,
+            **kwargs: VariableTracker,
+        ) -> VariableTracker | None:
+            if len(args) != 3 or kwargs:
+                return None
+
+            if all(arg.is_tensor() for arg in args):
+                x, y, z = args
+                addcmul_fn = _create_internal_torch_function(torch.addcmul)
+                return addcmul_fn.call_function(tx, [z, x, y], {})
+
+            # Let Python evaluate math.fma when its arguments are constants.
+            return None
 
         @register(math.gcd)
         def handle_gcd(

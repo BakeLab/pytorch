@@ -1951,9 +1951,8 @@ class TestAOTCompile(torch._inductor.test_case.TestCase):
         compiled_fn = torch.compile(fn, fullgraph=True, backend="aot_eager")
         compiled_fn = compiled_fn.aot_compile((inputs, {}))
         # One warning per dropped entry, from the real dump only (the probe
-        # picklers reach both functions too) and named by the code object, since
-        # wraps gave helper base's __qualname__ (co_qualname is 3.11+; 3.10 gets
-        # the bare co_name).
+        # picklers reach both functions too) and named by the code object's
+        # qualified name, since wraps gave helper base's __qualname__.
         with self.assertLogs("torch._dynamo.aot_compile", level="WARNING") as logs:
             compiled_fn.save_compiled_function(self.path())
         self.assertEqual(len([l for l in logs.output if "dropping" in l]), 2)

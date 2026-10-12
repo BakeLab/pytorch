@@ -16,7 +16,6 @@ variable tracking system.
 
 import collections
 import operator
-import sys
 from typing import Any, Optional, TYPE_CHECKING
 from typing_extensions import TypeIs
 
@@ -109,24 +108,6 @@ def pylist_check(obj: VariableTracker) -> bool:
 
 def pylist_checkexact(obj: VariableTracker) -> bool:
     return obj.python_type() is list
-
-
-def _cpython_has_simple_slice_bug() -> bool:
-    # CPython gh-120384 fixed an array-out-of-bounds crash by moving the
-    # PySequence_Fast check ahead of the step==1 branch in
-    # list_ass_subscript, which as a side effect unified the non-iterable
-    # error message for simple and extended slices. Before this landed,
-    # simple slices (step is None or 1) raised "can only assign an
-    # iterable" instead of "must assign iterable to extended slice".
-    # Verified empirically against real CPython builds: the fix shipped in
-    # 3.11.15 and 3.12.5 (3.12.0 is the first 3.12 release, so 3.12.0-3.12.4
-    # predate it); 3.13+ never had the bug.
-    v = sys.version_info
-    if v[:2] == (3, 11):
-        return v < (3, 11, 15)
-    if v[:2] == (3, 12):
-        return v < (3, 12, 5)
-    return False
 
 
 class BaseListVariable(VariableTracker):
@@ -1339,9 +1320,6 @@ class ListVariable(BaseListVariable):
                 # slice forms.
                 if not vt_is_iterable(value):
                     msg = "must assign iterable to extended slice"
-                    step = key_as_const.step
-                    if step in (None, 1) and _cpython_has_simple_slice_bug():
-                        msg = "can only assign an iterable"
                     raise_type_error(tx, msg)
 
                 value_unpack = unpack_iterable(tx, value)
@@ -1430,11 +1408,7 @@ class DequeVariable(BaseListVariable):
     _index_not_found_msg = (
         'deque.index(x): x not in deque'
     )
-    _remove_not_found_msg = (
-        "deque.remove(x): x not in deque"
-        if sys.version_info >= (3, 14)
-        else "{!r} is not in deque"
-    )
+    _remove_not_found_msg = "deque.remove(x): x not in deque"
 
     _nonvar_fields = {
         "state",
@@ -2096,11 +2070,7 @@ class ByteArrayVariable(VariableTracker):
     # PyByteArray_Type: https://github.com/python/cpython/blob/v3.13.0/Objects/bytearrayobject.c
     # Missing slots: tp_as_sequence.sq_ass_item, tp_as_mapping.mp_ass_subscript
     _cpython_type = bytearray
-    _index_not_found_msg = (
-        "bytearray.index(x): x not in bytearray"
-        if sys.version_info >= (3, 14)
-        else "{!r} is not in bytearray"
-    )
+    _index_not_found_msg = "bytearray.index(x): x not in bytearray"
 
     _nonvar_fields = {
         "data",

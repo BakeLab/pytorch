@@ -374,10 +374,10 @@ class TestPackage(torch._inductor.test_case.TestCase):
         self.assertEqual(_collapse_device_types(frozenset(("hpu", "mps"))), "hpu")
 
     def test_code_source_walk_skips_non_code_constants(self):
-        # Python 3.10 has no co_qualname, so the walk visits every constant of the
-        # module's functions. b"" and 2**61 - 1 both hash to 0, and putting both in
-        # one set compares them: a BytesWarning, which CI's python -bb raises. (0
-        # would too, but newer Pythons keep small ints out of co_consts.)
+        # The walk visits every constant of the module's functions. b"" and
+        # 2**61 - 1 both hash to 0, and putting both in one set compares them: a
+        # BytesWarning, which CI's python -bb raises. (0 would too, but newer
+        # Pythons keep small ints out of co_consts.)
         source = """
 def f():
     a = b""
@@ -390,15 +390,13 @@ def f():
     return C
 """
         script = """
-import sys
 from unittest import mock
 
 import torch._dynamo.package as package
 import bbmod
 
 code = bbmod.f().g.__code__
-with mock.patch.object(package.sys, "version_info", (3, 10, 0)):
-    name, path = package._get_code_source(code)
+name, path = package._get_code_source(code)
 print(eval(f"bbmod.{name}.{path}") is code)
 """
         with tempfile.TemporaryDirectory() as d:

@@ -5,7 +5,6 @@ import io
 from collections.abc import Sequence
 from typing import cast, IO
 
-# introduced as collections.abc.Buffer in Python 3.12
 from collections.abc import Buffer
 
 from torch._utils import try_import

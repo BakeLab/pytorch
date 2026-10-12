@@ -576,9 +576,7 @@ class CustomOpDef:
             >>> x = torch.randn(2, 2)
             >>> weight = torch.randn(2, 2)
             >>> bias = torch.randn(2)
-            >>> # xdoctest: +SKIP("Requires Python <= 3.11")
             >>> out = torch.compile(linear, fullgraph=True)(x, weight, bias)
-            >>> # xdoctest: +SKIP("Requires Python <= 3.11")
             >>> assert torch.allclose(out, torch.nn.functional.linear(x, weight, bias))
             >>>
             >>> # Example 2: an operator with data-dependent output shape
@@ -601,9 +599,7 @@ class CustomOpDef:
             >>>     return result
             >>>
             >>> x = torch.tensor([0, 1, 2, 0, 0, 1])
-            >>> # xdoctest: +SKIP("Requires Python <= 3.11")
             >>> out = torch.compile(nonzero, fullgraph=True)(x)
-            >>> # xdoctest: +SKIP("Requires Python <= 3.11")
             >>> assert torch.allclose(out, x.nonzero())
 
         """

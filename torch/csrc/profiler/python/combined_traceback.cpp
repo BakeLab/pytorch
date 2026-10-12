@@ -157,11 +157,9 @@ struct PythonTraceback : public CapturedTraceback::Python {
 
     // Get the traceback from the metadata dict.
     // This runs from a CUDA allocator callback, so a Python exception may
-    // already be pending (e.g. the forward function just raised). The compat
-    // shim for PyDict_GetItemRef on Python < 3.13 uses PyErr_Occurred() to
-    // distinguish "not found" from "error", so a stale pending exception would
-    // be misread as a lookup failure and then cleared, destroying the real
-    // exception. Save/restore the exception state to avoid that.
+    // already be pending (e.g. the forward function just raised). Preserve it
+    // across the dictionary lookup so the callback does not replace the
+    // original exception with a lookup error.
     py::gil_scoped_acquire gil;
 
     PyObject* exc_type = nullptr;

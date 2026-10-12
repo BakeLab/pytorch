@@ -208,9 +208,8 @@ def create_dup_top() -> Instruction:
 
 def create_rot_n(n: int) -> list[Instruction]:
     """
-    Returns a "simple" sequence of instructions that rotates TOS to the n-th
-    position in the stack. Any rotation can be expressed as a simple sequence
-    of swaps.
+    Return a sequence of SWAP instructions that rotates TOS to the n-th
+    position in the stack.
     """
     if n <= 1:
         # don't rotate
