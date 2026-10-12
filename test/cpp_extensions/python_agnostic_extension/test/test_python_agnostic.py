@@ -43,8 +43,8 @@ class TestPythonAgnostic(TestCase):
         # cpp_extensions/python_agnostic_extension folder, where the extension and
         # setup calls specify py_limited_api to `True`. To approximate that the
         # extension is indeed python agnostic, we test
-        #   a. The extension wheel name contains "cp39-abi3", meaning the wheel
-        # should be runnable for any Python 3 version after and including 3.9
+        #   a. The extension wheel name contains "cp314-abi3", matching this
+        # PyTorch build's minimum supported Python version
         #   b. The produced shared library does not have libtorch_python.so as a
         # dependency from the output of "ldd _C.so"
         #   c. The .so does not need any python related symbols. We approximate
@@ -53,7 +53,7 @@ class TestPythonAgnostic(TestCase):
         matches = list(Path(self.dist_dir).glob("*.whl"))
         self.assertEqual(len(matches), 1, msg=str(matches))
         whl_file = matches[0]
-        self.assertRegex(str(whl_file), r".*python_agnostic-0\.0-cp39-abi3-.*\.whl")
+        self.assertRegex(str(whl_file), r".*python_agnostic-0\.0-cp314-abi3-.*\.whl")
 
         build_dir = os.path.join(self.extension_root, "build")
         matches = list(Path(build_dir).glob("**/*.so"))
