@@ -1648,10 +1648,6 @@ class InstructionTranslatorBase(
                 # generator frame.
                 values.append(tx.gi_exc_state.items)
             instruction = tx.current_instruction
-            if instruction not in tx.instructions:
-                # Before Python 3.11, creating a local generator does not run its
-                # inline tracer, so it still points at the synthetic initial NOP.
-                instruction = tx.instructions[0]
             reads = livevars_analysis(tx.instructions, instruction)
             for name in reads:
                 key = name.replace(".", "implicit") if name.startswith(".") else name
