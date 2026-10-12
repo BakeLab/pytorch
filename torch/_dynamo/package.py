@@ -281,8 +281,6 @@ class FunctionPicklerBase(pickle.Pickler):
         # there rebakes, so restore what the reducer captured.
         fn.__doc__ = doc
         fn.__annotations__ = annotations
-        # On Python < 3.12 there is no __type_params__ slot, so both a live
-        # function's __type_params__ and the write below land in __dict__.
         # Assign __dict__ first so the reducer's (possibly pruned) type_params
         # wins over whatever the carried __dict__ holds under that key.
         fn.__dict__ = attributes
@@ -359,14 +357,12 @@ class FunctionPicklerBase(pickle.Pickler):
         # proxy in an f-string, `()[0]`), which the guards.py caller explains --
         # and both are left raising here: whether the set can be dropped is the
         # caller's question, and each caller logs the drop it takes.
-        if sys.version_info >= (3, 14):
-            import annotationlib
+        import annotationlib
 
-            fmt = annotationlib.Format
-            return annotationlib.get_annotations(
-                obj, format=fmt.VALUE if evaluate else fmt.FORWARDREF
-            )
-        return obj.__annotations__
+        fmt = annotationlib.Format
+        return annotationlib.get_annotations(
+            obj, format=fmt.VALUE if evaluate else fmt.FORWARDREF
+        )
 
     def _reduce_cell(self, cell: types.CellType) -> tuple[Any, ...]:
         try:

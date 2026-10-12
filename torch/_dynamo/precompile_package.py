@@ -761,9 +761,9 @@ def _defined_where_read(
     why the name compared is ``__qualname__``, backed by the code object's own
     name: functools.wraps copies ``__qualname__`` onto a wrapper but cannot
     forge its ``co_qualname``, so a same-file ``wraps`` decorator a flag turns
-    on is a slot in both arms. Only a plain function or a class is judged; a
-    bound method or any other proxy that
-    forwards ``__qualname__`` and ``__code__`` is refused before an attribute
+    on is a slot in both arms. Only a plain function or a class is judged.
+    Bound methods and other proxies that forward ``__qualname__`` and
+    ``__code__`` are refused before an attribute
     is read, which also keeps a proxy that answers reads by raising, such as
     ``torch.classes.<ns>``, out of the value slot. The file is read off the
     code object, not off ``__module__``: functools.wraps copies ``__module__``

@@ -465,7 +465,7 @@ class ContinueExecutionCache:
                     meta.prefix_block_target_offset_remap.append(hook_target_offset)
                     old_hook_target_remap[old_hook_target] = exn_target
 
-            # reverse the mapping since targets of later/nested contexts are inserted
+            # Reverse the mapping since targets of later/nested contexts are inserted
             # into the mapping later, but show up earlier in the prefix.
             meta.prefix_block_target_offset_remap = list(
                 reversed(meta.prefix_block_target_offset_remap)

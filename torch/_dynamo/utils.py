@@ -1308,15 +1308,11 @@ def get_inputs_devices(
     ] + [None]
 
 
-_builtin_final_typing_classes += (typing.Union,)
-
-
 def is_typing(value: object) -> bool:
     # _Final catches most of typing classes:
     #   - Any
     #   - Callable
-    #   - Union (Python < 3.14)
-    #   ...
+    #   - TypeAliasType
     #
     # NB: we intentionally ignore classes that inherit from Generic, since they
     # can be used as both TypingVariable as well as UserDefinedClassVariable.

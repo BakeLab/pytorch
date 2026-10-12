@@ -136,9 +136,6 @@ def sumprod(p: Iterable[Any], q: Iterable[Any], /) -> Any:
     # sumprod_generic.
     import math
 
-    # Narrows math for mypy on <3.12 stubs; the handler only dispatches here on 3.12+.
-    if not hasattr(math, "sumprod"):
-        raise NotImplementedError("math.sumprod requires Python 3.12+")
     ps: list[Any] = []
     qs: list[Any] = []
     for p_i, q_i in _sumprod_pairs(p, q):

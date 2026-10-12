@@ -74,11 +74,13 @@ from ..utils import (
 )
 from .base import (
     AsPythonConstantNotImplementedError,
+    GetSet,
     getset_build,
     Member,
     Method,
     NO_SUCH_SUBOBJ,
     readonly_setter,
+    unmodeled_setter,
     VariableTracker,
 )
 from .constant import ConstantVariable

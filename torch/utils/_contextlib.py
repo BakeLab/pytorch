@@ -43,10 +43,7 @@ def _context_manager_name(ctx) -> str:
 
 def _set_stack_frame_name(func, name: str) -> None:
     code = func.__code__
-    code_attrs = {"co_name": name}
-    if hasattr(code, "co_qualname"):
-        code_attrs["co_qualname"] = name
-    func.__code__ = code.replace(**code_attrs)
+    func.__code__ = code.replace(co_name=name, co_qualname=name)
 
 
 def _wrap_generator(ctx_factory, func, ctx_name):

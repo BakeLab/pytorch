@@ -3174,8 +3174,6 @@ class WrapperUserFunctionVariable(BaseUserFunctionVariable):
         return self.wrapper_obj.__name__
 
     def get_qualname(self) -> str:
-        # Before 3.11 the base falls back to co_name, since code objects have no
-        # co_qualname; the wrapper carries the real qualname either way.
         qualname = getattr(self.wrapper_obj, "__qualname__", None)
         return super().get_qualname() if qualname is None else qualname
 

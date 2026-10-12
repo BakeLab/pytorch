@@ -93,22 +93,20 @@ def report_compile_source_on_error():
                 frame = tb.tb_frame
                 code = compile("__inspect_currentframe()", f.name, "eval")
                 code = code.replace(co_name=frame.f_code.co_name)
-                # Python 3.11 only
-                if hasattr(frame.f_code, "co_linetable"):
-                    # We can't copy ALL of the metadata over, because you
-                    # can cause Python to segfault this way.  What exactly
-                    # do we need?  We need enough information for
-                    # traceback to be able to print the exception
-                    # correctly.  Code reading Lib/traceback.py reveals
-                    # that traceback calls code.co_positions() in order to
-                    # get the augmented line/col numbers.  Objects/codeobject.c,
-                    # specifically _PyCode_InitAddressRange, reveals that
-                    # this iterator is initialized from co_linetable and
-                    # co_firstlineno.  So copy these we must!
-                    code = code.replace(  # type: ignore[call-arg]
-                        co_linetable=frame.f_code.co_linetable,  # type: ignore[attr-defined]
-                        co_firstlineno=frame.f_code.co_firstlineno,  # type: ignore[attr-defined]
-                    )
+                # We can't copy ALL of the metadata over, because you
+                # can cause Python to segfault this way. What exactly
+                # do we need? We need enough information for traceback
+                # to be able to print the exception correctly. Code
+                # reading Lib/traceback.py reveals that traceback calls
+                # code.co_positions() in order to get the augmented
+                # line/col numbers. Objects/codeobject.c, specifically
+                # _PyCode_InitAddressRange, reveals that this iterator is
+                # initialized from co_linetable and co_firstlineno. So copy
+                # these we must!
+                code = code.replace(
+                    co_linetable=frame.f_code.co_linetable,
+                    co_firstlineno=frame.f_code.co_firstlineno,
+                )
                 fake_frame = eval(
                     code,
                     frame.f_globals,

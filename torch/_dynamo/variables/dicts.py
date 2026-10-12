@@ -1101,8 +1101,7 @@ class OrderedDictVariable(ConstDictVariable):
         return self._ordered_dict_repr(items)
 
     def tp_repr_impl(self, tx: "InstructionTranslatorBase") -> VariableTracker:
-        # Python < 3.12 uses the historical list-of-pairs form, while 3.12+
-        # uses dict-style formatting.
+        # Match OrderedDict's dict-style formatting.
         # https://github.com/python/cpython/blob/v3.13.3/Objects/odictobject.c#L1385-L1418
         with repr_guard(self) as recursive:
             if recursive:

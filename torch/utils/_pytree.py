@@ -1302,10 +1302,6 @@ class LeafSpec(TreeSpec):
     _children: list[Self] = dataclasses.field(default_factory=list, init=False)
 
     def __init__(self) -> None:
-        # On Python 3.10.0, the dataclass-generated __init__ for frozen+slots
-        # dataclasses doesn't populate init=False fields with simple defaults,
-        # causing copy.deepcopy to fail with AttributeError. Avoid the bug by
-        # providing a custom __init__ (init=False above) instead.
         object.__setattr__(self, "type", None)
         object.__setattr__(self, "_context", None)
         object.__setattr__(self, "_children", [])
