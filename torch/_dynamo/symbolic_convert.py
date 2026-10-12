@@ -1214,10 +1214,7 @@ def break_graph_if_unsupported(
                     else ()
                 )
                 if len(kw_names) > 0:
-                    # KW_NAMES no longer used in 3.13
-                    raise AssertionError(
-                        "expected sys.version_info < (3, 13) to be true"
-                    )
+                    raise AssertionError("CALL should not have keyword names")
                 if inst.arg is None:
                     raise AssertionError("expected inst.arg is not None to be true")
                 call_insts = create_call_function(inst.arg, False)
@@ -2383,11 +2380,8 @@ class InstructionTranslatorBase(
             self._raise_unbound_local_error(name)
         if isinstance(var, TensorVariable):
             self._maybe_emit_sync_dealloc(var)
-        if sys.version_info >= (3, 12):
-            # LOAD_FAST_CHECK handles NULL locals on Python 3.12 and newer.
-            self.symbolic_locals[name] = NullVariable()
-        else:
-            del self.symbolic_locals[name]
+        # LOAD_FAST_CHECK handles NULL locals; retain the slot as NULL.
+        self.symbolic_locals[name] = NullVariable()
 
     def _maybe_emit_sync_dealloc(self, var: TensorVariable) -> None:
         from .variables.streams import get_current_stream, new_event

@@ -41,10 +41,6 @@ if TYPE_CHECKING:
 from .bytecode_transformation import convert_instruction, Instruction, instruction_size
 
 
-# Python 3.12+ has sys.monitoring for efficient instruction-level tracing
-_HAS_SYS_MONITORING = hasattr(sys, "monitoring")
-
-
 # Sentinel for breakpoints inserted by PyCodegen via create_breakpoint()
 class _BreakpointMarker:
     """Sentinel constant that signals the debugger to break.
@@ -143,7 +139,6 @@ class _DebugContext:
         self._frame_states: dict[types.FrameType, DebuggerState] = {}
         self._active = False
         self._tracked_codes: set[types.CodeType] = set()
-        self._old_trace: Callable[..., Any] | None = None
         self._prev_callback: Callable[..., Any] | None = None
         self._return_from_frame: types.FrameType | None = None
         self._stop_after_return: bool = False
@@ -152,8 +147,7 @@ class _DebugContext:
         self._verbose: bool = False
         self._stop_at_new_code: bool = True
         self._quitting: bool = False
-        if _HAS_SYS_MONITORING:
-            self._tool_id = sys.monitoring.DEBUGGER_ID
+        self._tool_id = sys.monitoring.DEBUGGER_ID
 
     def get_instructions(self, code: types.CodeType | None = None) -> list[Instruction]:
         """Get the list of instructions for a tracked code object.
@@ -787,8 +781,7 @@ class _DebugContext:
                 state.step_mode = True
                 state.step_count = 0
                 self._stop_at_new_code = True
-            if _HAS_SYS_MONITORING:
-                sys.monitoring.restart_events()
+            sys.monitoring.restart_events()
 
         # First instruction - print header and enter step mode (unless suppressed)
         if not state.first_instruction_seen:
@@ -863,16 +856,14 @@ class _DebugContext:
         ):
             self._return_from_frame = None
             self._stop_after_return = True
-            if _HAS_SYS_MONITORING:
-                sys.monitoring.restart_events()
+            sys.monitoring.restart_events()
         if self._next_in_frame is not None and (
             frame is self._next_in_frame
             or (frame is None and code is self._next_in_frame.f_code)
         ):
             self._next_in_frame = None
             self._stop_after_return = True
-            if _HAS_SYS_MONITORING:
-                sys.monitoring.restart_events()
+            sys.monitoring.restart_events()
 
         # Clean up frame state to avoid holding dead frame references
         if frame is not None:
@@ -921,7 +912,7 @@ class _DebugContext:
         self._interactive_prompt(state)
 
     # =========================================================================
-    # Python 3.12+ implementation using sys.monitoring
+    # Instruction monitoring using sys.monitoring
     # =========================================================================
 
     def _dynamo_code_callback(self, code: types.CodeType) -> None:
@@ -930,15 +921,13 @@ class _DebugContext:
             return
         self._tracked_codes.add(code)
 
-        if _HAS_SYS_MONITORING:
-            # Enable INSTRUCTION and PY_RETURN events for this specific code object
-            # RAISE must be a global event (cannot be set locally)
-            sys.monitoring.set_local_events(
-                self._tool_id,
-                code,
-                sys.monitoring.events.INSTRUCTION | sys.monitoring.events.PY_RETURN,
-            )
-        # For settrace, we enable opcode tracing when we see the frame
+        # Enable INSTRUCTION and PY_RETURN events for this code object. RAISE
+        # must be a global event (cannot be set locally).
+        sys.monitoring.set_local_events(
+            self._tool_id,
+            code,
+            sys.monitoring.events.INSTRUCTION | sys.monitoring.events.PY_RETURN,
+        )
 
         # Pre-create code info for this code
         self._get_or_create_code_info(code)
@@ -968,44 +957,6 @@ class _DebugContext:
         return None
 
     # =========================================================================
-    # Python 3.11 and below implementation using sys.settrace
-    # =========================================================================
-
-    def _settrace_callback(
-        self, frame: types.FrameType, event: str, arg: Any
-    ) -> Callable[..., Any] | None:
-        """Trace function for sys.settrace."""
-        code = frame.f_code
-
-        # Only trace Dynamo-generated code
-        if code not in self._tracked_codes:
-            return self._settrace_callback
-
-        if event == "call":
-            # Enable opcode tracing for this frame
-            frame.f_trace_opcodes = True
-            return self._settrace_callback
-
-        elif event == "opcode":
-            # Get the current instruction offset
-            offset = frame.f_lasti
-            self._handle_instruction(code, offset, frame)
-            return self._settrace_callback
-
-        elif event == "return":
-            self._handle_return(code, arg, frame)
-            return self._settrace_callback
-
-        elif event == "exception":
-            # arg is (exception_type, exception_value, traceback)
-            offset = frame.f_lasti
-            exc_type, exc_value, exc_tb = arg
-            self._handle_exception(code, offset, exc_value)
-            return self._settrace_callback
-
-        return self._settrace_callback
-
-    # =========================================================================
     # Context manager implementation
     # =========================================================================
 
@@ -1022,35 +973,29 @@ class _DebugContext:
         self._frame_states.clear()
         self._tracked_codes.clear()
 
-        if _HAS_SYS_MONITORING:
-            # Python 3.12+: Use sys.monitoring
-            try:
-                sys.monitoring.use_tool_id(self._tool_id, "bytecode_debugger")
-            except ValueError:
-                pass
+        try:
+            sys.monitoring.use_tool_id(self._tool_id, "bytecode_debugger")
+        except ValueError:
+            pass
 
-            # Register callbacks (events enabled per-code via set_local_events)
-            sys.monitoring.register_callback(
-                self._tool_id,
-                sys.monitoring.events.INSTRUCTION,
-                self._monitoring_instruction_callback,
-            )
-            sys.monitoring.register_callback(
-                self._tool_id,
-                sys.monitoring.events.PY_RETURN,
-                self._monitoring_return_callback,
-            )
-            sys.monitoring.register_callback(
-                self._tool_id,
-                sys.monitoring.events.RAISE,
-                self._monitoring_raise_callback,
-            )
-            # RAISE must be a global event (cannot be local)
-            sys.monitoring.set_events(self._tool_id, sys.monitoring.events.RAISE)
-        else:
-            # Python 3.11 and below: Use sys.settrace
-            self._old_trace = sys.gettrace()
-            sys.settrace(self._settrace_callback)
+        # Register callbacks (events enabled per-code via set_local_events).
+        sys.monitoring.register_callback(
+            self._tool_id,
+            sys.monitoring.events.INSTRUCTION,
+            self._monitoring_instruction_callback,
+        )
+        sys.monitoring.register_callback(
+            self._tool_id,
+            sys.monitoring.events.PY_RETURN,
+            self._monitoring_return_callback,
+        )
+        sys.monitoring.register_callback(
+            self._tool_id,
+            sys.monitoring.events.RAISE,
+            self._monitoring_raise_callback,
+        )
+        # RAISE must be a global event (cannot be local).
+        sys.monitoring.set_events(self._tool_id, sys.monitoring.events.RAISE)
 
         # Set the C callback that will be called before executing Dynamo code
         set_bytecode_debugger_callback(self._dynamo_code_callback)
@@ -1071,46 +1016,42 @@ class _DebugContext:
         prev = self._prev_callback
         set_bytecode_debugger_callback(prev)
 
-        if _HAS_SYS_MONITORING:
-            if prev is None:
-                sys.monitoring.set_events(self._tool_id, 0)
-                try:
-                    sys.monitoring.free_tool_id(self._tool_id)
-                except ValueError:
-                    pass
-            else:
-                # Restore outer context's monitoring callbacks and events
-                if not isinstance(prev, types.MethodType):
-                    raise AssertionError(
-                        f"Expected prev callback to be a MethodType, got {type(prev)}"
-                    )
-                outer = cast("_DebugContext", prev.__self__)
-                sys.monitoring.register_callback(
-                    self._tool_id,
-                    sys.monitoring.events.INSTRUCTION,
-                    outer._monitoring_instruction_callback,
-                )
-                sys.monitoring.register_callback(
-                    self._tool_id,
-                    sys.monitoring.events.PY_RETURN,
-                    outer._monitoring_return_callback,
-                )
-                sys.monitoring.register_callback(
-                    self._tool_id,
-                    sys.monitoring.events.RAISE,
-                    outer._monitoring_raise_callback,
-                )
-                sys.monitoring.set_events(self._tool_id, sys.monitoring.events.RAISE)
-                for code in outer._tracked_codes:
-                    sys.monitoring.set_local_events(
-                        self._tool_id,
-                        code,
-                        sys.monitoring.events.INSTRUCTION
-                        | sys.monitoring.events.PY_RETURN,
-                    )
+        if prev is None:
+            sys.monitoring.set_events(self._tool_id, 0)
+            try:
+                sys.monitoring.free_tool_id(self._tool_id)
+            except ValueError:
+                pass
         else:
-            # Python 3.11 and below: Restore old trace
-            sys.settrace(self._old_trace)
+            # Restore outer context's monitoring callbacks and events.
+            if not isinstance(prev, types.MethodType):
+                raise AssertionError(
+                    f"Expected prev callback to be a MethodType, got {type(prev)}"
+                )
+            outer = cast("_DebugContext", prev.__self__)
+            sys.monitoring.register_callback(
+                self._tool_id,
+                sys.monitoring.events.INSTRUCTION,
+                outer._monitoring_instruction_callback,
+            )
+            sys.monitoring.register_callback(
+                self._tool_id,
+                sys.monitoring.events.PY_RETURN,
+                outer._monitoring_return_callback,
+            )
+            sys.monitoring.register_callback(
+                self._tool_id,
+                sys.monitoring.events.RAISE,
+                outer._monitoring_raise_callback,
+            )
+            sys.monitoring.set_events(self._tool_id, sys.monitoring.events.RAISE)
+            for code in outer._tracked_codes:
+                sys.monitoring.set_local_events(
+                    self._tool_id,
+                    code,
+                    sys.monitoring.events.INSTRUCTION
+                    | sys.monitoring.events.PY_RETURN,
+                )
 
         return False  # Don't suppress exceptions
 
