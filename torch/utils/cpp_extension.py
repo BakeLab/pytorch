@@ -416,7 +416,7 @@ _SYCL_DLINK_FLAGS = [
 
 JIT_EXTENSION_VERSIONER = ExtensionVersioner()
 
-min_supported_cpython = "0x030A0000"  # Python 3.10 hexcode
+min_supported_cpython = "0x030E0000"  # Python 3.14 hexcode
 
 def get_cxx_compiler():
     compiler = os.environ.get('CXX', 'c++')
