@@ -141,6 +141,10 @@ function(_pytorch_write_bundled_rocblas_version_script output_file)
   foreach(_symbol IN LISTS _required_rocblas_internal_symbols)
     string(APPEND _version_script "    ${_symbol};\n")
   endforeach()
+  # PyTorch's HIP libraries call this YAML loader from rocBLAS. Keep the
+  # Tensile namespace local by default, but export this required instantiation.
+  string(APPEND _version_script [=[    _ZN7Tensile19LLVMLoadLibraryFileINS_18ContractionProblemENS_19ContractionSolutionEEESt10shared_ptrINS_15SolutionLibraryIT_T0_EEERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERKSt6vectorINS_15LazyLoadingInitESaISI_EE;
+]=])
   string(APPEND _version_script [=[
   local:
     *rocblas_internal_*;
