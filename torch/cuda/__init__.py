@@ -1807,9 +1807,7 @@ class _CudaBase:
     is_sparse = False
 
     def type(self, *args, **kwargs):
-        # We could use a Protocol here to tell mypy that self has `get_device` method
-        # but it is only available in the typing module on Python >= 3.8
-        # or on typing_extensions module on Python >= 3.6
+        # We could use a Protocol here to tell mypy that self has `get_device` method.
         with device(self.get_device()):  # type: ignore[attr-defined]
             return super().type(*args, **kwargs)  # type: ignore[misc]
 

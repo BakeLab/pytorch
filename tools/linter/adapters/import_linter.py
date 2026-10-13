@@ -62,7 +62,6 @@ _MODULE_NAME_ALLOW_LIST.update(
         "_pytest",
         "tabulate",
         "optree",
-        "typing_extensions",
         "triton",
         "functorch",
         "torchrec",
