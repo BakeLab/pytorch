@@ -7,8 +7,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from time import perf_counter_ns
 from typing import Any, Optional
-from typing_extensions import deprecated
-from warnings import warn
+from warnings import deprecated, warn
 
 
 log = logging.getLogger(__name__)
