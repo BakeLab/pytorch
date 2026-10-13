@@ -409,8 +409,8 @@ def reduce_scatter_single_autograd(
 
 
 # The deprecated *_tensor aliases warn only outside compile: the
-# typing_extensions @deprecated wrapper lives in a Dynamo-skipped module, and a
-# raw warnings.warn is an untraceable builtin, either of which breaks
+# The standard-library @deprecated wrapper lives in a Dynamo-skipped module,
+# and a raw warnings.warn is an untraceable builtin, either of which breaks
 # fullgraph=True tracing of these still-supported entry points. Guarding on
 # is_compiling() keeps the eager-time deprecation while letting Dynamo trace
 # straight through to the _single implementation.

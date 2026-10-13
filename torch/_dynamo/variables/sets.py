@@ -19,8 +19,7 @@ import functools
 import operator
 import types
 from collections.abc import Iterable, Iterator
-from typing import Any, TYPE_CHECKING
-from typing_extensions import TypeIs
+from typing import Any, TYPE_CHECKING, TypeIs
 
 from torch.utils._ordered_set import OrderedSet
 
