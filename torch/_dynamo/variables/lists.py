@@ -16,8 +16,7 @@ variable tracking system.
 
 import collections
 import operator
-from typing import Any, Optional, TYPE_CHECKING
-from typing_extensions import TypeIs
+from typing import Any, Optional, TYPE_CHECKING, TypeIs
 
 import torch
 import torch.fx

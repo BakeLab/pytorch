@@ -16,8 +16,7 @@ import textwrap
 from abc import abstractmethod
 from collections.abc import Callable, Iterable, Sequence
 from functools import lru_cache
-from typing import Any, cast, TYPE_CHECKING, TypeVar
-from typing_extensions import override
+from typing import Any, cast, TYPE_CHECKING, TypeVar, override
 
 import sympy
 from sympy.printing.precedence import PRECEDENCE
