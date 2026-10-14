@@ -37,7 +37,6 @@ import re
 import sys
 import time
 import types
-import typing
 import weakref
 from collections.abc import Callable, MutableMapping
 from types import ModuleType

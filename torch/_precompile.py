@@ -270,8 +270,8 @@ import threading
 import types
 import uuid
 from collections.abc import (
-    Callable,  # noqa: TC003
-    Sequence,  # noqa: TC003
+    Callable,
+    Sequence,
 )
 from types import MappingProxyType
 from typing import (

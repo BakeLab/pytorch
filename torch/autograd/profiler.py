@@ -6,8 +6,8 @@ from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
 from time import perf_counter_ns
-from typing import Any, Optional
-from warnings import deprecated, warn
+from typing import Any
+from warnings import warn
 
 
 log = logging.getLogger(__name__)

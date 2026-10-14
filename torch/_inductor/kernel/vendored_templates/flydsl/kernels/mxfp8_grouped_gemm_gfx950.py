@@ -22,7 +22,6 @@
 
 import dataclasses
 import functools
-import os
 
 import torch
 from torch._inductor.runtime.flydsl_cache import run_cached_flydsl
@@ -95,9 +94,8 @@ def pick_tile(m_total: int, e: int, n: int, num_cus: int | None = None) -> tuple
         return br, bc
     # Shrink one step at a time, re-checking; partial-wave shapes gain from the
     # first step.
-    tiles_at = lambda r, c: (
-        max(1, e * ceildiv(max(m_total // e, 1), r)) * ceildiv(n, c)
-    )
+    def tiles_at(r, c):
+        return max(1, e * ceildiv(max(m_total // e, 1), r)) * ceildiv(n, c)
     if bc == 256 and n % 128 == 0:
         bc = 128
         if tiles_at(br, bc) >= starved:
@@ -734,7 +732,7 @@ def _compile(
     return launch_fwd
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def cached_launch(
     K: int, N: int, E: int, BLOCK_C: int, BLOCK_R: int = 256, PERSISTENT: bool = True
 ):

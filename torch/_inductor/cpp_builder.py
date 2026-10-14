@@ -1242,10 +1242,6 @@ def get_cpp_torch_device_options(
                 libraries += ["amdhip64"]
             else:
                 libraries += ["torch_hip"]
-                if _IS_WINDOWS:
-                    # Windows import libraries do not transitively resolve the
-                    # HIP runtime symbols referenced by the generated wrapper.
-                    libraries += ["amdhip64"]
             definitions.append(" __HIP_PLATFORM_AMD__")
         else:
             if not link_libtorch:

@@ -21,7 +21,7 @@ intends. Without the bound, real DSV3-16B shapes hit ``hipErrorIllegalAddress``.
 from __future__ import annotations
 
 import inspect
-from typing import Optional, Union
+from typing import Optional
 
 from flydsl._mlir import ir
 from flydsl._mlir.dialects import (
@@ -109,7 +109,7 @@ def create_buffer_resource(
     memref_val,
     max_size: bool = True,
     *,
-    num_records_bytes: Optional[Union[int, ir.Value]] = None,
+    num_records_bytes: Optional[int | ir.Value] = None,
 ):
     """A buffer resource descriptor (V#, `!llvm.ptr<8>`) over a fly.memref.
 
@@ -140,7 +140,7 @@ def buffer_load(
     offset,
     vec_width: int = 4,
     dtype=None,
-    soffset_bytes: Optional[Union[int, ir.Value]] = None,
+    soffset_bytes: Optional[int | ir.Value] = None,
     is_scalar: bool = False,
 ):
     """Load `vec_width` x `dtype` from `rsrc` at an ELEMENT offset.

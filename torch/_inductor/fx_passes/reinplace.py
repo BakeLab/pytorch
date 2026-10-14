@@ -18,8 +18,12 @@ from torch._higher_order_ops.triton_kernel_wrap import (
     kernel_side_table,
     triton_kernel_wrapper_functional,
 )
-from torch._inductor import inductor_prims
-from torch._inductor.fx_utils import get_node_storage, is_node_realized
+from torch._inductor import config, inductor_prims
+from torch._inductor.fx_utils import (
+    _same_size_stride_and_storage_offset,
+    get_node_storage,
+    is_node_realized,
+)
 from torch._inductor.lowering import (
     inplaceable_foreach_ops as inplaceable_foreach_ops_lowerings,
 )
