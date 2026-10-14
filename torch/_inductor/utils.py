@@ -2984,6 +2984,9 @@ def ensure_nv_universal_gemm_available() -> bool:
     """
     try:
         available = importlib.util.find_spec("cutlass.operators") is not None
+        if available:
+            _ensure_fp4_dtype_registered()
+        return available
     except (ImportError, ValueError):
         return False
 

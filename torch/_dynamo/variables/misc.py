@@ -26,6 +26,7 @@ import logging
 import random
 import re
 import sys
+import traceback
 import types
 import weakref
 from collections.abc import Callable, Sequence
@@ -78,6 +79,8 @@ from .base import (
     getset_build,
     Member,
     Method,
+    MutationType,
+    Setter,
     NO_SUCH_SUBOBJ,
     readonly_setter,
     unmodeled_setter,
@@ -89,7 +92,7 @@ from .functions import (
     UserFunctionVariable,
     UserMethodVariable,
 )
-from .object_protocol import mro_attr_source, python_constant_repr_impl
+from .object_protocol import generic_str, mro_attr_source, python_constant_repr_impl
 from .user_defined import (
     call_random_fn,
     is_standard_setattr,

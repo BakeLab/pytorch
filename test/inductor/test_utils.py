@@ -957,8 +957,26 @@ class TestRuntimeEstimation(_TestDeviceInfoTestCase):
         get_tflops.assert_called_once_with(torch.float32, device=device)
 
 
+@instantiate_parametrized_tests
 class TestFP4Support(TestCase):
     """Tests for FP4 (float4_e2m1fn_x2) infrastructure support."""
+
+    @parametrize("available", [False, True])
+    def test_ensure_nv_universal_gemm_availability(self, available):
+        from torch._inductor import utils
+
+        utils.ensure_nv_universal_gemm_available.cache_clear()
+        self.addCleanup(utils.ensure_nv_universal_gemm_available.cache_clear)
+        with (
+            mock.patch.object(
+                utils.importlib.util, "find_spec", return_value=object() if available else None
+            ),
+            mock.patch.object(utils, "_ensure_fp4_dtype_registered") as register_dtype,
+        ):
+            self.assertEqual(utils.ensure_nv_universal_gemm_available(), available)
+            self.assertEqual(register_dtype.call_count, int(available))
+            self.assertEqual(utils.ensure_nv_universal_gemm_available(), available)
+            self.assertEqual(register_dtype.call_count, int(available))
 
     def test_ensure_nv_universal_gemm_import_error(self):
         from torch._inductor import utils

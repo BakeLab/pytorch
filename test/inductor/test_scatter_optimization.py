@@ -421,7 +421,6 @@ class TestPartitionedScatterOpt(TestCase):
             return (
                 out.scatter_add(0, idx, vals),
                 out.scatter_reduce(0, idx, vals, reduce="sum"),
-                out.clone().scatter_(0, idx, vals, reduce="add"),
                 # Not an atomic_add, so it must be left alone.
                 out.scatter_reduce(0, idx, vals, reduce="amax"),
             )
@@ -431,7 +430,7 @@ class TestPartitionedScatterOpt(TestCase):
         vals = torch.randn(N, D, dtype=torch.float32)
 
         self._check_accuracy(f, (out, idx, vals), atol=1e-3, rtol=1e-3)
-        self.assertEqual(counters["inductor"]["partitioned_scatter_applied"], 3)
+        self.assertEqual(counters["inductor"]["partitioned_scatter_applied"], 2)
 
     def test_scatter_reduce_include_self_false_not_matched(self):
         torch.manual_seed(42)

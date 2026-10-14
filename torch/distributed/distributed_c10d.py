@@ -7474,7 +7474,7 @@ def new_subgroups(
 
     ranks = get_process_group_ranks(group=group)
     ranks_per_subgroup_list = [
-        list(batch) for batch in itertools.batched(ranks, group_size)
+        list(batch) for batch in itertools.batched(ranks, group_size, strict=True)
     ]
     subgroup, subgroups = new_subgroups_by_enumeration(
         ranks_per_subgroup_list,

@@ -1066,24 +1066,8 @@ def CppExtension(name, sources, *args, **kwargs):
 
 
 def _canonicalize_hip_source(source, build_dir):
-    """Return a canonical absolute path for a hipify source.
-
-    Only canonicalize sources that don't already live under ``build_dir``.
-    Realpath-ing every source would relocate a source that is legitimately
-    symlinked *into* the build dir to its real location outside it, which then
-    pushes the generated ``.hip`` file out of ``build_dir`` and breaks the
-    "paths relative to the setup.py directory" invariant. Restricting realpath
-    to sources outside ``build_dir`` still fixes the Windows ``subst`` drive /
-    symlinked-path case where a source resolves to a different spelling than
-    ``build_dir``. ``build_dir`` must already be resolved (``os.path.realpath``).
-    Only Windows needs this; on POSIX the abspath is returned unchanged, so a
-    file-level symlinked source keeps its generated ``.hip`` (and its quote
-    includes) next to the symlink rather than its target.
-    """
-    s_abs = os.path.abspath(source)
-    if not IS_WINDOWS or s_abs.startswith(build_dir + os.sep):
-        return s_abs
-    return os.path.realpath(source)
+    """Return the absolute path without relocating symlinked HIP sources."""
+    return os.path.abspath(source)
 
 
 def CUDAExtension(name, sources, *args, **kwargs):
@@ -2019,12 +2003,7 @@ def _jit_compile(name,
                 if IS_HIP_EXTENSION and (with_cuda or with_cudnn):
                     if hipify_python is None:
                         raise AssertionError("expected hipify_python to be not None")
-                    # Canonicalize sources that don't already live under the build
-                    # directory (same reasoning as `CUDAExtension`): this fixes the
-                    # Windows `subst` drive / symlinked-path case where a caller-supplied
-                    # source resolves to a different spelling than `build_directory`,
-                    # without relocating sources symlinked into the build directory.
-                    build_dir_real = os.path.realpath(build_directory) if IS_WINDOWS else build_directory
+                    build_dir_real = build_directory
 
                     hipify_result = hipify_python.hipify(
                         project_directory=build_dir_real,

@@ -250,7 +250,7 @@ class FakeTensorTest(TestCase):
 
     @unittest.skipIf(not torch.backends.cuda.is_built(), "requires CUDA build")
     def test_sparse_compressed_tensor_creation_device(self):
-        if torch._functorch.config.fake_tensor_propagate_real_tensors and not RUN_CUDA:
+        if torch._functorch.config.fake_tensor_propagate_real_tensors and not TEST_CUDA:
             self.skipTest("propagate_real_tensors requires real CUDA tensors")
         cuda0 = torch.device("cuda:0")
         with FakeTensorMode():
@@ -3852,7 +3852,7 @@ class FakeTensorDispatchCache(TestCase):
             z = x.to(device="cuda")
             self._test_cache_key(fm, x, y, z)
 
-    @unittest.skipIf(not RUN_CUDA, "requires cuda")
+    @unittest.skipIf(not TEST_CUDA, "requires cuda")
     def test_cache_key_indexless_device_pins_current_index(self):
         # An index-less device argument means "the current one", so it denotes a
         # different device depending on ambient state. Keying it unresolved lets a
