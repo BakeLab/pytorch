@@ -13,7 +13,7 @@ from collections import namedtuple
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from enum import Enum
 from functools import partial, wraps
-from typing import Any, ClassVar, TypeVar
+from typing import Any, ClassVar, override, TypeVar
 from typing import ParamSpec
 
 import torch

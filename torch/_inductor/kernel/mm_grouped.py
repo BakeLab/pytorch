@@ -1,7 +1,7 @@
 # mypy: allow-untyped-defs
 import logging
 from dataclasses import asdict, dataclass
-from typing import Any, cast
+from typing import Any
 
 import torch
 from torch._dynamo.utils import counters
@@ -9,7 +9,6 @@ from torch._inductor.codegen.cutedsl.cutedsl_template import CuteDSLTemplate
 from torch._inductor.heuristics.template.cutedsl import get_groupgemm_configs
 from torch._inductor.runtime.triton_compat import tl
 from torch._inductor.virtualized import V
-from torch.nn.functional import ScalingType, SwizzleType
 from torch.utils._triton import has_triton
 
 from ..ir import ChoiceCaller, Layout, TensorBox

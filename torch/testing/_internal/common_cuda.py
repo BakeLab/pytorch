@@ -11,7 +11,7 @@ import torch
 import torch.cuda
 from torch.testing._internal.common_utils import (
     _get_legacy_float32_matmul_precision, _set_legacy_float32_matmul_precision, LazyVal, TEST_NUMBA, TEST_WITH_ROCM,
-    TEST_CUDA, IS_WINDOWS, IS_MACOS, TEST_XPU, TEST_MTIA)
+    TEST_CUDA, IS_MACOS, TEST_XPU, TEST_MTIA)
 from torch.testing._internal.common_xpu import PLATFORM_SUPPORTS_FLASH_ATTENTION_XPU
 from torch.utils._import_utils import _check_module_exists
 import inspect
@@ -642,16 +642,7 @@ def xfailIfDistributedNotSupported(func):
     return func if not (IS_MACOS or IS_JETSON) else unittest.expectedFailure(func)
 
 def xfailCUDAIfSM89OrLaterOnWindows(test_fn):
-    """Mark a CUDA test as expected failure on Windows with NVIDIA SM >= 8.9.
-
-    Works for both device-parameterized tests and plain TestCase CUDA tests.
-    CPU/XPU variants of device-parameterized tests are unaffected.
-    """
-    return (
-        _xfail_cuda_on_windows_wrapper(test_fn)
-        if IS_WINDOWS and not TEST_WITH_ROCM and SM89OrLater
-        else test_fn
-    )
+    return test_fn
 
 
 # Importing this module should NOT eagerly initialize CUDA

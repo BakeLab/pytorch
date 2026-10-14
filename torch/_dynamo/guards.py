@@ -32,7 +32,6 @@ import io
 import itertools
 import logging
 import math
-import sys
 import textwrap
 import traceback
 import types
