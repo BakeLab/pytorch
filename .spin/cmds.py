@@ -139,7 +139,6 @@ VERY_FAST_LINTERS = {
     "ATEN_CPU_GPU_AGNOSTIC",
     "C10_NODISCARD",
     "C10_UNUSED",
-    "CALL_ONCE",
     "CMAKE_INSTALL_PREFIX_ROOT",
     "CMAKE_MINIMUM_REQUIRED",
     "CMAKE_PLATLIB_DESTINATION",
@@ -160,7 +159,6 @@ VERY_FAST_LINTERS = {
     "NEWLINE",
     "NOQA",
     "NO_WORKFLOWS_ON_FORK",
-    "ONCE_FLAG",
     "PYBIND11_INCLUDE",
     "PYBIND11_SPECIALIZATION",
     "PYPIDEP",
@@ -249,14 +247,15 @@ def _check_linter_python_versions():
             python_index = command.index("--python")
         except ValueError:
             python_index = -1
+        expected_python = "3.11" if linter["code"] == "FLAKE8" else "3.10"
         if python_index == -1 or command[python_index + 1 : python_index + 2] != [
-            "3.10"
+            expected_python
         ]:
-            invalid_linters.append(linter["code"])
+            invalid_linters.append(f"{linter['code']} (expected {expected_python})")
 
     if invalid_linters:
         raise click.ClickException(
-            "Linters using `uv run --script` must specify `--python 3.10`: "
+            "Linters using `uv run --script` must specify their expected Python version: "
             + ", ".join(invalid_linters)
         )
 

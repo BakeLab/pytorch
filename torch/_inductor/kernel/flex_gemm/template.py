@@ -1,6 +1,7 @@
 # mypy: allow-untyped-defs
 import dataclasses
-import logging
+from collections.abc import Callable, Sequence
+from contextlib import nullcontext
 from typing import Any, TYPE_CHECKING
 from typing import override
 

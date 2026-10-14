@@ -24,7 +24,7 @@ import sys
 import types
 import weakref
 from collections.abc import Callable, Iterator
-from typing import Any, cast, TYPE_CHECKING
+from typing import Any, cast, TYPE_CHECKING, TypeIs
 
 from torch.utils._pytree import MappingKey
 

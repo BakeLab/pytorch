@@ -18,10 +18,9 @@
 # assumption no live code here depends on.
 
 import flydsl.expr as fx
-from flydsl._mlir.dialects import fly as fly_dialect, llvm as _llvm
+from flydsl._mlir.dialects import llvm as _llvm
 from flydsl._mlir.dialects.fly_rocdl import TargetAddressSpace
-from flydsl.expr import arith, const_expr, range_constexpr
-from flydsl.expr.typing import Vector as Vec
+from flydsl.expr import const_expr, range_constexpr
 
 
 def make_fp8_buffer_tensor(arg_i8, fp8_ir_t):

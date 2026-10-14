@@ -11,7 +11,7 @@ Key classes include:
 
 import traceback
 import types
-from typing import Any, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING
 
 from torch._dynamo.variables.base import MutationType
 from torch._guards import Source
@@ -65,7 +65,7 @@ class TracebackVariable(VariableTracker):
     def __init__(
         self,
         frame_summary: FrameSummaryVariable,
-        tb_next: Union["TracebackVariable", ConstantVariable],
+        tb_next: "TracebackVariable" | ConstantVariable,
         **kwargs: Any,
     ) -> None:
         # The traceback holds four attributes:
@@ -85,7 +85,7 @@ class TracebackVariable(VariableTracker):
     def from_frame_summary(
         cls,
         frame_summary: traceback.FrameSummary,
-        tb_next: Union["TracebackVariable", ConstantVariable],
+        tb_next: "TracebackVariable" | ConstantVariable,
     ) -> "TracebackVariable":
         from .builder import SourcelessBuilder
 

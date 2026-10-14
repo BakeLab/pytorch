@@ -2599,7 +2599,6 @@ def _device_setters() -> dict[Any, str]:
         torch.xpu.set_device: "torch.xpu.set_device",
         torch.accelerator.set_device_index: "torch.accelerator.set_device_index",
         torch.accelerator.set_device_idx: "torch.accelerator.set_device_idx",
-        torch.mtia.set_device: "torch.mtia.set_device",
     }
 
 

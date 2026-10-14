@@ -70,11 +70,9 @@ _INDEX_ADD_TARGET = aten.index_add.default
 # dim and a values-shaped index.
 #   scatter_add(self, dim, index, src)
 #   scatter_reduce(self, dim, index, src, reduce, *, include_self)
-#   scatter(self, dim, index, src, *, reduce)
 _SCATTER_REDUCE_TARGETS = (
     aten.scatter_add.default,
     aten.scatter_reduce.two,
-    aten.scatter.reduce,
 )
 
 
@@ -88,7 +86,7 @@ def _is_summing_scatter(node: fx.Node) -> bool:
     reduce = node.kwargs.get("reduce")
     if reduce is None and len(node.args) > 4:
         reduce = node.args[4]
-    return reduce in ("sum", "add")
+    return reduce == "sum"
 
 
 def _scatter_falls_back(acc_dtype: torch.dtype) -> bool:
@@ -926,15 +924,11 @@ def _build_pattern_pass(ctx: ScatterPassContext) -> PatternMatcherPass:
 
     # dim is Ignored() because the replacement takes the normalized one off the
     # candidate; _is_summing_scatter already vetted reduce/include_self. By
-    # post-grad scatter_reduce carries reduce positionally, scatter.reduce as a
-    # kwarg.
+    # post-grad scatter_reduce carries reduce positionally.
     for scatter_pattern in (
         CallFunction(aten.scatter_add.default, Arg(), Ignored(), Ignored(), Arg()),
         CallFunction(
             aten.scatter_reduce.two, Arg(), Ignored(), Ignored(), Arg(), Ignored()
-        ),
-        CallFunction(
-            aten.scatter.reduce, Arg(), Ignored(), Ignored(), Arg(), reduce=Ignored()
         ),
     ):
         register_graph_pattern(

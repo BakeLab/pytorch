@@ -2,8 +2,7 @@
 
 import math
 import warnings
-from typing import Literal, TypeVar
-from typing import ParamSpec
+from typing import Literal
 
 import torch
 from torch import Tensor
@@ -27,9 +26,6 @@ __all__ = [
     "sparse_",
 ]
 
-
-_R = TypeVar("_R")
-_P = ParamSpec("_P")
 
 _NonlinearityType = Literal[
     "linear",
