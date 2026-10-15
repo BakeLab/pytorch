@@ -25,7 +25,7 @@ from torch._C._profiler import (
     _remove_execution_trace_observer,
 )
 from torch.autograd import kineto_available, ProfilerActivity
-from torch.monitor import _WaitCounter
+from torch._monitor import _WaitCounter
 from torch.profiler._memory_profiler import MemoryProfile, MemoryProfileTimeline
 from torch.profiler._trace_compression import _get_trace_file_opener
 

@@ -53,6 +53,17 @@ if TYPE_CHECKING:
 _CODE_CACHE = WeakIdKeyDictionary()
 
 
+def _globals_module(namespace: dict[str, object]) -> types.ModuleType | None:
+    """Return the owning module when *namespace* is its globals dictionary."""
+    name = namespace.get("__name__")
+    if not isinstance(name, str):
+        return None
+    module = sys.modules.get(name)
+    if isinstance(module, types.ModuleType) and vars(module) is namespace:
+        return module
+    return None
+
+
 def _code_cache(fn: Callable[..., Any]) -> Callable[..., Any]:
     def _(
         cls: type[Any], code: "SerializedCode" | types.CodeType
