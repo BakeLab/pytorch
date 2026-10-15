@@ -235,10 +235,11 @@ if(PYTORCH_FOUND_HIP)
   message("\n***** Library versions from cmake find_package *****\n")
   find_package_and_print_version(rocrand REQUIRED)
   find_package_and_print_version(hiprand REQUIRED)
-  include("${CMAKE_CURRENT_LIST_DIR}/../External/rocm_bundled.cmake")
-  print_package_version(rocblas)
-  print_package_version(miopen)
-  print_package_version(hipblaslt)
+  # rocBLAS, hipBLASLt and MIOpen come from the ROCm SDK (TheRock builds
+  # them for gfx1201 only), so PyTorch no longer builds or bundles its own.
+  find_package_and_print_version(rocblas REQUIRED)
+  find_package_and_print_version(miopen REQUIRED)
+  find_package_and_print_version(hipblaslt REQUIRED)
   find_package_and_print_version(hipblas REQUIRED)
   find_package_and_print_version(hipfft REQUIRED)
   find_package_and_print_version(hipsparse REQUIRED)
@@ -280,8 +281,6 @@ if(PYTORCH_FOUND_HIP)
   endif()
   message("libhipcxx VERSION: ${libhipcxx_VERSION}")
 
-  list(REMOVE_ITEM ROCM_INCLUDE_DIRS "${PYTORCH_ROCM_BUNDLED_PREFIX}/include")
-  list(PREPEND ROCM_INCLUDE_DIRS "${PYTORCH_ROCM_BUNDLED_PREFIX}/include")
   list(REMOVE_DUPLICATES ROCM_INCLUDE_DIRS)
 
   # roctx is part of roctracer

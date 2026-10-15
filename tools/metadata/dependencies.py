@@ -62,12 +62,17 @@ def dynamic_metadata(
     if extra:
         deps.extend(r.strip() for r in extra.split("|") if r.strip())
     elif _is_truthy(os.environ.get("USE_ROCM")):
-        try:
-            rocm_version = version("rocm")
-        except PackageNotFoundError:
-            pass
-        else:
-            deps.append(f"rocm[libraries]=={rocm_version}")
+        # Pin the ROCm SDK wheels the build used, including the device wheel with
+        # the GPU code objects: PYTORCH_ROCM_SDK_VERSION when
+        # building against an unpacked SDK, else the installed rocm package.
+        rocm_version = os.environ.get("PYTORCH_ROCM_SDK_VERSION")
+        if not rocm_version:
+            try:
+                rocm_version = version("rocm")
+            except PackageNotFoundError:
+                rocm_version = None
+        if rocm_version:
+            deps.append(f"rocm[libraries,device]=={rocm_version}")
 
     # cupti-python has no free-threaded wheels; PEP 508 cannot express this ABI constraint.
     if sysconfig.get_config_var("Py_GIL_DISABLED"):
