@@ -61,7 +61,9 @@ def dynamic_metadata(
     extra = os.environ.get("PYTORCH_EXTRA_INSTALL_REQUIREMENTS")
     if extra:
         deps.extend(r.strip() for r in extra.split("|") if r.strip())
-    elif _is_truthy(os.environ.get("USE_ROCM")):
+    elif _is_truthy(os.environ.get("USE_ROCM")) and not _is_truthy(
+        os.environ.get("PYTORCH_ROCM_EXTERNAL_SDK")
+    ):
         try:
             rocm_version = version("rocm")
         except PackageNotFoundError:
