@@ -205,6 +205,22 @@ ArrayRef(const std::initializer_list<T>&) -> ArrayRef<T>;
 
 /// @}
 
+// Keep a stream overload for ArrayRef itself. The inherited hidden friend on
+// HeaderOnlyArrayRef is not found when c10::str streams an ArrayRef through a
+// dependent expression in StringUtil.h.
+template <typename T>
+std::ostream& operator<<(std::ostream& out, ArrayRef<T> list) {
+  int i = 0;
+  out << '[';
+  for (const auto& e : list) {
+    if (i++ > 0)
+      out << ", ";
+    out << e;
+  }
+  out << ']';
+  return out;
+}
+
 /// @name ArrayRef Convenience constructors
 /// @{
 
