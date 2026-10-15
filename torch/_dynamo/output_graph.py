@@ -3511,6 +3511,8 @@ class OutputGraph(OutputGraphCommon):
                     arg = node.meta["grapharg"]
                     if isinstance(arg, BackwardStateGraphArg):
                         continue
+                    if is_custom_class(type(arg.example)):
+                        continue
                     if isinstance(node.meta["grapharg"].example, torch.ScriptObject):
                         real_script_obj = node.meta["grapharg"].example
                         fake_script_obj = node.meta["grapharg"].example_strong_ref
@@ -3527,8 +3529,6 @@ class OutputGraph(OutputGraphCommon):
                                     lambda t: update_used_symbols(used_symbols, t),
                                     fake_attr_val,
                                 )
-                        continue
-                    if is_custom_class(type(node.meta["grapharg"].example)):
                         continue
                     fake = (
                         arg.fake_tensor if arg.fake_tensor is not None else arg.example
