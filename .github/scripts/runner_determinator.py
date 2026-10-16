@@ -129,6 +129,7 @@ class RunnerPrefixResult(NamedTuple):
     prefix: str
     amd_sandbox_prefix: str = ""
     amd_dpx_prefix: str = ""
+    lf_restrict_runners: bool = True
 
 
 class Settings(NamedTuple):
@@ -684,6 +685,7 @@ def get_runner_prefix(
         prefix=prefix,
         amd_sandbox_prefix=amd_sandbox_prefix,
         amd_dpx_prefix=amd_dpx_prefix,
+        lf_restrict_runners=lf_restrict_runners,
     )
 
 
@@ -797,6 +799,7 @@ def main() -> None:
     runner_label_prefix = META_LABEL_PREFIX
     amd_sandbox_label_prefix = ""
     amd_dpx_label_prefix = ""
+    lf_restrict_runners = True
 
     # no-runner-experiments means "use Meta, not LF": opt out of the lf
     # experiment, so the run stays on the default Meta fleet.
@@ -837,6 +840,7 @@ def main() -> None:
         runner_label_prefix = result.prefix
         amd_sandbox_label_prefix = result.amd_sandbox_prefix
         amd_dpx_label_prefix = result.amd_dpx_prefix
+        lf_restrict_runners = result.lf_restrict_runners
 
     except Exception as e:
         log.error(
