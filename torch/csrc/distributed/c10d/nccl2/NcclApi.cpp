@@ -9,6 +9,14 @@
 
 namespace c10d::nccl2 {
 
+#if defined(USE_ROCM)
+MaterializedCollectiveConfig materializeCollConfig(
+    const OptionalCollectiveConfig&) {
+  // Per-collective NCCL configuration is not available in ROCm builds.
+  return {};
+}
+#endif
+
 // DefaultNcclApi implementation
 std::string_view DefaultNcclApi::getErrorString(ncclResult_t result) {
   std::lock_guard<std::mutex> lock(api_mutex_);
@@ -159,7 +167,8 @@ ncclResult_t DefaultNcclApi::broadcast(
     ncclDataType_t datatype,
     int root,
     ncclComm_t comm,
-    cudaStream_t stream) {
+    cudaStream_t stream,
+    const MaterializedCollectiveConfig&) {
   std::lock_guard<std::mutex> lock(api_mutex_);
   return ncclBroadcast(sendbuff, recvbuff, count, datatype, root, comm, stream);
 }
@@ -170,7 +179,8 @@ ncclResult_t DefaultNcclApi::bcast(
     ncclDataType_t datatype,
     int root,
     ncclComm_t comm,
-    cudaStream_t stream) {
+    cudaStream_t stream,
+    const MaterializedCollectiveConfig&) {
   std::lock_guard<std::mutex> lock(api_mutex_);
   return ncclBcast(buff, count, datatype, root, comm, stream);
 }
@@ -182,7 +192,8 @@ ncclResult_t DefaultNcclApi::allReduce(
     ncclDataType_t datatype,
     ncclRedOp_t op,
     ncclComm_t comm,
-    cudaStream_t stream) {
+    cudaStream_t stream,
+    const MaterializedCollectiveConfig&) {
   std::lock_guard<std::mutex> lock(api_mutex_);
   return ncclAllReduce(sendbuff, recvbuff, count, datatype, op, comm, stream);
 }
@@ -195,7 +206,8 @@ ncclResult_t DefaultNcclApi::reduce(
     ncclRedOp_t op,
     int root,
     ncclComm_t comm,
-    cudaStream_t stream) {
+    cudaStream_t stream,
+    const MaterializedCollectiveConfig&) {
   std::lock_guard<std::mutex> lock(api_mutex_);
   return ncclReduce(
       sendbuff, recvbuff, count, datatype, op, root, comm, stream);
@@ -207,7 +219,8 @@ ncclResult_t DefaultNcclApi::allGather(
     size_t sendcount,
     ncclDataType_t datatype,
     ncclComm_t comm,
-    cudaStream_t stream) {
+    cudaStream_t stream,
+    const MaterializedCollectiveConfig&) {
   std::lock_guard<std::mutex> lock(api_mutex_);
   return ncclAllGather(sendbuff, recvbuff, sendcount, datatype, comm, stream);
 }
@@ -219,7 +232,8 @@ ncclResult_t DefaultNcclApi::reduceScatter(
     ncclDataType_t datatype,
     ncclRedOp_t op,
     ncclComm_t comm,
-    cudaStream_t stream) {
+    cudaStream_t stream,
+    const MaterializedCollectiveConfig&) {
   std::lock_guard<std::mutex> lock(api_mutex_);
   return ncclReduceScatter(
       sendbuff, recvbuff, recvcount, datatype, op, comm, stream);
@@ -231,9 +245,28 @@ ncclResult_t DefaultNcclApi::allToAll(
     size_t count,
     ncclDataType_t datatype,
     ncclComm_t comm,
-    cudaStream_t stream) {
+    cudaStream_t stream,
+    const MaterializedCollectiveConfig&) {
   std::lock_guard<std::mutex> lock(api_mutex_);
   return ncclAlltoAll(sendbuff, recvbuff, count, datatype, comm, stream);
+}
+
+ncclResult_t DefaultNcclApi::gather(
+    const void* sendbuff,
+    void* recvbuff,
+    size_t count,
+    ncclDataType_t datatype,
+    int root,
+    ncclComm_t comm,
+    cudaStream_t stream,
+    const MaterializedCollectiveConfig&) {
+#if NCCL_VERSION_CODE >= NCCL_VERSION(2, 28, 3) && !defined(USE_ROCM)
+  std::lock_guard<std::mutex> lock(api_mutex_);
+  return ncclGather(sendbuff, recvbuff, count, datatype, root, comm, stream);
+#else
+  std::ignore = std::tie(sendbuff, recvbuff, count, datatype, root, comm, stream);
+  return ncclInvalidUsage;
+#endif
 }
 
 ncclResult_t DefaultNcclApi::groupStart() {
