@@ -39,7 +39,7 @@ constexpr int MAX_N_TEAMS = 128;
 // A pool of teams for each group. These are duplicate teams.
 #if defined(USE_ROCM)
 using TeamHandle = rocshmem::rocshmem_team_t;
-constexpr TeamHandle INVALID_TEAM = rocshmem::ROCSHMEM_TEAM_INVALID;
+const TeamHandle INVALID_TEAM = rocshmem::ROCSHMEM_TEAM_INVALID;
 #else
 using TeamHandle = nvshmem_team_t;
 constexpr TeamHandle INVALID_TEAM = NVSHMEM_TEAM_INVALID;
