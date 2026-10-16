@@ -9,6 +9,14 @@
 
 namespace c10d::nccl2 {
 
+#if defined(USE_ROCM)
+MaterializedCollectiveConfig materializeCollConfig(
+    const OptionalCollectiveConfig&) {
+  // Per-collective NCCL configuration is not available in ROCm builds.
+  return {};
+}
+#endif
+
 // DefaultNcclApi implementation
 std::string_view DefaultNcclApi::getErrorString(ncclResult_t result) {
   std::lock_guard<std::mutex> lock(api_mutex_);
