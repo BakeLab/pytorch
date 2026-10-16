@@ -243,6 +243,24 @@ ncclResult_t DefaultNcclApi::allToAll(
   return ncclAlltoAll(sendbuff, recvbuff, count, datatype, comm, stream);
 }
 
+ncclResult_t DefaultNcclApi::gather(
+    const void* sendbuff,
+    void* recvbuff,
+    size_t count,
+    ncclDataType_t datatype,
+    int root,
+    ncclComm_t comm,
+    cudaStream_t stream,
+    const MaterializedCollectiveConfig&) {
+#if NCCL_VERSION_CODE >= NCCL_VERSION(2, 28, 3) && !defined(USE_ROCM)
+  std::lock_guard<std::mutex> lock(api_mutex_);
+  return ncclGather(sendbuff, recvbuff, count, datatype, root, comm, stream);
+#else
+  std::ignore = std::tie(sendbuff, recvbuff, count, datatype, root, comm, stream);
+  return ncclInvalidUsage;
+#endif
+}
+
 ncclResult_t DefaultNcclApi::groupStart() {
   std::lock_guard<std::mutex> lock(api_mutex_);
   return ncclGroupStart();
