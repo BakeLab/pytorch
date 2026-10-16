@@ -5,13 +5,20 @@
 #include <ATen/Dispatch.h>
 #include <ATen/native/DispatchStub.h>
 #include <ATen/native/TensorIterator.h>
+#include <type_traits>
 
 namespace at::native {
 
 template<typename scalar_t>
 struct AbsFunctor {
   __device__ __forceinline__ scalar_t operator() (const scalar_t a) const {
-    return std::abs(a);
+    if constexpr (std::is_same_v<scalar_t, at::Half> ||
+                  std::is_same_v<scalar_t, at::BFloat16> ||
+                  std::is_same_v<scalar_t, at::Float8_e5m2>) {
+      return scalar_t(fabsf(static_cast<float>(a)));
+    } else {
+      return std::abs(a);
+    }
   }
 };
 
