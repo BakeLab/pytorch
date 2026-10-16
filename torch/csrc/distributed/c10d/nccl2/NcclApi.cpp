@@ -9,13 +9,13 @@
 
 namespace c10d::nccl2 {
 
-#if defined(USE_ROCM)
 MaterializedCollectiveConfig materializeCollConfig(
-    const OptionalCollectiveConfig&) {
-  // Per-collective NCCL configuration is not available in ROCm builds.
+    const OptionalCollectiveConfig& config) {
+  TORCH_CHECK(
+      !config.has_value() || config->empty(),
+      "Per-collective NCCL configuration is not supported in this build");
   return {};
 }
-#endif
 
 // DefaultNcclApi implementation
 std::string_view DefaultNcclApi::getErrorString(ncclResult_t result) {
