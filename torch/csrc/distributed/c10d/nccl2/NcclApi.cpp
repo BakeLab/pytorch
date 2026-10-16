@@ -159,7 +159,8 @@ ncclResult_t DefaultNcclApi::broadcast(
     ncclDataType_t datatype,
     int root,
     ncclComm_t comm,
-    cudaStream_t stream) {
+    cudaStream_t stream,
+    const MaterializedCollectiveConfig&) {
   std::lock_guard<std::mutex> lock(api_mutex_);
   return ncclBroadcast(sendbuff, recvbuff, count, datatype, root, comm, stream);
 }
@@ -170,7 +171,8 @@ ncclResult_t DefaultNcclApi::bcast(
     ncclDataType_t datatype,
     int root,
     ncclComm_t comm,
-    cudaStream_t stream) {
+    cudaStream_t stream,
+    const MaterializedCollectiveConfig&) {
   std::lock_guard<std::mutex> lock(api_mutex_);
   return ncclBcast(buff, count, datatype, root, comm, stream);
 }
@@ -182,7 +184,8 @@ ncclResult_t DefaultNcclApi::allReduce(
     ncclDataType_t datatype,
     ncclRedOp_t op,
     ncclComm_t comm,
-    cudaStream_t stream) {
+    cudaStream_t stream,
+    const MaterializedCollectiveConfig&) {
   std::lock_guard<std::mutex> lock(api_mutex_);
   return ncclAllReduce(sendbuff, recvbuff, count, datatype, op, comm, stream);
 }
@@ -195,7 +198,8 @@ ncclResult_t DefaultNcclApi::reduce(
     ncclRedOp_t op,
     int root,
     ncclComm_t comm,
-    cudaStream_t stream) {
+    cudaStream_t stream,
+    const MaterializedCollectiveConfig&) {
   std::lock_guard<std::mutex> lock(api_mutex_);
   return ncclReduce(
       sendbuff, recvbuff, count, datatype, op, root, comm, stream);
@@ -207,7 +211,8 @@ ncclResult_t DefaultNcclApi::allGather(
     size_t sendcount,
     ncclDataType_t datatype,
     ncclComm_t comm,
-    cudaStream_t stream) {
+    cudaStream_t stream,
+    const MaterializedCollectiveConfig&) {
   std::lock_guard<std::mutex> lock(api_mutex_);
   return ncclAllGather(sendbuff, recvbuff, sendcount, datatype, comm, stream);
 }
@@ -219,7 +224,8 @@ ncclResult_t DefaultNcclApi::reduceScatter(
     ncclDataType_t datatype,
     ncclRedOp_t op,
     ncclComm_t comm,
-    cudaStream_t stream) {
+    cudaStream_t stream,
+    const MaterializedCollectiveConfig&) {
   std::lock_guard<std::mutex> lock(api_mutex_);
   return ncclReduceScatter(
       sendbuff, recvbuff, recvcount, datatype, op, comm, stream);
@@ -231,7 +237,8 @@ ncclResult_t DefaultNcclApi::allToAll(
     size_t count,
     ncclDataType_t datatype,
     ncclComm_t comm,
-    cudaStream_t stream) {
+    cudaStream_t stream,
+    const MaterializedCollectiveConfig&) {
   std::lock_guard<std::mutex> lock(api_mutex_);
   return ncclAlltoAll(sendbuff, recvbuff, count, datatype, comm, stream);
 }
