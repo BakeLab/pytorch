@@ -996,6 +996,13 @@ class TestOpaqueObject(TestCase):
         self.assertIsInstance(fake_queue, FakeScriptObject)
         self.assertIsInstance(fake_rng, FakeScriptObject)
 
+    def test_fake_script_object_conversion_preserves_existing_wrapper(self):
+        queue = OpaqueQueue([], torch.zeros(3))
+        fake_mode = FakeTensorMode(shape_env=ShapeEnv())
+        with fake_mode:
+            fake_queue = maybe_to_fake_obj(fake_mode, queue)
+            self.assertIs(maybe_to_fake_obj(fake_mode, fake_queue), fake_queue)
+
     def test_isinstance_opaque_base_covers_all_opaque_types(self):
         # isinstance(x, CustomClassBase) should match all registered opaque types,
         # not just classes that directly subclass CustomClassBase.

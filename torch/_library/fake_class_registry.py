@@ -234,6 +234,9 @@ def maybe_to_fake_obj(
 ) -> FakeScriptObject | torch.ScriptObject:
     import torch.utils._pytree as pytree
 
+    if isinstance(x, FakeScriptObject):
+        return x
+
     # When tracing with real mode, people should implement meta kernels that can
     # handle the case of real script object + fake tensor inputs.
     if tracing_with_real(x):
