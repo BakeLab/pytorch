@@ -2173,10 +2173,10 @@ class DeviceCachingAllocator {
     }
     offset = static_cast<const char*>(block->ptr) -
         static_cast<const char*>(base_block->ptr);
-    sycl::ext::oneapi::experimental::ipc_memory::handle handle =
-        sycl::ext::oneapi::experimental::ipc_memory::get(
+    sycl::ext::oneapi::experimental::ipc::handle handle =
+        sycl::ext::oneapi::experimental::ipc::memory::get(
             base_block->ptr, c10::xpu::get_device_context());
-    sycl::ext::oneapi::experimental::ipc_memory::handle_data_t handle_data =
+    sycl::ext::oneapi::experimental::ipc::handle_data_t handle_data =
         handle.data();
     TORCH_INTERNAL_ASSERT(
         handle_data.size() <= std::numeric_limits<char>::max(),
@@ -2302,24 +2302,24 @@ class NativeCachingAllocator : public XPUAllocator {
           type == SHAREABLE_XPU_MALLOC,
           "unexpected or illformed shareable handle type.");
       auto handle_size = static_cast<size_t>(ss.get());
-      sycl::ext::oneapi::experimental::ipc_memory::handle_data_t handle_data(
+      sycl::ext::oneapi::experimental::ipc::handle_data_t handle_data(
           handle_size);
       ss.read(
           reinterpret_cast<char*>(handle_data.data()),
           static_cast<std::streamsize>(handle_size));
 
-      xpu_ipc_ptr = sycl::ext::oneapi::experimental::ipc_memory::open(
+      xpu_ipc_ptr = sycl::ext::oneapi::experimental::ipc::memory::open(
           handle_data,
           c10::xpu::get_device_context(),
           c10::xpu::get_raw_device(device));
     }
 
     // clear() must be called explicitly to release IPC resources. Using a
-    // destructor would risk calling ipc_memory::close after the SYCL runtime
+    // destructor would risk calling ipc::memory::close after the SYCL runtime
     // has already shut down during process exit.
     void clear() {
       if (xpu_ipc_ptr) {
-        sycl::ext::oneapi::experimental::ipc_memory::close(
+        sycl::ext::oneapi::experimental::ipc::memory::close(
             xpu_ipc_ptr, c10::xpu::get_device_context());
         xpu_ipc_ptr = nullptr;
       }

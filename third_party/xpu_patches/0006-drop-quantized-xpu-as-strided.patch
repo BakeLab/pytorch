@@ -1,7 +1,7 @@
 diff --git a/src/ATen/native/xpu/TensorShape.cpp b/src/ATen/native/xpu/TensorShape.cpp
 --- a/src/ATen/native/xpu/TensorShape.cpp
 +++ b/src/ATen/native/xpu/TensorShape.cpp
-@@ -24,21 +24,11 @@ namespace at {
+@@ -24,20 +24,10 @@ namespace at {
 
  namespace native {
 
