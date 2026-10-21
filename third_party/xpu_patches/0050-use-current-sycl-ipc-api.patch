@@ -1,0 +1,29 @@
+diff --git a/src/xccl/XPUSymmetricMemory.cpp b/src/xccl/XPUSymmetricMemory.cpp
+--- a/src/xccl/XPUSymmetricMemory.cpp
++++ b/src/xccl/XPUSymmetricMemory.cpp
+@@ -409,9 +409,9 @@
+   sycl::device dev = current_queue.get_device();
+
+   namespace syclexp = sycl::ext::oneapi::experimental;
+-  syclexp::ipc_memory::handle local_handle =
+-      syclexp::ipc_memory::get(base_ptr, ctx);
+-  syclexp::ipc_memory::handle_data_t local_handle_bytes = local_handle.data();
++  syclexp::ipc::handle local_handle =
++      syclexp::ipc::memory::get(base_ptr, ctx);
++  syclexp::ipc::handle_data_t local_handle_bytes = local_handle.data();
+   std::vector<uint8_t> local_payload(
+       reinterpret_cast<const uint8_t*>(local_handle_bytes.data()),
+       reinterpret_cast<const uint8_t*>(local_handle_bytes.data()) +
+@@ -435,10 +435,10 @@
+     }
+
+     const auto& payload = peer_handle_payloads[r];
+-    syclexp::ipc_memory::handle_data_t peer_bytes(
++    syclexp::ipc::handle_data_t peer_bytes(
+         reinterpret_cast<const std::byte*>(payload.data()),
+         reinterpret_cast<const std::byte*>(payload.data()) + payload.size());
+-    void* remote_base = syclexp::ipc_memory::open(peer_bytes, ctx, dev);
++    void* remote_base = syclexp::ipc::memory::open(peer_bytes, ctx, dev);
+
+     handles[r] = remote_base;
+     buffers[r] = remote_base;

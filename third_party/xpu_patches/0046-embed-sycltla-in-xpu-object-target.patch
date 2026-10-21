@@ -1,18 +1,18 @@
 diff --git a/src/BuildOnLinux.cmake b/src/BuildOnLinux.cmake
-index 042fdb6..ae3da83 100644
+index d37511b3..1d6374fe 100644
 --- a/src/BuildOnLinux.cmake
 +++ b/src/BuildOnLinux.cmake
 @@ -8,6 +8,10 @@
- 
+
  # Build on Linux
- 
+
 +if(USE_SYCLTLA)
 +  set(BUILD_SEPARATE_OPS OFF)
 +endif()
 +
  set(TORCH_XPU_OPS_LIBRARIES)
  set(SYCL_LINK_LIBRARIES_KEYWORD PRIVATE)
- 
+
 @@ -77,7 +81,13 @@ else()
      torch_xpu_ops
      OBJECT
@@ -28,12 +28,32 @@ index 042fdb6..ae3da83 100644
    if(USE_C10D_XCCL)
      target_compile_definitions(torch_xpu_ops PRIVATE USE_C10D_XCCL)
      target_link_libraries(torch_xpu_ops  PUBLIC torch::xccl)
-@@ -91,7 +101,7 @@ else()
+@@ -91,28 +101,6 @@ else()
    list(APPEND TORCH_XPU_OPS_LIBRARIES torch_xpu_ops)
  endif()
- 
+
 -if(USE_SYCLTLA)
-+if(USE_SYCLTLA AND BUILD_SEPARATE_OPS)
-   set(REPLACE_FLAGS_FOR_SYCLTLA TRUE)
-   set_build_flags()
- 
+-  set(REPLACE_FLAGS_FOR_SYCLTLA TRUE)
+-  set_build_flags()
+-
+-  set(sycl_lib torch-xpu-ops-sycltla)
+-  sycl_add_library(
+-    ${sycl_lib}
+-    SHARED
+-    SYCL_SOURCES ${ATen_XPU_SYCLTLA_SRCS})
+-  target_link_libraries(torch_xpu_ops PUBLIC ${sycl_lib})
+-  list(APPEND TORCH_XPU_OPS_LIBRARIES ${sycl_lib})
+-
+-  install(TARGETS ${sycl_lib} DESTINATION "${TORCH_INSTALL_LIB_DIR}")
+-
+-  # Set Compile options for sycltla kernels
+-  target_compile_definitions(${sycl_lib} PRIVATE ${SYCLTLA_COMPILE_DEFINITIONS})
+-  target_include_directories(${sycl_lib} PRIVATE ${SYCLTLA_INCLUDE_DIRS})
+-  target_include_directories(${sycl_lib} PRIVATE ${ATen_XPU_FLASH_ATTN_DIRS})
+-
+-  set(REPLACE_FLAGS_FOR_SYCLTLA FALSE)
+-  set_build_flags()
+-endif()
+
+ set(SYCL_LINK_LIBRARIES_KEYWORD)
+

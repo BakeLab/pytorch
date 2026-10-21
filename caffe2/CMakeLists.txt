@@ -957,7 +957,7 @@ if(USE_XPU)
 
   # ATen XPU implementation
   set(TORCH_XPU_OPS_DIR ${TORCH_ROOT}/third_party/torch-xpu-ops)
-  set(TORCH_XPU_OPS_REPO_URL https://github.com/intel/torch-xpu-ops.git)
+  set(TORCH_XPU_OPS_REPO_URL https://github.com/BakeLab/torch-xpu-ops.git)
   file(READ "${TORCH_ROOT}/third_party/xpu.txt" TORCH_XPU_OPS_COMMIT)
   string(REGEX REPLACE "\n$" "" TORCH_XPU_OPS_COMMIT "${TORCH_XPU_OPS_COMMIT}")
   if(NOT EXISTS "${TORCH_XPU_OPS_DIR}/.git")
@@ -968,6 +968,11 @@ if(USE_XPU)
       message(FATAL_ERROR "Fail to clone ${TORCH_XPU_OPS_REPO_URL}")
     endif()
   endif()
+  # Existing build trees must follow the configured fork as well.
+  execute_process(
+    COMMAND git remote set-url origin ${TORCH_XPU_OPS_REPO_URL}
+    WORKING_DIRECTORY ${TORCH_XPU_OPS_DIR}
+    COMMAND_ERROR_IS_FATAL ANY)
   execute_process(
     COMMAND git rev-parse HEAD
     WORKING_DIRECTORY ${TORCH_XPU_OPS_DIR}
@@ -1034,6 +1039,7 @@ if(USE_XPU)
   if(NOT TARGET torch_xpu_ops)
     message(WARNING "Failed to include ATen XPU implementation target")
   else()
+    target_compile_definitions(torch_xpu_ops PRIVATE USE_XPU)
     # USE_C10D_XCCL to decide if XCCL backend is enabled in torch-xpu-ops build.
     if(USE_C10D_XCCL)
       target_compile_definitions(torch_xpu PUBLIC USE_C10D_XCCL)
@@ -1343,6 +1349,9 @@ if(USE_ROCM)
 endif()
 
 if(USE_XPU)
+  # DispatchStub includes an XPU slot only when USE_XPU is defined. Keep
+  # its layout and dispatch cases consistent across CPU and XPU targets.
+  target_compile_definitions(torch_cpu PUBLIC USE_XPU)
   target_compile_definitions(torch_xpu PRIVATE TORCH_XPU_BUILD_MAIN_LIB)
 endif()
 

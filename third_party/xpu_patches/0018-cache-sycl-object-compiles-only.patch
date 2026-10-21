@@ -1,10 +1,13 @@
 diff --git a/cmake/Modules/FindSYCL.cmake b/cmake/Modules/FindSYCL.cmake
+index 523faead..20b204a2 100644
 --- a/cmake/Modules/FindSYCL.cmake
 +++ b/cmake/Modules/FindSYCL.cmake
-@@ -209,0 +210,3 @@
-+      # Apply the compiler launcher to individual SYCL object compiles.
-+      set(SYCL_compiler_launcher ${CMAKE_SYCL_COMPILER_LAUNCHER})
-+
-@@ -327 +330 @@
+@@ -397,7 +397,7 @@ macro(SYCL_LINK_DEVICE_OBJECTS output_file sycl_target)
+       OUTPUT ${output_file}
+       DEPENDS ${object_files} ${SYCL_device_link_extra_depends}
+       COMMAND ${CMAKE_COMMAND} -E make_directory "$<PATH:REMOVE_FILENAME,${output_file}>"
 -      COMMAND ${CMAKE_SYCL_COMPILER_LAUNCHER} ${SYCL_EXECUTABLE}
 +      COMMAND ${SYCL_EXECUTABLE}
+       ${SYCL_device_link_flags}
+       -fsycl-link ${SYCL_device_link_inputs}
+       -Xs ${SYCL_OFFLINE_COMPILER_FLAGS}
