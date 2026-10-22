@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 import torch
 from torch.types import Storage
@@ -10,6 +12,7 @@ __all__: list[str] = [
     "gds_register_buffer",
     "gds_deregister_buffer",
     "GdsFile",
+    "GdsIO",
 ]
 
 
@@ -40,10 +43,6 @@ if not is_available():
         raise AssertionError(
             "_gds_register_handle exists but _gds_register_buffer does not"
         )
-    if hasattr(torch._C, "_gds_deregister_handle"):
-        raise AssertionError(
-            "_gds_deregister_handle exists but _gds_register_buffer does not"
-        )
     if hasattr(torch._C, "_gds_load_storage"):
         raise AssertionError(
             "_gds_load_storage exists but _gds_register_buffer does not"
@@ -52,11 +51,11 @@ if not is_available():
         raise AssertionError(
             "_gds_save_storage exists but _gds_register_buffer does not"
         )
+    torch._C.__dict__["_gds_submit"] = _dummy_fn("_gds_submit")
     # Define functions
     torch._C.__dict__["_gds_register_buffer"] = _dummy_fn("_gds_register_buffer")
     torch._C.__dict__["_gds_deregister_buffer"] = _dummy_fn("_gds_deregister_buffer")
     torch._C.__dict__["_gds_register_handle"] = _dummy_fn("_gds_register_handle")
-    torch._C.__dict__["_gds_deregister_handle"] = _dummy_fn("_gds_deregister_handle")
     torch._C.__dict__["_gds_load_storage"] = _dummy_fn("_gds_load_storage")
     torch._C.__dict__["_gds_save_storage"] = _dummy_fn("_gds_save_storage")
 
@@ -98,6 +97,29 @@ def gds_deregister_buffer(s: Storage) -> None:
     torch._C._gds_deregister_buffer(s)
 
 
+
+class GdsIO:
+    """Pending cuFile/hipFile I/O returned by :class:`GdsFile`.
+
+    Call :meth:`wait` before accessing a read destination or modifying a write
+    source. The operation retains its storages and file descriptor. Dropping
+    it without waiting is safe but blocks; use wait() to observe I/O errors.
+    Do not resize or explicitly deregister buffers while I/O is pending.
+    """
+
+    def __init__(self, request: torch._C._GdsIO, stream: torch.cuda.Stream):
+        self._request = request
+        self._stream = stream
+
+    def wait(self) -> None:
+        """Wait for completion and raise on I/O errors, including short reads."""
+        self._request.wait()
+
+    def __del__(self) -> None:
+        # Destroy the native request before releasing the stream reference.
+        del self._request
+
+
 class GdsFile:
     r"""Wrapper around a file registered with the GPUDirect Storage (GDS) driver.
 
@@ -135,7 +157,7 @@ class GdsFile:
         self.filename = filename
         self.flags = flags
         self.fd = os.open(filename, flags | os.O_DIRECT)  # type: ignore[attr-defined]
-        self.handle: int | None = None
+        self.handle: torch._C._GdsHandle | None = None
         self.register_handle()
 
     def __del__(self) -> None:
@@ -171,7 +193,6 @@ class GdsFile:
         """
         if self.handle is None:
             raise AssertionError("Cannot deregister a handle that is not registered.")
-        torch._C._gds_deregister_handle(self.handle)
         self.handle = None
 
     def load_storage(self, storage: Storage, offset: int = 0) -> None:
@@ -202,3 +223,67 @@ class GdsFile:
         if self.handle is None:
             raise AssertionError("Cannot save data to a file that is not registered.")
         torch._C._gds_save_storage(self.handle, storage, offset)
+
+    def _submit(
+        self,
+        storages: Sequence[Storage],
+        offsets: Sequence[int],
+        *,
+        write: bool,
+        batch: bool,
+        stream: torch.cuda.Stream | None = None,
+    ) -> GdsIO:
+        if self.handle is None:
+            raise RuntimeError("Cannot submit I/O on an unregistered GdsFile")
+        storages, offsets = list(storages), list(offsets)
+        if not storages or len(storages) != len(offsets):
+            raise ValueError("Expected equally sized, nonempty storages and offsets")
+        device = storages[0].device
+        if device.type != "cuda":
+            raise ValueError("GDS requires CUDA/HIP storage")
+        if stream is None:
+            stream = torch.cuda.current_stream(device)
+        if stream.device != device:
+            raise ValueError("GDS stream and storage must be on the same device")
+        with torch.cuda.stream(stream):
+            request = torch._C._gds_submit(self.handle, storages, offsets, write, batch)
+        return GdsIO(request, stream)
+
+    def load_storage_async(
+        self, storage: Storage, offset: int = 0, *,
+        stream: torch.cuda.Stream | None = None,
+    ) -> GdsIO:
+        """Enqueue a read using cuFileReadAsync/hipFileReadAsync.
+
+        Uses the current stream unless specified. Call wait() to check I/O
+        success before consuming the storage, even for stream-ordered work.
+        """
+        return self._submit([storage], [offset], write=False, batch=False, stream=stream)
+
+    def save_storage_async(
+        self, storage: Storage, offset: int = 0, *,
+        stream: torch.cuda.Stream | None = None,
+    ) -> GdsIO:
+        """Enqueue a stream-ordered write using cuFileWriteAsync/hipFileWriteAsync."""
+        return self._submit([storage], [offset], write=True, batch=False, stream=stream)
+
+    def load_storages(
+        self, storages: Sequence[Storage], offsets: Sequence[int],
+    ) -> GdsIO:
+        """Submit up to 128 reads using the native batch API.
+
+        All storages must be on one device and destination ranges must not
+        overlap. Submission synchronizes the current stream on that device;
+        batch I/O itself is not stream ordered. Call wait() before using results.
+        """
+        return self._submit(storages, offsets, write=False, batch=True)
+
+    def save_storages(
+        self, storages: Sequence[Storage], offsets: Sequence[int],
+    ) -> GdsIO:
+        """Submit up to 128 writes; file ranges must not overlap.
+
+        Synchronizes producer work on the current stream before submitting.
+        Call wait() before modifying sources or relying on the file contents.
+        """
+        return self._submit(storages, offsets, write=True, batch=True)
