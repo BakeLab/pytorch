@@ -43,10 +43,6 @@ if not is_available():
         raise AssertionError(
             "_gds_register_handle exists but _gds_register_buffer does not"
         )
-    if hasattr(torch._C, "_gds_deregister_handle"):
-        raise AssertionError(
-            "_gds_deregister_handle exists but _gds_register_buffer does not"
-        )
     if hasattr(torch._C, "_gds_load_storage"):
         raise AssertionError(
             "_gds_load_storage exists but _gds_register_buffer does not"
@@ -60,7 +56,6 @@ if not is_available():
     torch._C.__dict__["_gds_register_buffer"] = _dummy_fn("_gds_register_buffer")
     torch._C.__dict__["_gds_deregister_buffer"] = _dummy_fn("_gds_deregister_buffer")
     torch._C.__dict__["_gds_register_handle"] = _dummy_fn("_gds_register_handle")
-    torch._C.__dict__["_gds_deregister_handle"] = _dummy_fn("_gds_deregister_handle")
     torch._C.__dict__["_gds_load_storage"] = _dummy_fn("_gds_load_storage")
     torch._C.__dict__["_gds_save_storage"] = _dummy_fn("_gds_save_storage")
 
@@ -162,7 +157,7 @@ class GdsFile:
         self.filename = filename
         self.flags = flags
         self.fd = os.open(filename, flags | os.O_DIRECT)  # type: ignore[attr-defined]
-        self.handle: int | None = None
+        self.handle: torch._C._GdsHandle | None = None
         self.register_handle()
 
     def __del__(self) -> None:
@@ -198,7 +193,6 @@ class GdsFile:
         """
         if self.handle is None:
             raise AssertionError("Cannot deregister a handle that is not registered.")
-        torch._C._gds_deregister_handle(self.handle)
         self.handle = None
 
     def load_storage(self, storage: Storage, offset: int = 0) -> None:
@@ -252,7 +246,7 @@ class GdsFile:
         if stream.device != device:
             raise ValueError("GDS stream and storage must be on the same device")
         with torch.cuda.stream(stream):
-            request = torch._C._gds_submit(self.fd, storages, offsets, write, batch)
+            request = torch._C._gds_submit(self.handle, storages, offsets, write, batch)
         return GdsIO(request, stream)
 
     def load_storage_async(
