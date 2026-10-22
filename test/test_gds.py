@@ -85,6 +85,38 @@ class TestGDSAsync(TestCase):
                 request.wait()
             file.close()
 
+    @parametrize("batch", [False, True])
+    def test_gds_resource_reuse(self, device, batch):
+        self._require_gds()
+        src = torch.arange(4096, device=device, dtype=torch.float32)
+        dest = torch.empty_like(src)
+        retained = []
+        with TemporaryFileName() as name:
+            file = torch.cuda.gds.GdsFile(name, os.O_CREAT | os.O_RDWR)
+            try:
+                for value in range(4):
+                    src.fill_(value)
+                    torch.cuda.synchronize()
+                    file.save_storage(src.untyped_storage())
+                    if batch:
+                        request = file.load_storages([dest.untyped_storage()], [0])
+                    else:
+                        request = file.load_storage_async(dest.untyped_storage())
+                    # Older results must not wait on or inspect reused state.
+                    for old in retained:
+                        old.wait()
+                    request.wait()
+                    retained.append(request)
+                    self.assertEqual(src, dest)
+                file.deregister_handle()
+                file.register_handle()
+                file.load_storage(dest.untyped_storage())
+                self.assertEqual(src, dest)
+            finally:
+                file.close()
+            for request in retained:
+                request.wait()
+
     def test_gds_pending_io_validation(self, device):
         self._require_gds()
         storage = torch.empty(4096, device=device, dtype=torch.uint8).untyped_storage()
