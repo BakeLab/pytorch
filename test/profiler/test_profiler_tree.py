@@ -21,7 +21,6 @@ from torch.testing._internal.common_device_type import (
 from torch.testing._internal.common_utils import (
     HardwareClassification,
     IS_ARM64,
-    IS_WINDOWS,
     run_tests,
     skipIfTorchDynamo,
     TEST_WITH_CROSSREF,
@@ -82,7 +81,7 @@ XPU_D2D_COPY_TREES = (
 #  2) We can diff the output to see how far we are from parity
 #
 # TODO: We also fail to capture events for Windows on some platforms.
-ALLOW_CUDA_FAILURE = (torch.version.hip is not None) or IS_WINDOWS
+ALLOW_CUDA_FAILURE = (torch.version.hip is not None)
 
 
 class TorchFunctionTensor(torch.Tensor):

@@ -24,7 +24,6 @@ from torch.testing._internal import common_utils
 from torch.testing._internal.common_utils import (
     instantiate_parametrized_tests,
     IS_SANDCASTLE,
-    IS_WINDOWS,
     parametrize,
     run_tests,
     skipIfTorchDynamo,
@@ -160,7 +159,6 @@ def _table(header: tuple[str, ...], rows: list[tuple[Any, ...]]) -> str:
 
 
 # torchci test run reports, on TestJunitXml's fixture suite.
-@unittest.skipIf(IS_WINDOWS, "Skipping because doesn't work for windows")
 @unittest.skipIf(IS_SANDCASTLE, "Skipping because doesn't work on sandcastle")
 @skipIfTorchDynamo("subprocess test does not need Dynamo coverage")
 @unittest.skipIf(TEST_WITH_CROSSREF, "subprocess test does not need crossref coverage")
@@ -376,7 +374,6 @@ TestUnittest    | test_unittest            | test_unittest""",
         )
 
 
-@unittest.skipIf(IS_WINDOWS, "Skipping because doesn't work for windows")
 @unittest.skipIf(IS_SANDCASTLE, "Skipping because doesn't work on sandcastle")
 @skipIfTorchDynamo("subprocess test does not need Dynamo coverage")
 @unittest.skipIf(TEST_WITH_CROSSREF, "subprocess test does not need crossref coverage")
@@ -458,7 +455,6 @@ class TestReportFailureIsolation(TestCase):
 instantiate_parametrized_tests(TestReportFailureIsolation)
 
 
-@unittest.skipIf(IS_WINDOWS, "Skipping because doesn't work for windows")
 @unittest.skipIf(IS_SANDCASTLE, "Skipping because doesn't work on sandcastle")
 @skipIfTorchDynamo("subprocess test does not need Dynamo coverage")
 @unittest.skipIf(TEST_WITH_CROSSREF, "subprocess test does not need crossref coverage")
@@ -508,7 +504,6 @@ class TestReportEnablement(TestCase):
             self.assertEqual(args("/reports"), [])
 
 
-@unittest.skipIf(IS_WINDOWS, "Skipping because doesn't work for windows")
 @unittest.skipIf(IS_SANDCASTLE, "Skipping because doesn't work on sandcastle")
 @skipIfTorchDynamo("subprocess test does not need Dynamo coverage")
 @unittest.skipIf(TEST_WITH_CROSSREF, "subprocess test does not need crossref coverage")

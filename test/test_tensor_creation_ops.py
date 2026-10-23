@@ -28,7 +28,6 @@ from torch.testing._internal.common_utils import (
     set_default_dtype,
     set_default_tensor_type,
     TEST_SCIPY,
-    IS_WINDOWS,
     IS_FBCODE,
     IS_SANDCASTLE,
     IS_ARM64,
@@ -3230,7 +3229,6 @@ class TestTensorCreationGeneric(TestCase):
                                    torch.tensor(1, dtype=torch.int16)).dtype)
 
     @parametrize('shared', [True, False])
-    @unittest.skipIf(IS_WINDOWS, "NamedTemporaryFile on windows")
     def test_from_file(self, shared):
         dtype = torch.float64
         t = torch.randn(2, 5, dtype=dtype)

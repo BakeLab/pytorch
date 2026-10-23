@@ -88,7 +88,6 @@ from torch.testing._internal.common_utils import (
     IS_LINUX,
     IS_MACOS,
     IS_SANDCASTLE,
-    IS_WINDOWS,
     skip_but_pass_in_sandcastle,
     skip_but_pass_in_sandcastle_if,
     TemporaryFileName,
@@ -1397,7 +1396,7 @@ class DistributedTest:
         @requires_nccl_version((2, 7, 0), "Need NCCL 2.7+ for send/recv")
         @skip_but_pass_in_sandcastle_if(IS_FBCODE, "Kineto in fbcode causes hang")
         @skip_but_pass_in_sandcastle_if(
-            IS_MACOS or IS_WINDOWS,
+            IS_MACOS,
             "torch.profiler not enabled for mac/windows: https://github.com/pytorch/pytorch/pull/56124",
         )
         def test_send_recv_nccl_torch_profiler(self):
@@ -1468,7 +1467,7 @@ class DistributedTest:
         )
         @skip_but_pass_in_sandcastle_if(IS_FBCODE, "Kineto in fbcode causes hang")
         @skip_but_pass_in_sandcastle_if(
-            IS_MACOS or IS_WINDOWS,
+            IS_MACOS,
             "torch.profiler not enabled for mac/windows: https://github.com/pytorch/pytorch/pull/56124",
         )
         def test_send_recv_torch_profiler(self):
@@ -1574,7 +1573,7 @@ class DistributedTest:
         )
         @skip_but_pass_in_sandcastle_if(IS_FBCODE, "Kineto in fbcode code causes hang")
         @skip_but_pass_in_sandcastle_if(
-            IS_MACOS or IS_WINDOWS,
+            IS_MACOS,
             "torch.profiler not enabled for mac/windows: https://github.com/pytorch/pytorch/pull/56124",
         )
         def test_send_recv_any_source_torch_profiler(self):
@@ -1634,7 +1633,7 @@ class DistributedTest:
         )
         @skip_but_pass_in_sandcastle_if(IS_FBCODE, "Kineto in fbcode code causes hang")
         @skip_but_pass_in_sandcastle_if(
-            IS_MACOS or IS_WINDOWS,
+            IS_MACOS,
             "torch.profiler not enabled for mac/windows: https://github.com/pytorch/pytorch/pull/56124",
         )
         def test_send_recv_with_tag_torch_profiler(self):
@@ -1705,7 +1704,7 @@ class DistributedTest:
         )
         @skip_but_pass_in_sandcastle_if(IS_FBCODE, "Kineto in fbcode code causes hang")
         @skip_but_pass_in_sandcastle_if(
-            IS_MACOS or IS_WINDOWS,
+            IS_MACOS,
             "torch.profiler not enabled for mac/windows: https://github.com/pytorch/pytorch/pull/56124",
         )
         def test_isend_torch_profiler(self):
@@ -6229,7 +6228,7 @@ class DistributedTest:
         @skip_if_lt_x_gpu(2)
         @skip_but_pass_in_sandcastle_if(IS_FBCODE, "Kineto in fbcode code causes hang")
         @skip_but_pass_in_sandcastle_if(
-            IS_MACOS or IS_WINDOWS,
+            IS_MACOS,
             "torch.profiler not enabled for mac/windows: https://github.com/pytorch/pytorch/pull/56124",
         )
         def test_ddp_profiling_torch_profiler(self):
@@ -6318,7 +6317,7 @@ class DistributedTest:
         @skip_if_lt_x_gpu(2)
         @skip_but_pass_in_sandcastle_if(IS_FBCODE, "Kineto in fbcode code causes hang")
         @skip_but_pass_in_sandcastle_if(
-            IS_MACOS or IS_WINDOWS,
+            IS_MACOS,
             "torch.profiler not enabled for mac/windows: https://github.com/pytorch/pytorch/pull/56124",
         )
         @unittest.skipIf(BACKEND != "nccl", "Tests nccl metadata primarily.")
@@ -7953,7 +7952,7 @@ class DistributedTest:
 
         @require_backend_is_available({"gloo"})
         @skip_but_pass_in_sandcastle_if(
-            IS_MACOS or IS_WINDOWS,
+            IS_MACOS,
             "MacOS uses uv transport which does not have as robust error handling as tcp transport",
         )
         def test_monitored_barrier_gloo(self):
@@ -8105,7 +8104,7 @@ class DistributedTest:
         @require_backend_is_available({"gloo"})
         @skip_if_small_worldsize
         @skip_but_pass_in_sandcastle_if(
-            IS_MACOS or IS_WINDOWS,
+            IS_MACOS,
             "MacOS uses uv transport which does not have as robust error handling as tcp transport",
         )
         def test_monitored_barrier_failure_order(self):

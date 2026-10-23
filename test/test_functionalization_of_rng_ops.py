@@ -1,7 +1,5 @@
 # Owner(s): ["oncall: pt2"]
 import functools
-import sys
-import unittest
 from unittest.mock import patch
 
 import torch
@@ -15,17 +13,9 @@ from torch.testing._internal.common_device_type import (
 
 from torch.testing._internal.common_utils import (
     HardwareClassification,
-    IS_CI,
-    IS_WINDOWS,
     run_tests,
     TestCase,
 )
-
-if IS_WINDOWS and IS_CI:
-    sys.stderr.write("torch.compile not supported on windows")
-    if __name__ == "__main__":
-        sys.exit(0)
-    raise unittest.SkipTest("torch.compile not supported on windows")
 
 
 def count_philox_rand(gm, args, freq):

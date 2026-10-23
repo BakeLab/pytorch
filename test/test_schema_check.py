@@ -9,7 +9,6 @@ import unittest
 
 from torch.testing._internal.common_utils import (
     HardwareClassification,
-    IS_WINDOWS,
     run_tests,
     slowTestIf,
     TEST_WITH_TORCHDYNAMO,
@@ -510,7 +509,7 @@ class TestSchemaCheckModeOpInfo(TestCase):
     hw_classification = HardwareClassification.ACCELERATOR
 
     @ops(op_db, dtypes=OpDTypes.supported)
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_schema_correctness(self, device, dtype, op):
         # Currently torch.equal isn't supported with torch.complex32 or torch.bcomplex32.
         # There's also errors with complex64 and complex128

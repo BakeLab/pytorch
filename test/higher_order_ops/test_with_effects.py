@@ -35,7 +35,6 @@ from torch.testing._internal.common_device_type import (
 from torch.testing._internal.common_quantization import skipIfNoDynamoSupport
 from torch.testing._internal.common_utils import (
     HardwareClassification,
-    IS_WINDOWS,
     run_tests,
     skipIfTorchDynamo,
     TestCase,
@@ -249,7 +248,6 @@ def forward(self, arg0_1, arg1_1, arg2_1):
         res = torch.compile(f, backend="aot_eager")(*inputs)
         self.assertTrue(torch.allclose(res, f(*inputs)))
 
-    @unittest.skipIf(IS_WINDOWS, "triton")
     def test_compile_inductor(self):
         def f(x):
             torch.ops.aten._print("moo")
@@ -262,7 +260,6 @@ def forward(self, arg0_1, arg1_1, arg2_1):
         res = torch.compile(f, backend="inductor")(*inputs)
         self.assertTrue(torch.allclose(res, f(*inputs)))
 
-    @unittest.skipIf(IS_WINDOWS, "Skipped on Windows!")
     @skipIfNoDynamoSupport
     def test_compile_inductor_external_op_return_none(self):
         with torch.library._scoped_library("mylib", "FRAGMENT") as lib:
@@ -293,7 +290,6 @@ def forward(self, arg0_1, arg1_1, arg2_1):
             res = torch.compile(f, backend="inductor")(*inputs)
             self.assertTrue(torch.allclose(res, f(*inputs)))
 
-    @unittest.skipIf(IS_WINDOWS, "Skipped on Windows!")
     @skipIfNoDynamoSupport
     def test_inductor_preserves_effect_order_across_kernel_types(self):
         # Two ORDERED-effectful ops must keep program order even when they lower
@@ -349,7 +345,6 @@ def forward(self, arg0_1, arg1_1, arg2_1):
             finally:
                 del lowerings[op_b]
 
-    @unittest.skipIf(IS_WINDOWS, "Skipped on Windows!")
     @skipIfNoDynamoSupport
     def test_inductor_effect_order_does_not_extend_lifetimes(self):
         # The effect edge between two ORDERED ops is an ordering constraint only.
@@ -1005,7 +1000,6 @@ class TestWithEffectsDevice(TestCase):
     hw_classification = HardwareClassification.ACCELERATOR
 
     @onlyAccelerator
-    @unittest.skipIf(IS_WINDOWS, "triton")
     @skipCUDAIf(not SM80OrLater, "triton")
     @skipIfNoDynamoSupport
     def test_register_effectful_custom_op(self, device):
@@ -1262,7 +1256,6 @@ def forward(self, arg1_1, arg2_1, arg3_1, arg4_1, arg5_1):
         self.assertTrue(torch.allclose(model(x)[0], out2[0], atol=1e-7, rtol=1e-4))
 
     @onlyAccelerator
-    @unittest.skipIf(IS_WINDOWS, "triton")
     @skipCUDAIf(not SM80OrLater, "triton")
     def test_effectful_op_with_flex_attention(self, device):
         """Test that effectful custom ops work with flex_attention."""

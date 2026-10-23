@@ -13,7 +13,6 @@ from torch.testing._internal.common_device_type import instantiate_device_type_t
 from torch.testing._internal.common_utils import (
     HardwareClassification,
     IS_MACOS,
-    IS_WINDOWS,
     run_tests,
     skipIfTorchDynamo,
     TestCase,
@@ -316,7 +315,7 @@ class TestIdentifyGradients(TestCase):
         self._test_extract_gradients_from_optimizer(device, set_to_none=False)
 
     @unittest.skipIf(
-        IS_MACOS or IS_WINDOWS, "https://github.com/pytorch/pytorch/issues/88721"
+        IS_MACOS, "https://github.com/pytorch/pytorch/issues/88721"
     )
     def test_extract_gradients_from_optimizer_set_to_none(self, device) -> None:
         self._test_extract_gradients_from_optimizer(device, set_to_none=True)

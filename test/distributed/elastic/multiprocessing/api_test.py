@@ -39,7 +39,6 @@ from torch.testing._internal.common_utils import (
     IS_CI,
     IS_LINUX,
     IS_MACOS,
-    IS_WINDOWS,
     run_tests,
     skip_if_pytest,
     TEST_WITH_ASAN,
@@ -299,7 +298,7 @@ class _StartProcessesTest(TestCase):
 
 
 # tests incompatible with tsan or asan
-if not (TEST_WITH_DEV_DBG_ASAN or IS_WINDOWS or IS_MACOS):
+if not (TEST_WITH_DEV_DBG_ASAN or IS_MACOS):
 
     class StartProcessesAsFuncTest(_StartProcessesTest):
         def test_to_map(self):
@@ -643,7 +642,7 @@ if not (TEST_WITH_DEV_DBG_ASAN or IS_WINDOWS or IS_MACOS):
 
 
 # tests incompatible with tsan or asan, the redirect functionality does not work on macos or windows
-if not (TEST_WITH_DEV_DBG_ASAN or IS_WINDOWS or IS_MACOS):
+if not (TEST_WITH_DEV_DBG_ASAN or IS_MACOS):
 
     class StartProcessesListAsFuncTest(_StartProcessesTest):
         def test_function(self):
@@ -796,7 +795,7 @@ if not (TEST_WITH_DEV_DBG_ASAN or IS_WINDOWS or IS_MACOS):
 
 
 # tests incompatible with tsan or asan, the redirect functionality does not work on macos or windows
-if not (TEST_WITH_DEV_DBG_ASAN or IS_WINDOWS or IS_MACOS or IS_CI):
+if not (TEST_WITH_DEV_DBG_ASAN or IS_MACOS or IS_CI):
 
     class StartProcessesNotCIAsFuncTest(_StartProcessesTest):
         @skip_if_pytest

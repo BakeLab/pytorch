@@ -40,11 +40,8 @@ from torch.testing._internal.common_utils import (
     _restore_fp32_precision,
     _snapshot_fp32_precision,
     IS_JETSON,
-    MI200_ARCH,
-    MI300_ARCH,
     MI350_ARCH,
     NAVI3_5_ARCH,
-    NAVI3_ARCH,
     NAVI_ARCH,
     getRocmVersion,
     isRocmArchAnyOf,
@@ -611,9 +608,9 @@ class TestMatmulCuda(InductorTestCase):
 
 
     @onlyCUDA
-    # Fails with triton 3.7 on RDNA3/RDNA3.5 with the cublaslt backend
+    # Fails with triton 3.7 on RDNA3.5 with the cublaslt backend
     @decorateIf(
-        skipIfRocmArch(NAVI3_ARCH + NAVI3_5_ARCH),
+        skipIfRocmArch(NAVI3_5_ARCH),
         lambda params: params["backend"] == "cublaslt",
     )
     @dtypes(torch.float16)
@@ -751,10 +748,7 @@ class TestMatmulCuda(InductorTestCase):
         if N == M and M == P:
             M2_eye = torch.eye(N, device=device, dtype=dtype)
             out1_eye_gpu = torch.nn.functional.linear(M1, M2_eye.t(), torch.zeros_like(A))
-            if TEST_WITH_ROCM and isRocmArchAnyOf(MI200_ARCH) and dtype == torch.float16:
-                self.assertEqual(M1_cpu.to(dtype=dtype), out1_eye_gpu.cpu(), atol=1e-4, rtol=0.001)
-            else:
-                self.assertEqual(M1_cpu.to(dtype=dtype), out1_eye_gpu.cpu())
+            self.assertEqual(M1_cpu.to(dtype=dtype), out1_eye_gpu.cpu())
 
         # baddbmm
         def _expand_to_batch(t: torch.Tensor):
@@ -769,10 +763,7 @@ class TestMatmulCuda(InductorTestCase):
         if N == M and M == P:
             M2_eye = torch.eye(N, device=device, dtype=dtype).expand(batch_size, N, N)
             out2_eye_gpu = torch.baddbmm(torch.zeros_like(A), M1, M2_eye, beta=beta, alpha=alpha)
-            if TEST_WITH_ROCM and isRocmArchAnyOf(MI200_ARCH) and dtype == torch.float16:
-                self.assertEqual(M1_cpu.to(dtype=dtype), out2_eye_gpu.cpu(), atol=1e-4, rtol=0.001)
-            else:
-                self.assertEqual(M1_cpu.to(dtype=dtype), out2_eye_gpu.cpu())
+            self.assertEqual(M1_cpu.to(dtype=dtype), out2_eye_gpu.cpu())
 
         # cross comparison
         self.assertEqual(out1_gpu, out2_gpu[0])
@@ -1191,8 +1182,8 @@ class TestMatmulCuda(InductorTestCase):
             "ck": ("ROCM_ALLOW_GROUP_GEMM_CK", "kernel_grouped_gemm_xdl_splitk", "kernel_grouped_gemm_xdl_splitk"),
             "ck_tile": ("ROCM_ALLOW_GROUP_GEMM_CK_TILE", "ck_tile::GroupedGemmKernel", "ck_tile::GroupedGemmKernel"),
         }[backend]
-        if backend == "ck_tile" and not isRocmArchAnyOf(MI300_ARCH + MI350_ARCH):
-            raise unittest.SkipTest("ck_tile grouped gemm is only dispatched on gfx942 and gfx950")
+        if backend == "ck_tile" and not isRocmArchAnyOf(MI350_ARCH):
+            raise unittest.SkipTest("ck_tile grouped gemm is only dispatched on gfx950")
         HIPBLASLT_HINT = "Cijk_Alik_Bljk_BBS_BH_Bias_HA_S_SAV_UserArgs"
 
         def has_ck_kernel(kernels: set[str], hint: str) -> bool:
@@ -1316,7 +1307,7 @@ class TestMatmulCuda(InductorTestCase):
     @parametrize("backend", ["cublas", "cublaslt"])
     def test_addmm_baddmm_dtype_overload(self, input_dtype, M, N, K, batch_size, broadcast_self, high_precision_self, backend):
         if torch.version.hip and (
-            _get_torch_rocm_version() < (7, 2, 1) or isRocmArchAnyOf(MI200_ARCH)
+            _get_torch_rocm_version() < (7, 2, 1)
         ):
             msg = "accuracy regression in hipblas and hipblaslt in ROCm 7.0 for certain shapes"
             if input_dtype == torch.bfloat16 and N == 1 and K == 32 and batch_size:

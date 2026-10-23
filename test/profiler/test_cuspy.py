@@ -34,7 +34,6 @@ from torch.testing._internal.common_cuda import (
 )
 from torch.testing._internal.common_profiler import initialize_kineto_with_cuda
 from torch.testing._internal.common_utils import (
-    IS_WINDOWS,
     run_tests,
     skipIfTorchDynamo,
     TemporaryFileName,
@@ -251,7 +250,7 @@ class TestCuspyRecords(TestCase):
         with patch.object(
             type(m._cupti),
             "enable_kernel_latency_timestamps",
-            lambda _self, _sub, enable: calls.append(enable) or True,
+            lambda _self, _sub, enable: True,
         ):
             timing = m.register(
                 {ActivityKind.CONCURRENT_KERNEL: [Kernel.START.id, Kernel.END.id]},
@@ -3618,7 +3617,6 @@ class TestCuspyTraceExport(TestCase):
         prof.profiler.export_chrome_trace.assert_not_called()
 
 
-@unittest.skipIf(IS_WINDOWS, "Test is flaky on Windows")
 @unittest.skipIf(not TEST_CUDA, "CUDA is required")
 class TestCuspyProfiler(TestCase):
     """Cuspy driven through ``torch.profiler.profile`` (trace shape, op/kernel

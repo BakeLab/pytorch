@@ -54,7 +54,7 @@ from torch.testing._internal.common_utils import (
 )
 from torch.utils import _pytree as pytree
 
-from torch.testing._internal.common_utils import IS_WINDOWS, slowTestIf
+from torch.testing._internal.common_utils import slowTestIf
 
 if TEST_SCIPY:
     import scipy
@@ -277,7 +277,7 @@ class TestUnaryUfuncs(TestCase):
     #   and noncontiguities.
     @suppress_warnings
     @ops(reference_filtered_ops)
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_reference_numerics_normal(self, device, dtype, op):
         tensors = generate_elementwise_unary_tensors(
             op, device=device, dtype=dtype, requires_grad=False
@@ -286,7 +286,7 @@ class TestUnaryUfuncs(TestCase):
 
     @suppress_warnings
     @ops(reference_filtered_ops)
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_reference_numerics_small(self, device, dtype, op):
         if dtype == torch.bool:
             raise self.skipTest("bool has no small values")
@@ -298,7 +298,7 @@ class TestUnaryUfuncs(TestCase):
 
     @suppress_warnings
     @ops(reference_filtered_ops)
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_reference_numerics_large(self, device, dtype, op):
         if dtype in (torch.bool, torch.uint8, torch.int8):
             raise self.skipTest("bool, uint8, and int8 dtypes have no large values")
@@ -313,7 +313,7 @@ class TestUnaryUfuncs(TestCase):
         reference_filtered_ops,
         allowed_dtypes=floating_and_complex_types_and(torch.bfloat16, torch.half),
     )
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_reference_numerics_extremal(self, device, dtype, op):
         tensors = generate_elementwise_unary_extremal_value_tensors(
             op, device=device, dtype=dtype, requires_grad=False
@@ -322,7 +322,7 @@ class TestUnaryUfuncs(TestCase):
 
     # Tests for testing (non)contiguity consistency
     @ops(unary_ufuncs)
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_contig_vs_every_other(self, device, dtype, op):
         contig = make_tensor(
             (1026,), device=device, dtype=dtype, low=op.domain[0], high=op.domain[1]
@@ -339,7 +339,7 @@ class TestUnaryUfuncs(TestCase):
         self.assertEqual(result, expected)
 
     @ops(unary_ufuncs)
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_contig_vs_transposed(self, device, dtype, op):
         contig = make_tensor(
             (789, 357), device=device, dtype=dtype, low=op.domain[0], high=op.domain[1]
@@ -356,7 +356,7 @@ class TestUnaryUfuncs(TestCase):
         self.assertEqual(result, expected)
 
     @ops(unary_ufuncs)
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_non_contig(self, device, dtype, op):
         shapes = [(5, 7), (1024,)]
         for shape in shapes:
@@ -373,7 +373,7 @@ class TestUnaryUfuncs(TestCase):
             self.assertEqual(op(contig, **torch_kwargs), op(non_contig, **torch_kwargs))
 
     @ops(unary_ufuncs)
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_non_contig_index(self, device, dtype, op):
         contig = make_tensor(
             (2, 2, 1, 2),
@@ -392,7 +392,7 @@ class TestUnaryUfuncs(TestCase):
         self.assertEqual(op(contig, **torch_kwargs), op(non_contig, **torch_kwargs))
 
     @ops(unary_ufuncs)
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_non_contig_expand(self, device, dtype, op):
         shapes = [(1, 3), (1, 7), (5, 7)]
         for shape in shapes:
@@ -414,7 +414,7 @@ class TestUnaryUfuncs(TestCase):
                 )
 
     @ops(unary_ufuncs)
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_contig_size1(self, device, dtype, op):
         contig = make_tensor(
             (5, 100), dtype=dtype, device=device, low=op.domain[0], high=op.domain[1]
@@ -430,7 +430,7 @@ class TestUnaryUfuncs(TestCase):
         self.assertEqual(op(contig, **torch_kwargs), op(contig2, **torch_kwargs))
 
     @ops(unary_ufuncs)
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_contig_size1_large_dim(self, device, dtype, op):
         contig = make_tensor(
             (5, 2, 3, 1, 4, 5, 3, 2, 1, 2, 3, 4),
@@ -452,7 +452,7 @@ class TestUnaryUfuncs(TestCase):
     # Tests that computation on a multiple batches is the same as
     # per-batch computation.
     @ops(unary_ufuncs)
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_batch_vs_slicing(self, device, dtype, op):
         input = make_tensor(
             (1024, 512), dtype=dtype, device=device, low=op.domain[0], high=op.domain[1]

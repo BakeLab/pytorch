@@ -11,7 +11,6 @@ import unittest
 import torch.multiprocessing as mp
 
 from torch.testing._internal.common_utils import (
-    IS_WINDOWS,
     run_tests,
     TestCase,
     parametrize,
@@ -134,14 +133,6 @@ class _TestMultiProcessing:
         # SIGABRT is aliased with SIGIOT
         message = "process 0 terminated with signal (SIGABRT|SIGIOT)"
 
-        # Termination through with signal is expressed as a negative exit code
-        # in multiprocessing, so we know it was a signal that caused the exit.
-        # This doesn't appear to exist on Windows, where the exit code is always
-        # positive, and therefore results in a different exception message.
-        # Exit code 22 means "ERROR_BAD_COMMAND".
-        if IS_WINDOWS:
-            message = "process 0 terminated with exit code 22"
-
         with self.assertRaisesRegex(Exception, message):
             mp.start_processes(_test_terminate_signal_func, nprocs=2, start_method=self.start_method)
 
@@ -231,18 +222,10 @@ class SpawnTest(TestCase, _TestMultiProcessing):
             self.assertEqual(12, e.exit_code)
 
 
-@unittest.skipIf(
-    IS_WINDOWS,
-    "Fork is only available on Unix",
-)
 class ForkTest(TestCase, _TestMultiProcessing):
     start_method = 'fork'
 
 
-@unittest.skipIf(
-    IS_WINDOWS,
-    "Fork is only available on Unix",
-)
 class ParallelForkServerShouldWorkTest(TestCase, _TestMultiProcessing):
     orig_paralell_env_val = None
 
@@ -259,10 +242,6 @@ class ParallelForkServerShouldWorkTest(TestCase, _TestMultiProcessing):
             os.environ[mp.ENV_VAR_PARALLEL_START] = self.orig_paralell_env_val
 
 
-@unittest.skipIf(
-    IS_WINDOWS,
-    "Fork is only available on Unix",
-)
 class ParallelForkServerPerfTest(TestCase):
 
     @unittest.skipIf(
