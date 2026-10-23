@@ -466,6 +466,24 @@ endif()
 
 # _rocm_init.py is gitignored (injected by ROCm build scripts to bootstrap
 # torch/__init__.py). See https://github.com/ROCm/TheRock/blob/main/docs/packaging/python_packaging.md
+# When building against the ROCm SDK wheels, PYTORCH_ROCM_SDK_VERSION names
+# their version: generate the file so `import torch` preloads the SDK's
+# libraries from those wheels and checks that the installed SDK matches.
+if(USE_ROCM AND NOT "$ENV{PYTORCH_ROCM_SDK_VERSION}" STREQUAL "")
+  set(_rocm_preloads
+      amd_comgr amd_smi amdhip64 hiprtc hipblas hipfft hiprand hipsparse
+      hipsparselt hipsolver hipblaslt miopen rocm_sysdeps_liblzma rocm-openblas
+      rocprofiler-sdk rocprofiler-sdk-roctx roctracer64 roctx64 rccl hipfile)
+  list(TRANSFORM _rocm_preloads PREPEND "'")
+  list(TRANSFORM _rocm_preloads APPEND "'")
+  list(JOIN _rocm_preloads ", " _rocm_preloads)
+  file(WRITE "${TORCH_SRC_DIR}/_rocm_init.py"
+       "def initialize():\n"
+       "    import rocm_sdk\n"
+       "    rocm_sdk.initialize_process(\n"
+       "        preload_shortnames=[${_rocm_preloads}],\n"
+       "        check_version='$ENV{PYTORCH_ROCM_SDK_VERSION}')\n")
+endif()
 # scikit-build-core won't include it via Python package collection. Install it
 # explicitly via cmake instead.
 if(SKBUILD AND USE_ROCM AND EXISTS "${TORCH_SRC_DIR}/_rocm_init.py")
