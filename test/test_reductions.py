@@ -23,8 +23,7 @@ from torch.testing._internal.common_utils import (
     parametrize, serialTest, subtest,
     gradcheck, gradgradcheck,
     skipIfMPS,
-    skipIfTorchDynamo, HardwareClassification,
-    IS_WINDOWS)
+    skipIfTorchDynamo, HardwareClassification)
 from torch.testing._internal.common_device_type import (
     OpDTypes, onlyCPU, onlyCUDA, onlyNativeDeviceTypes, expectedFailureMeta, instantiate_device_type_tests, dtypes, dtypesIfCUDA,
     dtypesIfCPU, dtypesIfXPU, onlyAccelerator, largeMPSBufferTest, largeTensorTest, ops,
@@ -644,10 +643,7 @@ class TestReductionsDevice(TestCase):
             complex(inf, nan),
             complex(nan, nan),
         ])
-        # windows give strange results on the second-to-last results where it gives inf + pi/4 j
-        # instead of inf + nan j
-        if not IS_WINDOWS:
-            compare_logcumsumexp(a3_input, a3_expected)
+        compare_logcumsumexp(a3_input, a3_expected)
 
         a4_input = torch.tensor([
             complex(-inf, inf),
@@ -663,8 +659,7 @@ class TestReductionsDevice(TestCase):
             1.2 + 2.1j,
             complex(nan, nan),
         ])
-        if not IS_WINDOWS:
-            compare_logcumsumexp(a4_input, a4_expected)
+        compare_logcumsumexp(a4_input, a4_expected)
 
     @skipIfMPS
     def test_sum_parallel(self, device):
@@ -1782,12 +1777,6 @@ class TestReductionsDevice(TestCase):
             return dtype in integral_types()
 
         exact_dtype = True
-        # On Windows CI, the current version of `numpy` promotes all lower integers
-        # dtypes to int32 while `torch` promotes them to int64. Hence we skip on checking
-        # the exact dtype.
-        # PR : https://github.com/pytorch/pytorch/pull/38628#issuecomment-655905370
-        if IS_WINDOWS and is_integral(dtype):
-            exact_dtype = False
         # For uint8, numpy promotes to uint64 while torch promotes to int64.
         # So we must skip this as well.
         if dtype == torch.uint8:

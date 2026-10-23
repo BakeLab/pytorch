@@ -54,7 +54,6 @@ from torch.testing._internal.common_utils import (
     instantiate_parametrized_tests,
     IS_FBCODE,
     IS_MACOS,
-    IS_WINDOWS,
     parametrize,
     run_tests,
     TemporaryFileName,
@@ -62,6 +61,7 @@ from torch.testing._internal.common_utils import (
 )
 from torch.testing._internal.inductor_utils import HAS_TRITON
 from torch.testing._internal.torchbind_impls import init_torchbind_implementations
+from torch._export.utils import wrap_method
 
 
 try:
@@ -1122,7 +1122,6 @@ class _DeserializeGraphMixin:
             _check_graph(pre_dispatch=False)
 
 
-@unittest.skipIf(IS_WINDOWS, "Windows not supported for this test")
 @unittest.skipIf(not torchdynamo.is_dynamo_supported(), "dynamo doesn't support")
 class TestDeserialize(_DeserializeGraphMixin, TestCase):
     hw_classification = HardwareClassification.GENERIC
@@ -2057,7 +2056,6 @@ class TestSaveLoad(TestCase):
         self.assertIsInstance(result, dict)
         self.assertTrue(torch.equal(result["key"], torch.tensor([1, 2, 3])))
 
-    @unittest.skipIf(IS_WINDOWS, "Cannot modify file in windows")
     def test_save_file(self):
         class Foo(torch.nn.Module):
             def forward(self, x):
@@ -2113,7 +2111,7 @@ class TestSaveLoad(TestCase):
         self.assertEqual(extra_files["extra.txt"], "moo")
 
     @unittest.skipIf(
-        IS_FBCODE or IS_MACOS or IS_WINDOWS, "The file path is different in fbcode CI"
+        IS_FBCODE or IS_MACOS, "The file path is different in fbcode CI"
     )
     def test_version_error(self):
         class Foo(torch.nn.Module):
@@ -2949,7 +2947,6 @@ class TestSerializeAccelerator(TestCase):
         self.assertIsNotNone(triton_node)
 
 
-@unittest.skipIf(IS_WINDOWS, "Windows not supported for this test")
 @unittest.skipIf(not torchdynamo.is_dynamo_supported(), "dynamo doesn't support")
 class TestDeserializeAccelerator(_DeserializeGraphMixin, TestCase):
     hw_classification = HardwareClassification.ACCELERATOR

@@ -1,7 +1,6 @@
 # Owner(s): ["module: cpp-extensions"]
 
 import sys
-import unittest
 
 from model import get_custom_op_library_path
 
@@ -11,7 +10,6 @@ from torch import ops
 from torch.testing._internal.common_utils import (
     expectedIfCppFakeTensor,
     HardwareClassification,
-    IS_WINDOWS,
     run_tests,
     TestCase,
 )
@@ -45,7 +43,6 @@ class TestCustomOperators(TestCase):
         with self.assertRaisesRegex(RuntimeError, "pointwise"):
             torch.ops.custom.cos(x)
 
-    @unittest.skipIf(IS_WINDOWS, "torch.compile not supported on windows")
     def test_dynamo_pystub_suggestion(self):
         x = torch.randn(3)
 

@@ -11,7 +11,6 @@ from torch.export import export, FlatArgsAdapter, unflatten
 from torch.export.unflatten import _assign_attr, _AttrKind, _disable_interpreter
 from torch.testing._internal.common_utils import (
     HardwareClassification,
-    IS_WINDOWS,
     run_tests,
     skipIfTorchDynamo,
     TestCase,
@@ -282,7 +281,6 @@ class TestUnflatten(TestCase):
         inp = (torch.randn(3), torch.randn(3))
         self.assertTrue(torch.allclose(uep(*inp), m(*inp)))
 
-    @unittest.skipIf(IS_WINDOWS, "Windows not supported for this test")
     @skipIfTorchDynamo("Non strict mode is not meant to run with dynamo")
     def test_unflatten_preserve_signature(self):
         class NestedChild(torch.nn.Module):
@@ -384,7 +382,6 @@ class TestUnflatten(TestCase):
             export_module.module(), unflattened, (torch.randn((2, 3)),)
         )
 
-    @unittest.skipIf(IS_WINDOWS, "Windows not supported for this test")
     def test_unflatten_preserve_with_unused_input(self):
         class M1(torch.nn.Module):
             def forward(self, x, a, b):
@@ -443,7 +440,6 @@ class TestUnflatten(TestCase):
         ):
             unflattened(torch.randn(6, 6))
 
-    @unittest.skipIf(IS_WINDOWS, "Windows not supported for this test")
     def test_unflatten_with_inplace_compile(self):
         class NestedChild(torch.nn.Module):
             def forward(self, x):

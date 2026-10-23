@@ -90,10 +90,8 @@ from torch.testing._internal.common_quantization import (
 from torch.testing._internal.common_utils import (
     DeterministicGuard,
     HardwareClassification,
-    IS_CI,
     IS_FBCODE,
     IS_MACOS,
-    IS_WINDOWS,
     IS_X86,
     parametrize,
     random_matrix_with_scaled_reduction_dim,
@@ -121,6 +119,7 @@ from torch.utils._triton import (
     has_triton_experimental_host_tma,
     has_triton_tensor_descriptor_host_tma,
 )
+from torch.testing._internal.common_utils import TEST_WITH_ROCM
 
 
 requires_cuda_tma = unittest.skipIf(
@@ -197,14 +196,6 @@ if HAS_GPU:
         sub_kernel_autotuned,
     )
 
-if IS_WINDOWS and IS_CI:
-    sys.stderr.write(
-        "Windows CI does not have necessary dependencies for test_torchinductor yet\n"
-    )
-    if __name__ == "__main__":
-        sys.exit(0)
-    raise unittest.SkipTest("requires sympy/functorch/filelock")
-
 try:
     try:
         from .test_aot_inductor_utils import (
@@ -253,10 +244,7 @@ except (unittest.SkipTest, ImportError):
 
 
 def get_module_ext_type():
-    if IS_WINDOWS:
-        return "pyd"
-    else:
-        return "so"
+    return "so"
 
 
 def get_triton_grid_info(kernel, total_elements, src_code):
@@ -1590,8 +1578,6 @@ class AOTInductorTestsTemplate:
     @tf32_on_and_off(0.005)
     def test_deconv_freezing(self):
         dtypes = [torch.float]
-        if False:
-            dtypes.append(torch.bfloat16)
         for dtype, groups in itertools.product(dtypes, [2, 1]):
             iC = 4
             oC = 2

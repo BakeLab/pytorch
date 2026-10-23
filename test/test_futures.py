@@ -4,9 +4,8 @@
 import threading
 import time
 import torch
-import unittest
 from torch.futures import Future
-from torch.testing._internal.common_utils import IS_WINDOWS, TestCase, TemporaryFileName, run_tests
+from torch.testing._internal.common_utils import TestCase, TemporaryFileName, run_tests
 from typing import TypeVar
 
 T = TypeVar("T")
@@ -314,7 +313,6 @@ class TestFuture(TestCase):
         self.assertEqual(res[1].wait(), 2)
         t.join()
 
-    @unittest.skipIf(IS_WINDOWS, "TODO: need to fix this testcase for Windows")
     def test_wait_all(self):
         fut1 = Future[int]()
         fut2 = Future[int]()

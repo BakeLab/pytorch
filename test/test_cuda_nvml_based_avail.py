@@ -18,7 +18,6 @@ with patch.dict(os.environ, {"PYTORCH_NVML_BASED_CUDA_CHECK": "1"}):
     from torch.testing._internal.common_utils import (
         instantiate_parametrized_tests,
         IS_JETSON,
-        IS_WINDOWS,
         NoTest,
         parametrize,
         run_tests,
@@ -55,7 +54,7 @@ class TestExtendedCUDAIsAvail(TestCase):
         _ = torch.cuda.is_available()
         return torch.cuda._is_in_bad_fork()
 
-    @unittest.skipIf(IS_WINDOWS or torch.version.hip is not None, "NVIDIA fork test")
+    @unittest.skipIf(torch.version.hip is not None, "NVIDIA fork test")
     def test_triton_driver_probe_does_not_poison_fork(self):
         if not has_triton_package():
             self.skipTest("Triton not installed")
@@ -74,7 +73,6 @@ class TestExtendedCUDAIsAvail(TestCase):
     # `torch.cuda.is_available()` assessment. The NVML-based assessment should be attempted when
     # `PYTORCH_NVML_BASED_CUDA_CHECK` is set to 1, reverting to the default CUDA Runtime API check otherwise.
     # If the NVML-based assessment is attempted but fails, the CUDA Runtime API check should be executed
-    @unittest.skipIf(IS_WINDOWS, "Needs fork")
     @parametrize("nvml_avail", [True, False])
     @parametrize("avoid_init", ["1", "0", None])
     def test_cuda_is_available(self, avoid_init, nvml_avail):

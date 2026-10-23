@@ -86,7 +86,6 @@ from torch.testing._internal.common_cuda import PLATFORM_SUPPORTS_FP8, SM90OrLat
 from torch.testing._internal.common_device_type import largeTensorTest
 from torch.testing._internal.common_utils import (
     instantiate_parametrized_tests,
-    IS_WINDOWS,
     parametrize,
     random_matrix_with_scaled_reduction_dim,
     recover_orig_fp32_precision,
@@ -1165,7 +1164,6 @@ class TestMaxAutotune(TestCase):
     @fresh_cache()
     @skipIfXpu(msg="XPU doesn't support sm carveout")
     @unittest.skipIf(TEST_WITH_ROCM, "ROCm doesn't support sm carveout")
-    @unittest.skipIf(IS_WINDOWS, "Windows doesn't support persistent TMA")
     @unittest.skipIf(
         not has_triton_cuda_tma_device(), "Need device-side TMA support in Triton"
     )

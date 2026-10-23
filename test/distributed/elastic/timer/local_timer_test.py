@@ -18,7 +18,6 @@ from torch.testing._internal.common_utils import (
     HardwareClassification,
     IS_ARM64,
     IS_MACOS,
-    IS_WINDOWS,
     run_tests,
     TEST_WITH_DEV_DBG_ASAN,
     TEST_WITH_TSAN,
@@ -27,7 +26,7 @@ from torch.testing._internal.common_utils import (
 
 
 # timer is not supported on these platforms
-INVALID_PLATFORMS = IS_WINDOWS or IS_MACOS or TEST_WITH_DEV_DBG_ASAN or IS_ARM64
+INVALID_PLATFORMS = IS_MACOS or TEST_WITH_DEV_DBG_ASAN or IS_ARM64
 
 if not INVALID_PLATFORMS:
     # func2 should time out

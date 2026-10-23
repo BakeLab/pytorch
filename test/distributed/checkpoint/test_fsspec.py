@@ -14,6 +14,7 @@ import torch
 import torch.distributed as dist
 import torch.distributed.checkpoint as dcp
 from torch.distributed.checkpoint._fsspec_filesystem import (
+    _FileSystem,
     FileSystem,
     FsspecReader,
     FsspecWriter,

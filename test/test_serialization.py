@@ -59,7 +59,6 @@ from torch.testing._internal.common_utils import (
     IS_CI,
     IS_FBCODE,
     IS_FILESYSTEM_UTF8_ENCODING,
-    IS_WINDOWS,
     parametrize,
     run_tests,
     serialTest,
@@ -72,12 +71,7 @@ from torch.testing._internal.common_utils import (
 from torch.testing._internal.two_tensor import TwoTensor
 from torch.utils._import_utils import import_dill
 from pickle import UnpicklingError
-
-
-if not IS_WINDOWS:
-    from mmap import MAP_PRIVATE, MAP_SHARED
-else:
-    MAP_SHARED, MAP_PRIVATE = None, None
+from mmap import MAP_PRIVATE, MAP_SHARED
 
 # These tests were all copied from `test/test_torch.py` at some point, so see
 # the actual blame, see this revision
@@ -1353,7 +1347,7 @@ class TestSerialization(TestCase, SerializationMixin):
                 self.assertEqual(loaded_obj, obj)
 
     def test_weights_only_safe_globals_blocklist(self):
-        module = 'nt' if IS_WINDOWS else 'posix'
+        module = 'posix'
         error_msg = f"unsupported GLOBAL {module}.execv whose module {module} is blocked"
         with BytesIOContext() as f:
             torch.save(os.execv, f)
@@ -4306,7 +4300,6 @@ class TestSerialization(TestCase, SerializationMixin):
             self.assertTrue(torch.equal(tensor_be_no_bom, tensor_le_bom))
             self.assertTrue(torch.equal(tensor_be_no_bom, tensor_be_bom))
 
-    @unittest.skipIf(IS_WINDOWS, "NamedTemporaryFile on windows")
     @parametrize('path_type', (str, Path))
     @parametrize('weights_only', (True, False))
     def test_serialization_mmap_loading_options(self, weights_only, path_type):
@@ -4334,10 +4327,6 @@ class TestSerialization(TestCase, SerializationMixin):
         self.assertEqual(model_mmap_state_dict(input), model_non_mmap_state_dict(input.clone()))
 
     def test_serialization_mmap_loading(self):
-        if IS_WINDOWS:
-            with self.assertRaisesRegex(RuntimeError, "Changing the default mmap options is currently not supported"):
-                torch.serialization.set_default_mmap_options(2)
-            return
         m = torch.nn.Linear(3, 5)
         sd = m.state_dict()
         with tempfile.NamedTemporaryFile() as f:
@@ -4359,7 +4348,6 @@ class TestSerialization(TestCase, SerializationMixin):
             finally:
                 torch.serialization.set_default_mmap_options(MAP_PRIVATE)
 
-    @unittest.skipIf(IS_WINDOWS, "mmap ctx doesn't work on Windows")
     def test_serialization_mmap_loading_ctx(self):
         sd = torch.nn.Linear(3, 5).state_dict()
         with tempfile.NamedTemporaryFile() as f:
@@ -4653,7 +4641,6 @@ class TestSerialization(TestCase, SerializationMixin):
                     self.assertTrue(opened_zipfile.has_record(".format_version"))
                     self.assertEqual(opened_zipfile.get_record(".format_version"), b'1')
 
-    @unittest.skipIf(IS_WINDOWS, "TemporaryFileName on windows")
     def test_corrupted_checkpoint_error_message(self):
         """Test that corrupted checkpoint files produce helpful error messages."""
         sd = torch.nn.Linear(2, 3).state_dict()
@@ -4750,7 +4737,6 @@ class TestSerialization(TestCase, SerializationMixin):
         self.assertEqual(untyped_loaded.nbytes(), 6)
 
     @parametrize('path_type', (str, Path))
-    @unittest.skipIf(IS_WINDOWS, "TemporaryFileName on windows")
     def test_mmap_load_offset_calculation(self, path_type):
         calculate_offsets_before = serialization_config.load.calculate_storage_offsets
         try:
@@ -5618,7 +5604,6 @@ class TestSerializationGDS(TestCase):
     def test_gds_config_defaults_to_off(self):
         self.assertFalse(serialization_config.load.use_gds)
 
-    @unittest.skipIf(IS_WINDOWS, "TemporaryFileName on windows")
     @parametrize("path_type", (str, Path))
     def test_gds_falls_back_for_cpu_map_location(self, path_type):
         # map_location is not CUDA, so the load must silently take the usual path.
@@ -5647,7 +5632,6 @@ class TestSerializationGDS(TestCase):
         for v in loaded.values():
             self.assertEqual(v.device.type, map_location)
 
-    @unittest.skipIf(IS_WINDOWS, "TemporaryFileName on windows")
     @parametrize("path_type", (str, Path))
     def test_gds_load_round_trip(self, path_type):
         self._require_gds()
@@ -5664,7 +5648,6 @@ class TestSerializationGDS(TestCase):
             self.assertEqual(v, reference[k])
             self.assertTrue(torch.equal(v, sd[k].cuda()))
 
-    @unittest.skipIf(IS_WINDOWS, "TemporaryFileName on windows")
     @parametrize("dtype", (torch.float32, torch.float64, torch.uint8, torch.int64))
     def test_gds_load_dtypes(self, dtype):
         self._require_gds()
@@ -5682,7 +5665,6 @@ class TestSerializationGDS(TestCase):
         self.assertTrue(torch.equal(loaded["t"], t.cuda()))
         self.assertEqual(loaded["empty"].numel(), 0)
 
-    @unittest.skipIf(IS_WINDOWS, "TemporaryFileName on windows")
     def test_gds_load_indexed_device(self):
         self._require_gds()
         sd = torch.nn.Linear(64, 64).state_dict()

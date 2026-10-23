@@ -39,7 +39,6 @@ from torch.testing._internal.common_cuda import (
 )
 from torch.testing._internal.common_device_type import instantiate_device_type_tests
 from torch.testing._internal.common_utils import (
-    IS_WINDOWS,
     parametrize,
     skipIfHpu,
     skipIfXpu,
@@ -976,7 +975,6 @@ Non-primal fwd outputs from model w/o backward hook: {mod_no_hook_fwd_outputs_no
         self.assertEqual(len(wrap_node.args), 3)
 
     @requires_gpu_and_triton
-    @unittest.skipIf(IS_WINDOWS, "torch.compile doesn't work with windows")
     @parametrize(
         "partition_fn",
         [
@@ -1143,7 +1141,6 @@ Non-primal fwd outputs from model w/o backward hook: {mod_no_hook_fwd_outputs_no
             self.assertEqual(x.grad, x.cos())
 
     @requires_gpu_and_triton
-    @unittest.skipIf(IS_WINDOWS, "torch.compile doesn't work with windows")
     @parametrize(
         "partition_fn",
         [
@@ -1199,7 +1196,6 @@ Non-primal fwd outputs from model w/o backward hook: {mod_no_hook_fwd_outputs_no
         self._compare_orig_and_checkpointed_fns(gn, fn, x, y)
 
     @requires_gpu_and_triton
-    @unittest.skipIf(IS_WINDOWS, "torch.compile doesn't work with windows")
     @parametrize(
         "partition_fn",
         [
@@ -1255,7 +1251,6 @@ Non-primal fwd outputs from model w/o backward hook: {mod_no_hook_fwd_outputs_no
         self._compare_orig_and_checkpointed_fns(gn, fn, x, y)
 
     @requires_gpu_and_triton
-    @unittest.skipIf(IS_WINDOWS, "torch.compile doesn't work with windows")
     @parametrize(
         "partition_fn",
         [
@@ -1329,7 +1324,6 @@ Non-primal fwd outputs from model w/o backward hook: {mod_no_hook_fwd_outputs_no
         self._compare_orig_and_checkpointed_fns(gn, fn, x, y)
 
     @requires_gpu_and_triton
-    @unittest.skipIf(IS_WINDOWS, "torch.compile doesn't work with windows")
     @parametrize(
         "partition_fn",
         [
@@ -1386,7 +1380,6 @@ Non-primal fwd outputs from model w/o backward hook: {mod_no_hook_fwd_outputs_no
         self._compare_orig_and_checkpointed_fns(gn, fn, x, y)
 
     @requires_gpu_and_triton
-    @unittest.skipIf(IS_WINDOWS, "torch.compile doesn't work with windows")
     @parametrize(
         "partition_fn",
         [
@@ -1458,7 +1451,6 @@ Non-primal fwd outputs from model w/o backward hook: {mod_no_hook_fwd_outputs_no
         self._compare_orig_and_checkpointed_fns(gn, fn, x, y)
 
     @requires_gpu_and_triton
-    @unittest.skipIf(IS_WINDOWS, "torch.compile doesn't work with windows")
     @parametrize(
         "partition_fn",
         [
@@ -1511,7 +1503,6 @@ Non-primal fwd outputs from model w/o backward hook: {mod_no_hook_fwd_outputs_no
         self._compare_orig_and_checkpointed_fns(gn, fn, x, y)
 
     @requires_gpu_and_triton
-    @unittest.skipIf(IS_WINDOWS, "torch.compile doesn't work with windows")
     @parametrize(
         "partition_fn",
         [
@@ -1563,7 +1554,6 @@ Non-primal fwd outputs from model w/o backward hook: {mod_no_hook_fwd_outputs_no
         self._compare_orig_and_checkpointed_fns(gn, fn, x, y)
 
     @requires_gpu_and_triton
-    @unittest.skipIf(IS_WINDOWS, "torch.compile doesn't work with windows")
     @parametrize(
         "partition_fn",
         [
@@ -1612,7 +1602,6 @@ Non-primal fwd outputs from model w/o backward hook: {mod_no_hook_fwd_outputs_no
         self._validate(fn, backend, x, y)
         self._compare_orig_and_checkpointed_fns(gn, fn, x, y)
 
-    @unittest.skipIf(IS_WINDOWS, "torch.compile doesn't work with windows")
     @unittest.skip(
         "In-place op support in selective checkpointing + torch.compile "
         "requires TorchDispatchMode + torch.compile work to complete"
@@ -1671,7 +1660,6 @@ Non-primal fwd outputs from model w/o backward hook: {mod_no_hook_fwd_outputs_no
         self._compare_orig_and_checkpointed_fns(gn, fn, x, y)
 
     @requires_gpu_and_triton
-    @unittest.skipIf(IS_WINDOWS, "torch.compile doesn't work with windows")
     @torch._inductor.config.patch(fallback_random=True)
     @parametrize(
         "partition_fn",
@@ -1738,7 +1726,6 @@ Non-primal fwd outputs from model w/o backward hook: {mod_no_hook_fwd_outputs_no
             self._compare_orig_and_checkpointed_fns(gn, fn, x)
 
     @requires_gpu_and_triton
-    @unittest.skipIf(IS_WINDOWS, "torch.compile doesn't work with windows")
     @parametrize(
         "partition_fn",
         [

@@ -16,7 +16,6 @@ from torch.profiler import _utils, profile
 from torch.testing._internal.common_utils import (
     IS_LINUX,
     IS_MACOS,
-    IS_WINDOWS,
     run_tests,
     TEST_WITH_TORCHDYNAMO,
     TestCase,
@@ -368,7 +367,7 @@ class TestTorchTidyProfiler(TestCase):
         )
 
     @unittest.skipIf(
-        TEST_WITH_TORCHDYNAMO or IS_LINUX or IS_MACOS or IS_WINDOWS,
+        TEST_WITH_TORCHDYNAMO or IS_LINUX or IS_MACOS,
         "https://github.com/pytorch/pytorch/issues/87581",
     )
     def test_module_and_optimizer_ids(self) -> None:

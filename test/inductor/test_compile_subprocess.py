@@ -19,8 +19,6 @@ from torch._inductor.compile_fx import _InProcessFxCompile, FxCompile, FxCompile
 from torch._inductor.graph import GraphLowering
 from torch._inductor.test_case import TestCase
 from torch.testing._internal.common_utils import (
-    IS_CI,
-    IS_WINDOWS,
     isRocmArchAnyOf,
     MI350_ARCH,
     TEST_WITH_ASAN,
@@ -34,16 +32,6 @@ from torch.testing._internal.inductor_utils import (
     RUN_CPU,
     RUN_GPU,
 )
-
-
-if IS_WINDOWS and IS_CI:
-    # TODO(xuhancn) : Debug and confirm pass_fds status on Windows.
-    sys.stderr.write(
-        "Almost UTs failed: pass_fds not supported on Windows, skip them on Windows.\n"
-    )
-    if __name__ == "__main__":
-        sys.exit(0)
-    raise unittest.SkipTest("pass_fds not supported on Windows")
 
 
 # Make the helper files in test/ importable

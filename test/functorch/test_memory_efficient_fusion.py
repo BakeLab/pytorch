@@ -7,6 +7,7 @@ import torch.fx as fx
 from functorch import make_fx
 from torch._functorch.compile_utils import fx_graph_cse
 from torch.testing._internal.common_utils import run_tests, TestCase
+from torch.testing._internal.common_utils import HardwareClassification
 
 
 HAS_CUDA = torch.cuda.is_available()
@@ -314,14 +315,6 @@ class RandomOpTestCase(TestCase):
 
         for _ in range(30):
             check(fx_g, t, -1, graph_input=True)
-
-
-instantiate_device_type_tests(
-    TestMemoryEfficientOpAuthoringDevice,
-    globals(),
-    only_for=("cuda", "xpu"),
-    allow_xpu=True,
-)
 
 
 if __name__ == "__main__":

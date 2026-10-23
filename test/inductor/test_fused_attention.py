@@ -31,6 +31,7 @@ from torch.testing._internal.inductor_utils import (
     HAS_CUDA_AND_TRITON,
     HAS_XPU_AND_TRITON,
 )
+from torch.testing._internal.common_utils import recover_orig_fp32_precision
 
 
 def checkpoint_wrapper(fn):

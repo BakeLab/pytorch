@@ -16,24 +16,13 @@ from torch.testing._internal import common_utils
 from torch.testing._internal.common_utils import (
     find_library_location,
     HardwareClassification,
-    IS_CI,
     IS_FBCODE,
     IS_MACOS,
     IS_SANDCASTLE,
-    IS_WINDOWS,
 )
 from torch.testing._internal.inductor_utils import GPU_TYPE, HAS_GPU_AND_TRITON
 from torch.testing._internal.logging_utils import LoggingTestCase, make_logging_test
 from torch.utils._python_dispatch import TorchDispatchMode
-
-
-if IS_WINDOWS and IS_CI:
-    sys.stderr.write(
-        "Windows CI does not have necessary dependencies for test_torchinductor yet\n"
-    )
-    if __name__ == "__main__":
-        sys.exit(0)
-    raise unittest.SkipTest("requires sympy/functorch/filelock")
 
 try:
     try:
@@ -615,8 +604,6 @@ class AOTICustomOpTestCase(TestCase):
             raise unittest.SkipTest("non-portable load_library call used in test")
         else:
             lib_file_path = find_library_location("libaoti_custom_ops.so")
-            if IS_WINDOWS:
-                lib_file_path = find_library_location("aoti_custom_ops.dll")
             if not os.path.exists(lib_file_path):
                 raise unittest.SkipTest("libaoti_custom_ops not built!")
             torch.ops.load_library(str(lib_file_path))

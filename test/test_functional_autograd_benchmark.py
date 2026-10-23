@@ -8,7 +8,6 @@ import unittest
 
 from torch.testing._internal.common_utils import (
     HardwareClassification,
-    IS_WINDOWS,
     run_tests,
     slowTest,
     TemporaryFileName,
@@ -70,10 +69,6 @@ class TestFunctionalAutogradBenchmark(TestCase):
             self._test_runner(task)
 
     @slowTest
-    @unittest.skipIf(
-        IS_WINDOWS,
-        "NamedTemporaryFile on windows does not have all the features we need.",
-    )
     def test_slow_tasks(self):
         slow_tasks = ["fcn_resnet", "detr"]
         # deepspeech is voluntarily excluded as it takes too long to run without

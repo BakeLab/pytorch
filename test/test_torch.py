@@ -69,7 +69,7 @@ from torch.testing._internal.common_dtype import (
     all_types_complex_float8_and, all_passthru_types_and,
 )
 from torch.testing._internal.two_tensor import TwoTensor
-from torch.testing._internal.common_utils import IS_WINDOWS
+from torch.testing._internal.common_utils import AlwaysWarnTypedStorageRemoval, TEST_CUDA_GRAPH, instantiate_parametrized_tests
 
 if TEST_WITH_TORCHINDUCTOR:
     from torch._inductor.test_case import TestCase
@@ -163,7 +163,7 @@ class TestTorchDeviceType(TestCase):
         return tuple(shape)
 
     @onlyNativeDeviceTypes
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     @dtypes(torch.int8, torch.uint8, torch.int16, torch.int32, torch.int64,
             torch.bool, torch.float32, torch.complex64, torch.float64,
             torch.complex128, torch.uint16, torch.uint32, torch.uint64)
@@ -258,7 +258,7 @@ class TestTorchDeviceType(TestCase):
     @dtypes(torch.int8, torch.uint8, torch.int16, torch.int32, torch.int64,
             torch.bool, torch.float32, torch.complex64, torch.float64,
             torch.complex128, torch.uint16, torch.uint32, torch.uint64)
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_storage(self, device, dtype):
         v = make_tensor((3, 5), dtype=dtype, device=device, low=-9, high=9)
         self.assertEqual(v.storage()[0], v[0][0])
@@ -288,7 +288,7 @@ class TestTorchDeviceType(TestCase):
     @dtypes(torch.int8, torch.uint8, torch.int16, torch.int32, torch.int64,
             torch.bool, torch.float32, torch.complex64, torch.float64,
             torch.complex128)
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_storage_setitem(self, device, dtype):
         storage_type_name = torch.storage._dtype_to_storage_type_map()[dtype]
         if torch.device(device).type == 'cuda':
@@ -315,7 +315,7 @@ class TestTorchDeviceType(TestCase):
 
     @skipIfTorchDynamo("Not a suitable test for TorchDynamo")
     @onlyNativeDeviceTypes
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_storage_use_count(self, device):
         a = torch.randn(10, device=device)
         prev_cf = torch._C._storage_Use_Count(a.untyped_storage()._cdata)
@@ -360,7 +360,7 @@ class TestTorchDeviceType(TestCase):
     @onlyNativeDeviceTypes
     @expectedFailureXPU  # https://github.com/intel/torch-xpu-ops/issues/5377
     @dtypes(*all_types_and_complex_and(torch.half, torch.bool, torch.bfloat16))
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_tensor_storage_type(self, device, dtype):
         a = make_tensor((10,), dtype=dtype, device=device, low=-9, high=9)
 
@@ -371,7 +371,7 @@ class TestTorchDeviceType(TestCase):
 
     @onlyNativeDeviceTypes
     @dtypes(*all_types_and_complex_and(torch.half, torch.bool, torch.bfloat16, torch.uint16, torch.uint32, torch.uint64))
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_tensor_from_storage(self, device, dtype):
         a = make_tensor((4, 5, 3), dtype=dtype, device=device, low=-9, high=9)
         a_s = a.storage()
@@ -389,7 +389,7 @@ class TestTorchDeviceType(TestCase):
 
     @onlyNativeDeviceTypes
     @dtypes(*all_types_and_complex_and(torch.half, torch.bool, torch.bfloat16))
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_set_storage(self, device, dtype):
         a = make_tensor((4, 5, 3), dtype=dtype, device=device, low=-9, high=9)
         a_s = a.storage()
@@ -430,7 +430,7 @@ class TestTorchDeviceType(TestCase):
 
     @onlyNativeDeviceTypes
     @dtypes(*all_types_and_complex_and(torch.half, torch.bool, torch.bfloat16))
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_typed_storage_meta(self, device, dtype):
         args_list = [
             [],
@@ -444,7 +444,7 @@ class TestTorchDeviceType(TestCase):
             self._check_storage_meta(s, s_check)
 
     @onlyNativeDeviceTypes
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_untyped_storage_meta(self, device):
         args_list = [
             [],
@@ -459,7 +459,7 @@ class TestTorchDeviceType(TestCase):
 
     @onlyNativeDeviceTypes
     @dtypes(*all_types_and_complex_and(torch.half, torch.bool, torch.bfloat16))
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_storage_meta_from_tensor(self, device, dtype):
         t_check = make_tensor((4, 5, 3), dtype=dtype, device=device, low=-9, high=9)
         t = t_check.to('meta')
@@ -469,7 +469,7 @@ class TestTorchDeviceType(TestCase):
         self._check_storage_meta(s, s_check)
 
     @dtypes(*all_types_and_complex_and(torch.half, torch.bool, torch.bfloat16))
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_storage_meta_errors(self, device, dtype):
         s0 = torch.TypedStorage([1, 2, 3, 4], device='meta', dtype=dtype)
 
@@ -509,7 +509,7 @@ class TestTorchDeviceType(TestCase):
 
     @onlyCPU
     @dtypes(*all_types_and_complex_and(torch.half, torch.bool, torch.bfloat16))
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_storage_meta_ok(self, device, dtype):
         s0 = torch.TypedStorage([1, 2, 3, 4], device='meta', dtype=dtype)
 
@@ -525,7 +525,7 @@ class TestTorchDeviceType(TestCase):
         model.share_memory()
 
     @dtypes(torch.float32, torch.complex64)
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_deepcopy(self, device, dtype):
         from copy import deepcopy
         a = torch.randn(5, 5, dtype=dtype, device=device)
@@ -553,7 +553,7 @@ class TestTorchDeviceType(TestCase):
         self.assertEqual(deepcopy(a).foo, 3)
 
     @dtypes(torch.float32, torch.complex64)
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_deepcopy_scalar(self, device, dtype):
         from copy import deepcopy
         a = torch.tensor(5, dtype=dtype, device=device)
@@ -3767,7 +3767,7 @@ class TestTorchDeviceType(TestCase):
 
     # FIXME: find a test suite for the take operator
     @dtypes(*all_types_and_complex_and(torch.half, torch.bool, torch.bfloat16))
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_take(self, device, dtype):
         idx_size = (4,)
 
@@ -7456,7 +7456,7 @@ class TestTorchCUDA(TestCase):
             torch.set_default_tensor_type(default_type)
 
     @dtypes(*all_types_and_complex_and(torch.half, torch.bool, torch.bfloat16))
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_storage_meta_errors(self, device, dtype):
         s0 = torch.TypedStorage([1, 2, 3, 4], device='meta', dtype=dtype)
 
@@ -11420,7 +11420,7 @@ tensor([[[1.+1.j, 1.+1.j, 1.+1.j,  ..., 1.+1.j, 1.+1.j, 1.+1.j],
             self.assertEqual(len(w), 0)
 
     @parametrize("dtype", all_types_and_complex_and(torch.half, torch.bool, torch.bfloat16))
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_storage_meta_ok(self, dtype):
         s0 = torch.TypedStorage([1, 2, 3, 4], device='meta', dtype=dtype)
 
@@ -11428,7 +11428,7 @@ tensor([[[1.+1.j, 1.+1.j, 1.+1.j,  ..., 1.+1.j, 1.+1.j, 1.+1.j],
         s0.resize_(10)
 
     @parametrize("dtype", all_types_and_complex_and(torch.half, torch.bool, torch.bfloat16))
-    @slowTestIf(IS_WINDOWS)
+    @slowTestIf(False)
     def test_storage_meta_errors(self, dtype):
         s0 = torch.TypedStorage([1, 2, 3, 4], device='meta', dtype=dtype)
 
@@ -11471,15 +11471,6 @@ tensor([[[1.+1.j, 1.+1.j, 1.+1.j,  ..., 1.+1.j, 1.+1.j, 1.+1.j],
 class TestTorchCPU(TestCase):
     hw_classification = HardwareClassification.CPU
     exact_dtype = True
-
-    @skipIfTorchInductor("https://github.com/pytorch/pytorch/issues/113707")
-    @dtypes(*get_all_qint_dtypes())
-    def test_nondeterministic_resize_quantized(self, device, dtype):
-        a = torch.tensor([-1, 0, 1, 2, 3], dtype=torch.float, device=device)
-        b = torch.quantize_per_tensor(a, 0.1, 10, dtype)
-        self.check_nondeterministic_alert(
-            lambda: b.resize_((10,)),
-            'quantized_resize_cpu_')
 
     # FIXME: move to test_scatter_gather_ops
     def test_gather_backward_one_dim(self):

@@ -16,7 +16,6 @@ import torch.multiprocessing as torch_mp
 from torch.testing._internal.common_utils import (
     IS_ARM64,
     IS_MACOS,
-    IS_WINDOWS,
     run_tests,
     skip_but_pass_in_sandcastle_if,
     TEST_WITH_DEV_DBG_ASAN,
@@ -42,7 +41,7 @@ def _stuck_function(rank, mp_queue):
 
 
 # timer is not supported on these platforms
-if not (IS_WINDOWS or IS_MACOS or IS_ARM64):
+if not (IS_MACOS or IS_ARM64):
 
     class LocalTimerExample(TestCase):
         """

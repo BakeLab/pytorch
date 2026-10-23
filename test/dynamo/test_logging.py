@@ -22,7 +22,6 @@ from torch.testing._internal.common_cuda import SM90OrLater
 from torch.testing._internal.common_utils import (
     expectedIfCppFakeTensor,
     find_free_port,
-    IS_WINDOWS,
     munge_exc,
     skipIfTorchDynamo,
     skipIfWindows,
@@ -1048,8 +1047,7 @@ Mutating object of type dict (source name: L['mod']._buffers)
         # NOTE: list comprehensions are inlined in 3.12, so test with tuples
         def fn1():
             def fn2():
-                if True:
-                    return tuple(torch.ones(3, 3) for _ in range(5))
+                return tuple(torch.ones(3, 3) for _ in range(5))
                 return None
 
             return fn2()
@@ -1088,7 +1086,7 @@ Mutating object of type dict (source name: L['mod']._buffers)
             "import torch",
             env=env,
         )
-        lines = stderr.decode().split("\r\n" if IS_WINDOWS else "\n")
+        lines = stderr.decode().split("\n")
         # This is a sanity assert that our error is not spammy.
         # As of this test creation this was 18.
         # See this issue for the purpose o this test:

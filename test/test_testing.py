@@ -26,7 +26,7 @@ import torch
 
 from torch.testing import make_tensor
 from torch.testing._internal.common_utils import (
-    IS_CI, IS_FBCODE, IS_JETSON, IS_MACOS, IS_SANDCASTLE, IS_WINDOWS, TestCase, run_tests, slowTest,
+    IS_CI, IS_FBCODE, IS_JETSON, IS_MACOS, IS_SANDCASTLE, TestCase, run_tests, slowTest,
     parametrize, reparametrize, subtest, instantiate_parametrized_tests, dtype_name,
     TEST_CUDA, TEST_WITH_CROSSREF, TEST_WITH_PERIODIC, TEST_WITH_ROCM, decorateIf, periodic, skipIfTorchDynamo, skipIfXpu,
     getRocmVersion, TemporaryFileName, sanitize_pytest_xml,
@@ -594,7 +594,6 @@ class TestFrameworkUtils(TestCase):
                 common_cuda.xfailCUDAIfSM89OrLaterOnWindows(test_fn), test_fn
             )
 
-    @unittest.skipIf(IS_WINDOWS, "Skipping because doesn't work for windows")
     @unittest.skipIf(IS_SANDCASTLE, "Skipping because doesn't work on sandcastle")
     def test_filtering_env_var(self):
         # Test environment variable selected device type test generator.
@@ -712,7 +711,6 @@ def _count_junit_tags(normalized: str) -> collections.Counter[str]:
 
 # The fixture runs as the default config, so its XML doesn't depend on the test
 # config or device; skip the configs and GPU builds that would only repeat it.
-@unittest.skipIf(IS_WINDOWS, "Skipping because doesn't work for windows")
 @unittest.skipIf(IS_SANDCASTLE, "Skipping because doesn't work on sandcastle")
 @skipIfTorchDynamo("subprocess test does not need Dynamo coverage")
 @unittest.skipIf(TEST_WITH_CROSSREF, "subprocess test does not need crossref coverage")
@@ -3012,7 +3010,7 @@ class TestImports(TestCase):
                            "torch._inductor.kernel.flex_gemm.quack_ops",  # depends on cutlass
                            "torch.profiler._cuspy",  # depends on cupti-python
                            ]
-        if IS_WINDOWS or IS_MACOS or IS_JETSON:
+        if IS_MACOS or IS_JETSON:
             # Distributed should be importable on Windows, but not on Mac
             if IS_MACOS or IS_JETSON:
                 ignored_modules.append("torch.distributed.")

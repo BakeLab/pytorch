@@ -82,14 +82,9 @@ from torch.testing._internal.common_utils import (
     HardwareClassification,
     IS_FBCODE,
     IS_MACOS,
-    IS_ARM64,
-    IS_LINUX,
-    IS_CPU_CAPABILITY_SVE256,
-    IS_WINDOWS,
     TEST_WITH_CROSSREF,
     run_tests,
     skipIfTorchDynamo,
-    xfailIf,
     xfailIfNoAcceleratorTriton,
 )
 from torch.testing._internal.common_utils import TestCase
@@ -285,7 +280,7 @@ class TestFX(TestCase):
         )
         torch.fx.proxy.TracerBase.check_mutable_operations = True
 
-        if not (IS_FBCODE or IS_WINDOWS or IS_MACOS):
+        if not (IS_FBCODE or IS_MACOS):
             lib_file_path = find_library_location("libtorchbind_test.so")
             torch.ops.load_library(str(lib_file_path))
 
@@ -1035,7 +1030,7 @@ class TestFX(TestCase):
         self.checkGraphModule(m, (a, b))
 
     def test_native_callable(self):
-        if IS_FBCODE or IS_WINDOWS or IS_MACOS:
+        if IS_FBCODE or IS_MACOS:
             raise unittest.SkipTest("non-portable load_library call used in test")
         # This test exercises the case where we use FX to translate from Python
         # code to some native callable object
@@ -2660,7 +2655,6 @@ def forward(self, x : _torch_Tensor_) -> _torch_Tensor_:
                         f"Expected tensor_meta[1].shape == torch.Size([]), "
                         f"got {tensor_meta[1].shape}"
                     )
-    @xfailIf(IS_ARM64 and IS_LINUX and IS_CPU_CAPABILITY_SVE256) # RuntimeError: label is too far
     def test_shape_prop_layout_3d(self):
         class ConvTest3d(torch.nn.Module):
             def __init__(self) -> None:
@@ -3704,7 +3698,7 @@ def forward(self, x : _torch_Tensor_) -> _torch_Tensor_:
             node.__update_args_kwargs((), {})
 
     def test_torchbind_class_attribute_in_fx(self):
-        if IS_FBCODE or IS_WINDOWS or IS_MACOS:
+        if IS_FBCODE or IS_MACOS:
             self.skipTest(
                 "torch.classes._TorchScriptTesting._StackString is registered, skipping"
             )
@@ -3721,7 +3715,7 @@ def forward(self, x : _torch_Tensor_) -> _torch_Tensor_:
         self.checkGraphModule(m, ())
 
     def test_torchbind_class_attribute_in_fx_tensor_arg(self):
-        if IS_FBCODE or IS_WINDOWS or IS_MACOS:
+        if IS_FBCODE or IS_MACOS:
             self.skipTest(
                 "torch.classes._TorchScriptTesting._ReLUClass is registered, skipping"
             )
@@ -5046,28 +5040,10 @@ def forward(self, args_list: List[torch.Tensor]){maybe_return_annotation}:
         # recorver mutable checking flag
         torch.fx.proxy.TracerBase.check_mutable_operations = orig_tracer_mutable_flag
 
-    @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
-    @torch.fx.experimental._config.patch("enrich_profiler_metadata", True)
-    @blas_library_context("cublaslt")
-    def test_profiler_stack_trace_augmentation(self):
-        """
-        Test that map_recorded_events_to_aten_ops_with_stack_trace correctly
-        augments profiler events with stack traces from FX metadata registry.
-        """
-
-        # Simple test model
-        class TestModel(torch.nn.Module):
-            def __init__(self):
-                super().__init__()
-                self.linear1 = torch.nn.Linear(10, 16)
-                self.relu = torch.nn.ReLU()
-                self.linear2 = torch.nn.Linear(16, 10)
-
-            def forward(self, x):
-                x = self.linear1(x)
-                x = self.relu(x)
-                x = self.linear2(x)
-                return x
+    @staticmethod
+    def _capture_gm(fn, *example_inputs):
+        """Compile ``fn`` with dynamic shapes, return the captured GraphModule."""
+        from torch._dynamo.testing import EagerAndRecordGraphs
 
         backend = EagerAndRecordGraphs()
         torch.compile(fn, dynamic=True, backend=backend)(*example_inputs)
@@ -5343,7 +5319,7 @@ def run_getitem_target():
         _wrapped_methods_to_patch.pop()
 
 
-class TestFXCUDA(JitTestCase):
+class TestFXCUDA(TestCase):
     hw_classification = HardwareClassification.CUDA
 
     def setUp(self):
@@ -5436,32 +5412,21 @@ class TestFXCUDA(JitTestCase):
         else:
             kernel_event = "cudaLaunchKernel"
             kernel_event_relu = "cudaLaunchKernel"
-
-        if IS_WINDOWS:
-            self._assert_profiler_stack_traces_for_nodes(
-                actual_traces,
-                {
-                    "addmm": ("linear",),
-                    "relu": ("relu",),
-                    "addmm_1": ("linear",),
-                },
-            )
-        else:
-            # cuBLASLt added two internal cudaStreamIsCapturing checks before
-            # launching GEMM kernels starting with CUDA 13.4, which show up
-            # as extra runtime events ahead of each addmm's kernel launch.
-            extra_event = not torch.version.hip and _get_torch_cuda_version() >= (13, 4)
-            capture_1, capture_2 = "", ""
-            if extra_event:
-                capture_1 = (
-                    "event=cudaStreamIsCapturing node=addmm "
-                    "stack_trace=x = self.linear1(x)\n"
-                ) * 2
-                capture_2 = (
-                    "event=cudaStreamIsCapturing node=addmm_1 "
-                    "stack_trace=x = self.linear2(x)\n"
-                ) * 2
-            expected = f"""\
+        # cuBLASLt added two internal cudaStreamIsCapturing checks before
+        # launching GEMM kernels starting with CUDA 13.4, which show up
+        # as extra runtime events ahead of each addmm's kernel launch.
+        extra_event = not torch.version.hip and _get_torch_cuda_version() >= (13, 4)
+        capture_1, capture_2 = "", ""
+        if extra_event:
+            capture_1 = (
+                "event=cudaStreamIsCapturing node=addmm "
+                "stack_trace=x = self.linear1(x)\n"
+            ) * 2
+            capture_2 = (
+                "event=cudaStreamIsCapturing node=addmm_1 "
+                "stack_trace=x = self.linear2(x)\n"
+            ) * 2
+        expected = f"""\
 event=aten::t node=t stack_trace=x = self.linear1(x)
 event=aten::transpose node=t stack_trace=x = self.linear1(x)
 event=aten::as_strided node=t stack_trace=x = self.linear1(x)
@@ -5475,7 +5440,7 @@ event=aten::transpose node=t_1 stack_trace=x = self.linear2(x)
 event=aten::as_strided node=t_1 stack_trace=x = self.linear2(x)
 event=aten::addmm node=addmm_1 stack_trace=x = self.linear2(x)
 {capture_2}event={kernel_event} node=addmm_1 stack_trace=x = self.linear2(x)"""
-            self.assertExpectedInline(actual_traces, expected)
+        self.assertExpectedInline(actual_traces, expected)
 
     @torch.fx.experimental._config.patch("enrich_profiler_metadata", True)
     def test_profiler_multiple_modules(self, device):

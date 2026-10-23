@@ -10,7 +10,6 @@ from torch.export import export
 from torch.fx.passes.infra.pass_base import PassResult
 from torch.testing._internal.common_utils import (
     HardwareClassification,
-    IS_WINDOWS,
     run_tests,
     TestCase,
 )
@@ -48,7 +47,6 @@ class TestPassInfra(TestCase):
             self.assertEqual(new_node.op, old_node.op)
             self.assertEqual(new_node.target, old_node.target)
 
-    @unittest.skipIf(IS_WINDOWS, "Windows not supported")
     def test_cond(self) -> None:
         class M(torch.nn.Module):
             def __init__(self) -> None:

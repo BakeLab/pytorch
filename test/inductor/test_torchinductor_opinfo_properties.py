@@ -57,7 +57,6 @@ from torch.testing._internal.common_utils import (
     getRocmVersion,
     HardwareClassification,
     IS_FBCODE,
-    IS_WINDOWS,
     parametrize,
     skipIfTorchDynamo,
     TEST_WITH_ASAN,
@@ -823,7 +822,6 @@ def compile_fn(fn, backend):
         raise ValueError(f"Unknown backend: {backend}")
 
 
-@unittest.skipIf(IS_WINDOWS, "Skipped on Windows")
 @unittest.skipIf(TEST_WITH_ASAN, "Skipped under ASAN")
 @unittest.skipIf(not HAS_GPU, "Requires GPU")
 class TestOpInfoProperties(TestCase):
@@ -935,16 +933,6 @@ class TestOpInfoProperties(TestCase):
         across batch sizes, as split-k can produce different rounding based on
         how the work is partitioned.
         """
-        if (
-            op.name == "log1p"
-            and dtype == torch.float32
-            and backend == "inductor_default"
-            and isRocmArchAnyOf(MI200_ARCH)
-        ):
-            # The static- vs dynamic-shape log1p mismatch (#191552) shows up on
-            # every MI300/MI350 run but only on some MI200 runs, so a strict
-            # xfail would flake there.
-            self.skipTest("log1p mismatch is intermittent on MI200 (#191552)")
         torch._dynamo.reset()
         device_type = torch.device(device).type
 

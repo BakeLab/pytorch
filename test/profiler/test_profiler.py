@@ -64,7 +64,6 @@ from torch.testing._internal.common_utils import (
     IS_ARM64,
     IS_JETSON,
     IS_LINUX,
-    IS_WINDOWS,
     IS_X86,
     parametrize,
     run_tests,
@@ -121,7 +120,6 @@ except ModuleNotFoundError:
 
 
 @unittest.skipIf(not HAS_PSUTIL, "Requires psutil to run")
-@unittest.skipIf(IS_WINDOWS, "Test is flaky on Windows")
 class TestProfilerCUDA(TestCase):
     hw_classification = HardwareClassification.CUDA
 
@@ -2224,7 +2222,6 @@ with open(sys.argv[1], "w") as f:
                 y = torch.mm(x, x)
 
     @skipIfTorchDynamo("profiler gets ignored if dynamo activated")
-    @unittest.skipIf(IS_WINDOWS, "can't use os.fork() on Windows")
     # The child deadlocks once the parent has initialized Kineto's XPU profiler,
     # which setUpModule does on any XPU build.
     @unittest.skipIf(

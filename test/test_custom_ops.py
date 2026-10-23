@@ -53,7 +53,6 @@ from torch.testing._internal.common_utils import (
     instantiate_parametrized_tests,
     IS_LINUX,
     IS_MACOS,
-    IS_WINDOWS,
     parametrize,
     run_tests,
     scoped_load_inline,
@@ -89,7 +88,7 @@ device_type = (
 
 
 def requires_compile(fun):
-    fun = unittest.skipIf(IS_WINDOWS, "torch.compile doesn't work with windows")(fun)
+    fun = unittest.skipIf(False, "torch.compile doesn't work with windows")(fun)
     return fun
 
 
@@ -2263,7 +2262,6 @@ def forward(self, x_1):
     return numpy_view_copy""",
         )
 
-    @unittest.skipIf(IS_WINDOWS, "torch.compile doesn't work on windows")
     def test_data_dependent_compile(self):
         import torch._dynamo.testing
         from torch._dynamo.utils import counters
@@ -5407,15 +5405,13 @@ This is necessary for torch.compile/export/fx tracing to work.
 Please use `add.register_fake` to add an fake impl.""",
         )
 
-        if not IS_WINDOWS:
+        @torch.compile(backend="eager")
+        def f(x, y):
+            return add(x, y)
 
-            @torch.compile(backend="eager")
-            def f(x, y):
-                return add(x, y)
-
-            x = torch.randn(3)
-            with self.assertRaisesRegex(RuntimeError, "no fake impl"):
-                f(x, y)
+        x = torch.randn(3)
+        with self.assertRaisesRegex(RuntimeError, "no fake impl"):
+            f(x, y)
 
         abstract_called = False
 
@@ -5432,7 +5428,6 @@ Please use `add.register_fake` to add an fake impl.""",
             self.assertTrue(abstract_called)
 
     @skipIfTorchDynamo("recursive dynamo")
-    @unittest.skipIf(IS_WINDOWS, "torch.compile doesn't work on windows")
     def test_compile(self):
         called_impl = False
         called_abstract = False
@@ -6944,7 +6939,6 @@ class TestOpProfiles(TestCase):
         loaded = read_profiles_from_yaml(yaml_str)
         self.assertEqual(op_profiles, loaded)
 
-    @unittest.skipIf(IS_WINDOWS, "Windows not supported for this test")
     def test_save_to_file(self):
         op_profile = self.get_sample_op_profile("mylib.foo.default")
 

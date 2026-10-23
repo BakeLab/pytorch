@@ -100,7 +100,6 @@ from torch.testing._internal.common_utils import (
     instantiate_parametrized_tests,
     IS_ARM64,
     IS_MACOS,
-    IS_WINDOWS,
     IS_X86,
     outs_and_grads,
     parametrize,
@@ -1179,7 +1178,6 @@ metadata incorrectly.
         self.assertTrue(isinstance(aa2.grad, ConstantExtraMetadataTensor))
         self.assertTrue(isinstance(aa2.grad.elem, TwoTensor))
 
-    @unittest.skipIf(IS_WINDOWS, "Windows isn't supported for this case")
     def test_custom_tensor_metadata(self):
         def f(x):
             x_elem = x.elem
@@ -1259,7 +1257,6 @@ metadata incorrectly.
         self.assertTrue(torch.allclose(y_nested_compile.grad.a.a, y_nested.grad.a.a))
         self.assertTrue(torch.allclose(y_nested_compile.grad.a.b, y_nested.grad.a.b))
 
-    @unittest.skipIf(IS_WINDOWS, "Windows isn't supported for this case")
     def test_nested_subclasses_complicated_inps_mixed(self):
         def f(x, y):
             y_elem = y.elem
@@ -6113,7 +6110,6 @@ def forward(self, arg0_1, arg1_1):
     return (add_3,)""",
         )
 
-    @unittest.skipIf(IS_WINDOWS, "Windows isn't supported for this case")
     @unittest.skipIf(
         not torchdynamo.is_dynamo_supported(), "TorchDynamo is not supported"
     )
@@ -6191,7 +6187,6 @@ def forward(self, arg0_1):
     return (sin_1,)""",
         )
 
-    @unittest.skipIf(IS_WINDOWS, "Windows isn't supported for this case")
     @unittest.skipIf(
         not torchdynamo.is_dynamo_supported(), "TorchDynamo is not supported"
     )
@@ -6352,7 +6347,6 @@ class <lambda>(torch.nn.Module):
 """,
         )
 
-    @unittest.skipIf(IS_WINDOWS, "Windows isn't supported for this case")
     @unittest.skipIf(
         not torchdynamo.is_dynamo_supported(), "TorchDynamo is not supported"
     )
@@ -6923,7 +6917,6 @@ graph():
         ):
             aot_export_module(mod, [inp], trace_joint=True, output_loss_index=1)
 
-    @unittest.skipIf(IS_WINDOWS, "Windows isn't supported for this case")
     @unittest.skipIf(
         not torch._dynamo.is_dynamo_supported(), "Cond needs dynamo to run"
     )

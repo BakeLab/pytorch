@@ -22,7 +22,6 @@ from torch.testing._internal.common_methods_invocations import op_db
 from torch.testing._internal.common_utils import (
     HardwareClassification,
     IS_FBCODE,
-    IS_WINDOWS,
     run_tests,
     TestCase,
 )
@@ -195,11 +194,6 @@ class TestExportOnFakeDevice(TestCase):
     # Running this on all ops in op_db is too slow, so we only run on a selected subset
     @onlyAccelerator
     @skipXPUIf(True, "https://github.com/intel/torch-xpu-ops/issues/5157")
-    @unittest.skipIf(
-        IS_WINDOWS,
-        "Subprocess with simulated CPU machine imports op_db which triggers "
-        "get_device_capability(); 0 devices raises Invalid device id on Windows.",
-    )
     @ops(selected_op_db, allowed_dtypes=(torch.float,))
     def test_fake_export(self, device, dtype, op):
         test_script = f"""\
@@ -266,10 +260,6 @@ for op in ops:
         self.assertEqual(r, "")
 
     @onlyAccelerator
-    @unittest.skipIf(
-        IS_WINDOWS,
-        "Failing on Windows, device_count() changes from 0 to 1 ",
-    )
     def test_preserve_original_behavior(self, device):
         test_script = f"""\
 import torch

@@ -30,7 +30,6 @@ from torch.testing._internal.common_device_type import (
     skipCPUIf,
 )
 from torch.testing._internal.common_utils import (
-    IS_WINDOWS,
     run_tests,
     skipIfHpu,
     skipIfTorchDynamo,
@@ -380,7 +379,6 @@ class TestExecutionTrace(TestCase):
 
         self.assertTrue(p.execution_trace_observer is None)
 
-    @unittest.skipIf(IS_WINDOWS, "torch.compile does not support WINDOWS")
     @unittest.skipIf(
         sys.version_info >= (3, 12), "torch.compile is not supported on python 3.12+"
     )
@@ -448,7 +446,6 @@ class TestExecutionTrace(TestCase):
         if not found_call_compiled_fx_graph:
             raise AssertionError("Expected Call CompiledFxGraph node")
 
-    @unittest.skipIf(IS_WINDOWS, "torch.compile does not support WINDOWS")
     @unittest.skipIf(
         sys.version_info >= (3, 12), "torch.compile is not supported on python 3.12+"
     )
@@ -523,7 +520,6 @@ class TestExecutionTrace(TestCase):
         if not found_captured_triton_kernel_node:
             raise AssertionError("Expected captured triton kernel node")
 
-    @unittest.skipIf(IS_WINDOWS, "torch.compile does not support WINDOWS")
     @unittest.skipIf(
         not (has_triton() and (TEST_CUDA or TEST_XPU)),
         "need triton and device(CUDA or XPU) availability to run",
