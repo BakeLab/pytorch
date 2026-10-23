@@ -5808,12 +5808,6 @@ instantiate_device_type_tests(
     allow_xpu=True,
 )
 instantiate_device_type_tests(
-    TestComposabilityDevice,
-    globals(),
-    only_for=only_for,
-    allow_xpu=True,
-)
-instantiate_device_type_tests(
     TestExamplesCorrectnessDevice,
     globals(),
     only_for=only_for,

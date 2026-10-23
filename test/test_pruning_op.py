@@ -5,6 +5,7 @@ from hypothesis import given, settings
 import numpy as np
 import torch
 from torch.testing._internal.common_utils import TestCase, run_tests, skipIfTorchDynamo
+from torch.testing._internal.common_utils import HardwareClassification
 
 # Generating a tensor and running an operator on it is routinely slower than
 # hypothesis' default deadline.

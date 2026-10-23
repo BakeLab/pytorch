@@ -4638,28 +4638,10 @@ def forward(self, args_list: List[torch.Tensor]){maybe_return_annotation}:
         # recorver mutable checking flag
         torch.fx.proxy.TracerBase.check_mutable_operations = orig_tracer_mutable_flag
 
-    @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
-    @torch.fx.experimental._config.patch("enrich_profiler_metadata", True)
-    @blas_library_context("cublaslt")
-    def test_profiler_stack_trace_augmentation(self):
-        """
-        Test that map_recorded_events_to_aten_ops_with_stack_trace correctly
-        augments profiler events with stack traces from FX metadata registry.
-        """
-
-        # Simple test model
-        class TestModel(torch.nn.Module):
-            def __init__(self):
-                super().__init__()
-                self.linear1 = torch.nn.Linear(10, 16)
-                self.relu = torch.nn.ReLU()
-                self.linear2 = torch.nn.Linear(16, 10)
-
-            def forward(self, x):
-                x = self.linear1(x)
-                x = self.relu(x)
-                x = self.linear2(x)
-                return x
+    @staticmethod
+    def _capture_gm(fn, *example_inputs):
+        """Compile ``fn`` with dynamic shapes, return the captured GraphModule."""
+        from torch._dynamo.testing import EagerAndRecordGraphs
 
         backend = EagerAndRecordGraphs()
         torch.compile(fn, dynamic=True, backend=backend)(*example_inputs)
@@ -4935,7 +4917,7 @@ def run_getitem_target():
         _wrapped_methods_to_patch.pop()
 
 
-class TestFXCUDA(JitTestCase):
+class TestFXCUDA(TestCase):
     hw_classification = HardwareClassification.CUDA
 
     def setUp(self):

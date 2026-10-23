@@ -57,6 +57,7 @@ from torch.testing._internal.inductor_utils import (
 from torch.utils._dtype_abbrs import dtype_abbrs
 from torch.utils._python_dispatch import TorchDispatchMode
 from torch.utils._pytree import tree_leaves, tree_map
+from torch.testing._internal.common_utils import parametrize
 
 
 try:

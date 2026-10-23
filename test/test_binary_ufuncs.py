@@ -74,6 +74,7 @@ from torch.testing._internal.common_utils import (
     torch_to_numpy_dtype_dict,
     xfailIfTorchDynamo,
 )
+from torch.testing._internal.common_device_type import onlyAccelerator
 
 
 if TEST_SCIPY:
