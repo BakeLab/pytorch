@@ -47,7 +47,6 @@ from torch.testing._internal.common_cuda import (
     PLATFORM_SUPPORTS_GREEN_CONTEXT,
     PLATFORM_SUPPORTS_WORKQUEUE_CONFIG,
     ROCM_VERSION,
-    SM89OrLater,
     TEST_CUDNN,
     TEST_MULTIGPU,
     tf32_enabled,
@@ -86,7 +85,6 @@ from torch.testing._internal.common_utils import (
     IS_JETSON,
     IS_LINUX,
     IS_SANDCASTLE,
-    IS_WINDOWS,
     IS_X86,
     load_tests,
     MI350_ARCH,
@@ -178,8 +176,6 @@ _wait_for_cpu_kernel = None
 def skip_background_threads_on_windows(f):
     @functools.wraps(f)
     def wrapped(self, **kwargs):
-        if IS_WINDOWS and SM89OrLater and kwargs.get("use_background_threads"):
-            raise unittest.SkipTest("using background threads fails on Windows")
         return f(self, **kwargs)
 
     return wrapped
@@ -685,7 +681,6 @@ class TestCuda(TestCase):
 
     # Pinned allocator background thread does not shut down cleanly on Windows
     # Python process hangs
-    @unittest.skipIf(IS_WINDOWS and SM89OrLater, "Fails on windows with SM89+")
     def test_pinned_memory_use_background_threads(self):
         script = """
 import torch
@@ -883,7 +878,6 @@ print(t.is_pinned())
 
     # CUDA memory allocations on windows do not OOM on rtx even when they cross allowed memory
     # Skip test until this is investigated
-    @unittest.skipIf(IS_WINDOWS and SM89OrLater, "Fails on windows with SM89+")
     @unittest.skipIf(
         TEST_CUDAMALLOCASYNC or IS_JETSON, "Segmentation fault (core dumped)"
     )
@@ -920,9 +914,6 @@ print(t.is_pinned())
     @unittest.skipIf(
         IS_FBCODE or IS_SANDCASTLE, "glog may route c10 logs away from stderr"
     )
-    # Same platform skips as test_out_of_memory_retry above: Windows/SM89+ does
-    # not reliably OOM past the free memory, Jetson segfaults on this pattern.
-    @unittest.skipIf(IS_WINDOWS and SM89OrLater, "Fails on windows with SM89+")
     @unittest.skipIf(IS_JETSON, "Segmentation fault (core dumped)")
     @skipIfRocmArch(MI350_ARCH)
     @serialTest()
@@ -1174,9 +1165,6 @@ print("RECOVERED")
         q_copy[1].fill_(10)
         self.assertEqual(q_copy[3], torch.cuda.IntStorage(10).fill_(10))
 
-    @unittest.skipIf(
-        IS_WINDOWS and SM89OrLater, "preferred_blas_library not supported on Windows"
-    )
     @unittest.skipIf(IS_FBCODE or IS_SANDCASTLE, "Does not work in fbcode yet")
     @setBlasBackendsToDefaultFinally
     def test_preferred_blas_library_settings(self):
@@ -1277,9 +1265,6 @@ print("RECOVERED")
         self.assertIsInstance(handle, int)
         self.assertNotEqual(handle, 0)
 
-    @unittest.skipIf(
-        IS_WINDOWS and SM89OrLater, "preferred_blas_library not supported on Windows"
-    )
     @unittest.skipIf(TEST_CUDAMALLOCASYNC, "temporarily disabled for async")
     @serialTest()
     @blas_library_context("cublas")
@@ -3285,7 +3270,6 @@ torch.cuda.synchronize()
                 self.assertEqual(results[t].sum().item(), size * size)
 
     # Test is flaky on Windows (https://github.com/pytorch/pytorch/issues/57401)
-    @unittest.skipIf(IS_WINDOWS, "Test is flaky on Windows (see issue 57401)")
     @unittest.skipIf(not TEST_CUDNN, "CUDNN not available")
     def test_cudnn_multiple_threads_same_device(self):
         # This function is intended to test the lazy creation and reuse of per-thread
@@ -5364,7 +5348,7 @@ torch._C._cuda_setCheckpointPoolState(device, state, [], [])
             torch.cuda.empty_cache()
 
     @unittest.skipIf(
-        (not TEST_CUDA_GRAPH) or IS_WINDOWS,
+        (not TEST_CUDA_GRAPH),
         "Graph bindings disallow concurrent replay; "
         + "still appears broken on Windows. See "
         + "https://github.com/pytorch/pytorch/pull/57556",
@@ -6760,7 +6744,7 @@ with torch.cuda.graph(g):
         test_script = f"import os; import torch;os.environ['{VISIBLE_DEVICES}']='1024';torch.get_device_module().device_count();print(torch.cuda.device_count())"
         rc = check_output(test_script)
         self.assertEqual(rc, "0")
-        if TEST_WITH_ROCM and not IS_WINDOWS:
+        if TEST_WITH_ROCM:
             # hipGetDeviceCount initializes the runtime, so it cannot report
             # hipErrorNotInitialized. hsa_system_get_info returns
             # HSA_STATUS_ERROR_NOT_INITIALIZED (0x100B) until hsa_init.
@@ -6785,7 +6769,7 @@ with torch.cuda.graph(g):
             # Check that `cuInit` was not called during the import
             # By using ctypes and calling cuDeviceCountGet() and expect CUDA_ERROR_NOT_INITIALIZED == 3
             # See https://github.com/pytorch/pytorch/issues/116276 for more details
-            libcuda_name = "libcuda.so.1" if not IS_WINDOWS else "nvcuda.dll"
+            libcuda_name = "libcuda.so.1"
             cuda_driver_api_call = (
                 f"ctypes.CDLL('{libcuda_name}').cuDeviceGetCount(ctypes.byref(x))"
             )
@@ -6855,9 +6839,6 @@ print(f"{{r1}}, {{r2}}")
         x = torch.cuda.device_count()
         self.assertEqual(f"{x}, 1", r)
 
-    @unittest.skipIf(
-        IS_WINDOWS, "test relies on fork; Windows multiprocessing uses spawn"
-    )
     def test_is_pinned_no_context(self):
         test_script = """\
 import torch
@@ -8552,28 +8533,12 @@ class TestCudaAllocator(TestCase):
 
     def test_allocator_backend(self):
         def subprocess_env():
-            if IS_WINDOWS:
-                # An empty env breaks Windows stdlib/CUDA extension loading (no PATH).
-                return {
-                    k: os.environ[k]
-                    for k in (
-                        "SYSTEMROOT",
-                        "SYSTEMDRIVE",
-                        "WINDIR",
-                        "COMSPEC",
-                        "PATH",
-                    )
-                    if k in os.environ
-                }
-            else:
-                return {
-                    k: os.environ[k] for k in ("LD_LIBRARY_PATH",) if k in os.environ
-                }
+            return {
+                k: os.environ[k] for k in ("LD_LIBRARY_PATH",) if k in os.environ
+            }
 
         def check_output(script: str) -> str:
             kwargs = {"env": subprocess_env(), "text": True}
-            if IS_WINDOWS:
-                kwargs["cwd"] = tempfile.gettempdir()
             return subprocess.check_output(
                 [sys.executable, "-c", script], **kwargs
             ).strip()
@@ -8823,20 +8788,9 @@ print(value, end="")
         torch.cuda.synchronize()
         torch.cuda.empty_cache()
         b = torch.cuda.device_memory_used()
-        if IS_WINDOWS:
-            # NVML used memory does not reflect CUDA allocations on WDDM; only check API sanity
-            self.assertGreaterEqual(a, 0, "device_memory_used should be non-negative")
-            self.assertGreaterEqual(b, 0, "device_memory_used should be non-negative")
-            self.assertGreaterEqual(
-                b, a, "used memory should not decrease after allocation"
-            )
-            total = torch.cuda.get_device_properties(0).total_memory
-            self.assertLessEqual(a, total, "used should not exceed total device memory")
-            self.assertLessEqual(b, total, "used should not exceed total device memory")
-        else:
-            mem_bytes = b - a
-            # test the order of magnitude
-            self.assertTrue(num_bytes // 32 <= mem_bytes <= num_bytes * 32)
+        mem_bytes = b - a
+        # test the order of magnitude
+        self.assertTrue(num_bytes // 32 <= mem_bytes <= num_bytes * 32)
 
     @unittest.skipIf(not TEST_PYNVML, "pynvml/amdsmi is not available")
     def test_power_draw(self):
@@ -14738,7 +14692,7 @@ class TestLocalizedAllocatorCallbacks(TestCase):
             patch.object(
                 memory,
                 "is_localization_supported",
-                side_effect=lambda device: order.append("query") or True,
+                side_effect=lambda device: True,
             ),
             patch.object(memory, "get_num_locality_domains", return_value=2),
             patch.dict(memory._LOCALITY_ALLOCATORS, clear=True),

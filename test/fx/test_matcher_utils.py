@@ -13,13 +13,11 @@ from torch.fx.experimental.proxy_tensor import make_fx
 
 pytorch_test_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.append(pytorch_test_dir)
-import unittest
 
 from torch.fx.passes.utils.matcher_utils import SubgraphMatcher
 from torch.fx.passes.utils.matcher_with_name_node_map_utils import (
     SubgraphMatcherWithNameNodeMap,
 )
-from torch.testing._internal.common_utils import IS_WINDOWS
 from torch.testing._internal.common_utils import TestCase
 
 
@@ -155,7 +153,6 @@ class TestMatcher(TestCase):
         match_sp_result = maxpool_matcher.match(maxpool_sp_graph)
         self.assertEqual(len(match_sp_result), 1)
 
-    @unittest.skipIf(IS_WINDOWS, "Windows not yet supported for torch.compile")
     def test_split_to_graph_and_name_node_map(self):
         """Testing the internal helper function for splitting the pattern graph"""
         from torch.fx.passes.utils.matcher_with_name_node_map_utils import (
@@ -181,7 +178,6 @@ class TestMatcher(TestCase):
         self.assertEqual(before_split_res[0], after_split_res[0])
         self.assertEqual(before_split_res[1], after_split_res[1])
 
-    @unittest.skipIf(IS_WINDOWS, "Windows not yet supported for torch.compile")
     def test_matcher_with_name_node_map_function(self):
         """Testing SubgraphMatcherWithNameNodeMap with function pattern"""
 
@@ -229,7 +225,6 @@ class TestMatcher(TestCase):
                             "Expected custom_annotation to be 'annotation'"
                         )
 
-    @unittest.skipIf(IS_WINDOWS, "Windows not yet supported for torch.compile")
     def test_matcher_with_name_node_map_module(self):
         """Testing SubgraphMatcherWithNameNodeMap with module pattern"""
 

@@ -4,7 +4,6 @@ import sys
 from setuptools import setup
 
 import torch.cuda
-from torch.testing._internal.common_utils import IS_WINDOWS
 from torch.utils.cpp_extension import (
     BuildExtension,
     CppExtension,
@@ -42,7 +41,7 @@ ext_modules = [
     ),
 ]
 
-NVCC_FLAGS = ["-O2"] + (["-DUSE_CUDA"] if IS_WINDOWS else [])
+NVCC_FLAGS = ["-O2"] + []
 
 if torch.cuda.is_available() and (CUDA_HOME is not None or ROCM_HOME is not None):
     extension = CUDAExtension(
@@ -83,8 +82,7 @@ if torch.xpu.is_available() and USE_NINJA:
 
 # todo(mkozuki): Figure out the root cause
 if (
-    (not IS_WINDOWS)
-    and torch.cuda.is_available()
+    torch.cuda.is_available()
     and (CUDA_HOME is not None or ROCM_HOME is not None)
 ):
     # malfet: One should not assume that PyTorch re-exports CUDA dependencies
@@ -96,8 +94,7 @@ if (
     ext_modules.append(cublas_extension)
 
 if (
-    (not IS_WINDOWS)
-    and torch.cuda.is_available()
+    torch.cuda.is_available()
     and (CUDA_HOME is not None or ROCM_HOME is not None)
 ):
     cusolver_extension = CUDAExtension(
@@ -109,7 +106,6 @@ if (
 
 if (
     USE_NINJA
-    and (not IS_WINDOWS)
     and torch.cuda.is_available()
     and CUDA_HOME is not None
 ):

@@ -89,7 +89,6 @@ from torch.testing._internal.common_utils import (
     IS_FBCODE,
     IS_MACOS,
     IS_SANDCASTLE,
-    IS_WINDOWS,
     run_tests,
     skipIfCrossRef,
     skipIfRocm,
@@ -587,7 +586,6 @@ class InputModuleWithNestedSubclass(torch.nn.Module):
         return x + a
 
 
-@unittest.skipIf(IS_WINDOWS, "Windows isn't supported for this case")
 @unittest.skipIf(not torchdynamo.is_dynamo_supported(), "dynamo isn't support")
 class TestExport(TestCase):
     def _test_export_same_as_eager(self, f, args, kwargs=None):

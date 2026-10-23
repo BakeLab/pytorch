@@ -24,7 +24,6 @@ from torch.distributed.elastic.utils.distributed import (
 from torch.testing._internal.common_utils import (
     HardwareClassification,
     IS_MACOS,
-    IS_WINDOWS,
     run_tests,
     TEST_WITH_TSAN,
     TestCase,
@@ -55,7 +54,7 @@ def _can_bind(family, host):
         return False
 
 
-if IS_WINDOWS or IS_MACOS:
+if IS_MACOS:
     print("tests incompatible with tsan or asan", file=sys.stderr)
     sys.exit(0)
 

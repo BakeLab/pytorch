@@ -50,7 +50,6 @@ from torch.testing._internal.common_cuda import TEST_CUDA
 from torch.testing._internal.common_device_type import instantiate_device_type_tests
 from torch.testing._internal.common_utils import (
     HardwareClassification,
-    IS_WINDOWS,
     run_tests,
     skipIfTorchDynamo,
     TestCase,
@@ -759,7 +758,6 @@ def forward(self, obj_attr, x):
         new_inp = torch.tensor([1, 1, 1, 1])
         self.assertEqual(mod(new_inp), ep.module()(new_inp))
 
-    @unittest.skipIf(IS_WINDOWS, "Windows not supported")
     @unittest.expectedFailure
     # TODO(pianpwk): add back runtime asserts to subgraphs
     def test_runtime_assert_inline_constraints_for_cond(self) -> None:

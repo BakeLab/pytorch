@@ -8,7 +8,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -18,7 +17,6 @@ from spin.tests.testutil import spin
 
 from torch.testing._internal.common_utils import (
     instantiate_parametrized_tests,
-    IS_S390X,
     parametrize,
     run_tests,
     subtest,
@@ -69,7 +67,6 @@ SUITE = ["-i", "test_nn", "--dry-run"]
 
 
 class TestSpin(TestCase):
-    @unittest.skipIf(IS_S390X, "pyrefly doesn't support s390x")
     def test_autotype(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             here = Path(__file__).parent

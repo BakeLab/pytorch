@@ -53,7 +53,6 @@ from torch.testing._internal.common_device_type import (
 
 from torch.testing._internal.common_xpu import Xe2_Or_Later
 from torch.testing._internal.common_utils import (
-    IS_WINDOWS,
     isRocmArchAnyOf,
     MI350_ARCH,
     NAVI4_ARCH,
@@ -1876,7 +1875,7 @@ class TestFP8Matmul(TestCase):
         out_fp8_s = scaled_mm_wrap(x, y, scale_a=scale_a, scale_b=scale_b, out_dtype=e4m3_type, use_fast_accum=True)
         self.assertEqual(out_fp8, out_fp8_s)
 
-    @unittest.skipIf(not PLATFORM_SUPPORTS_FP8 or IS_WINDOWS, f8_msg)
+    @unittest.skipIf(not PLATFORM_SUPPORTS_FP8, f8_msg)
     @skipCUDAIf(not SM89OrLater, "rowwise implementation is currently sm89-sm100 specific")
     @parametrize("use_fast_accum", [True, False])
     def test_float8_rowwise_scaling_sanity(self, device, use_fast_accum: bool) -> None:
@@ -1904,7 +1903,7 @@ class TestFP8Matmul(TestCase):
             out_fp8.to(torch.float32), torch.full((M, N), K * (fill_value**2), device=device)
         )
 
-    @unittest.skipIf(not PLATFORM_SUPPORTS_FP8 or IS_WINDOWS, f8_msg)
+    @unittest.skipIf(not PLATFORM_SUPPORTS_FP8, f8_msg)
     @skipIfTorchDynamo("error message checks rely on eager exception types")
     def test_float8_error_messages(self, device) -> None:
         M, K, N = (1024, 512, 2048)
@@ -2012,7 +2011,7 @@ class TestFP8Matmul(TestCase):
             ):
                 e5m2()
 
-    @unittest.skipIf(not PLATFORM_SUPPORTS_FP8 or IS_WINDOWS, f8_msg)
+    @unittest.skipIf(not PLATFORM_SUPPORTS_FP8, f8_msg)
     @skipCUDAIf(not SM89OrLater, "rowwise implementation is currently sm89-sm100 specific")
     @parametrize("base_dtype", [torch.bfloat16, torch.float16, torch.float32])
     @parametrize("shapes", [
@@ -2085,7 +2084,7 @@ class TestFP8Matmul(TestCase):
         # fp32 output is now supported on both the cuBLAS and CUTLASS row-wise paths.
         test()
 
-    @unittest.skipIf(not PLATFORM_SUPPORTS_FP8 or IS_WINDOWS, f8_msg)
+    @unittest.skipIf(not PLATFORM_SUPPORTS_FP8, f8_msg)
     @skipCUDAIf(not SM89OrLater, "rowwise implementation is currently sm89-sm100 specific")
     @parametrize("output_dtype", [torch.bfloat16, torch.float16, torch.float32])
     @parametrize("wrap_v2", [True, False])
@@ -2132,7 +2131,7 @@ class TestFP8Matmul(TestCase):
             self.assertEqual(out, out_emulated, atol=7e-2, rtol=7e-2)
 
     @onlyCUDA
-    @unittest.skipIf(not PLATFORM_SUPPORTS_FP8 or IS_WINDOWS, f8_msg)
+    @unittest.skipIf(not PLATFORM_SUPPORTS_FP8, f8_msg)
     @skipCUDAIf(not SM89OrLater, "rowwise implementation is currently sm89-sm100 specific")
     @parametrize("wrap_v2", [True, False])
     def test_scaled_mm_row_wise_fp32_out_with_bias_errors(self, wrap_v2, device):
@@ -2165,7 +2164,7 @@ class TestFP8Matmul(TestCase):
             )
 
     @onlyOn(["cuda", "xpu"])
-    @unittest.skipIf(not PLATFORM_SUPPORTS_FP8 or IS_WINDOWS, f8_msg)
+    @unittest.skipIf(not PLATFORM_SUPPORTS_FP8, f8_msg)
     @skipCUDAIf(not IS_SM90, "DeepSeek style (1x128, 128x128) blockwise scaling requires SM90 (Hopper)")
     @parametrize("output_dtype", [torch.bfloat16, torch.float32])
     @parametrize("lhs_block,rhs_block", [(1, 1), (128, 1), (1, 128)])
@@ -2415,7 +2414,7 @@ class TestFP8Matmul(TestCase):
 
 
     @onlyOn(["cuda", "xpu"])
-    @unittest.skipIf(not PLATFORM_SUPPORTS_FP8 or IS_WINDOWS, f8_msg)
+    @unittest.skipIf(not PLATFORM_SUPPORTS_FP8, f8_msg)
     @skipCUDAIf(not IS_SM90, "DeepSeek style (1x128, 128x128) blockwise scaling requires SM90 (Hopper)")
     @parametrize("output_dtype", [torch.bfloat16, torch.float32])
     @parametrize("lhs_block,rhs_block", [(1, 1), (128, 1), (1, 128)])
@@ -2497,7 +2496,7 @@ class TestFP8Matmul(TestCase):
         )
 
     @onlyCUDA
-    @unittest.skipIf(not PLATFORM_SUPPORTS_FP8 or IS_WINDOWS, f8_msg)
+    @unittest.skipIf(not PLATFORM_SUPPORTS_FP8, f8_msg)
     @unittest.skipIf(IS_SM90, "DeepSeek style (1x128, 128x128) blockwise scaling works on SM90 (Hopper)")
     @runOnRocmArch(MI350_ARCH)
     @parametrize("output_dtype", [torch.bfloat16, ])
@@ -2578,7 +2577,6 @@ class TestFP8Matmul(TestCase):
         self.assertEqual(out_fp32, out_fp8.to(torch.float))
 
     @onlyCUDA
-    @unittest.skipIf(IS_WINDOWS, "Windows doesn't support row-wise scaling")
     @unittest.skipIf(not PLATFORM_SUPPORTS_FP8, f8_msg)
     @unittest.skipIf(not SM90OrLater, "sm89 kernel isn't opted into carveout yet")
     def test_honor_sm_carveout(self, device) -> None:
@@ -3011,7 +3009,7 @@ class TestFP8Matmul(TestCase):
                 raise AssertionError(f"sqnr {sqnr.item()} should be > {approx_match_sqnr_target}")
 
     @skipXPU
-    @unittest.skipIf(not PLATFORM_SUPPORTS_MX_GEMM or IS_WINDOWS, mx_skip_msg)
+    @unittest.skipIf(not PLATFORM_SUPPORTS_MX_GEMM, mx_skip_msg)
     def test_passed_swizzle_arrays(self, device) -> None:
         # Ensure that incorrectly-sized swizzle arrays are caught
         M, N, K = 128, 128, 128
@@ -3132,7 +3130,7 @@ class TestFP8Matmul(TestCase):
             )
 
 
-    @unittest.skipIf(not PLATFORM_SUPPORTS_MX_GEMM or IS_WINDOWS, mx_skip_msg)
+    @unittest.skipIf(not PLATFORM_SUPPORTS_MX_GEMM, mx_skip_msg)
     @parametrize("recipe", ["mxfp8", "mxfp4", "nvfp4"])
     def test_blockwise_mxfp8_nvfp4_mxfp4_error_messages(self, device, recipe) -> None:
         if "xpu" in device:

@@ -1563,8 +1563,6 @@ def run_tests(argv=None):
         unittest.main(argv=argv, testLoader=testLoader)
 
 IS_LINUX = sys.platform == "linux"
-# Windows support has been removed; kept (always False) for API compatibility
-IS_WINDOWS = False
 IS_MACOS = sys.platform == "darwin"
 IS_X86 = platform.machine() in ('x86_64', 'i386')
 IS_ARM64 = platform.machine() in ('arm64', 'aarch64', 'ARM64')
@@ -2518,12 +2516,12 @@ def skipIfNotMiopenSuggestNHWC(fn):
     )(fn)
 
 def skipIfWindows(func=None, *, msg="test doesn't currently work on the Windows stack"):
-    decorator = lazy_skip_if(lambda: IS_WINDOWS, f"skipIfWindows: {msg}")
+    decorator = lazy_skip_if(lambda: False, f"skipIfWindows: {msg}")
     return decorator(func) if func is not None else decorator
 
 def skipIfWindowsXPU(func=None, *, msg="test doesn't currently work on the Windows stack"):
     decorator = lazy_skip_if(
-        lambda: IS_WINDOWS and torch.xpu.is_available(), f"skipIfWindowsXPU: {msg}"
+        lambda: False, f"skipIfWindowsXPU: {msg}"
     )
     return decorator(func) if func is not None else decorator
 
