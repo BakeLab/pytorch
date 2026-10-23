@@ -32,7 +32,6 @@ from torch.testing._internal.common_distributed import (
 )
 from torch.testing._internal.common_utils import (
     instantiate_parametrized_tests,
-    IS_WINDOWS,
     load_tests,
     NoTest,
     parametrize,
@@ -73,13 +72,13 @@ broadcast_dtypes = (
 
 
 class TestNCCL(TestCase):
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     def test_unique_id(self, device):
         uid = nccl.unique_id()
         self.assertIsInstance(uid, bytes)
         self.assertGreater(len(uid), 1)
 
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @skip_but_pass_in_sandcastle_if(not TEST_MULTIGPU, "only one GPU detected")
     @dtypes(*broadcast_dtypes)
     def test_broadcast(self, device, dtype):
@@ -115,7 +114,7 @@ class TestNCCL(TestCase):
         for i in range(nGPUs):
             self.assertEqual(tensors[i], expected)
 
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @skip_but_pass_in_sandcastle_if(not TEST_MULTIGPU, "only one GPU detected")
     @dtypes(*datatypes)
     def test_reduce(self, device, dtype):
@@ -137,7 +136,7 @@ class TestNCCL(TestCase):
 
         self.assertEqual(tensors[0], expected)
 
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @skip_but_pass_in_sandcastle_if(not TEST_MULTIGPU, "only one GPU detected")
     @dtypes(*datatypes)
     def test_all_reduce(self, device, dtype):
@@ -168,7 +167,7 @@ class TestNCCL(TestCase):
         for tensor in tensors:
             self.assertEqual(tensor, expected)
 
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     def test_collective_errors(self, device):
         t = torch.rand(10).cuda(0)
         with self.assertRaisesRegex(
@@ -196,7 +195,7 @@ class TestNCCL(TestCase):
         ):
             nccl.reduce_scatter(t, t)
 
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @skip_but_pass_in_sandcastle_if(not TEST_MULTIGPU, "only one GPU detected")
     @dtypes(*datatypes)
     def test_all_gather(self, device, dtype):
@@ -222,7 +221,7 @@ class TestNCCL(TestCase):
         for tensor in outputs:
             self.assertEqual(tensor, expected)
 
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @skip_but_pass_in_sandcastle_if(not TEST_MULTIGPU, "only one GPU detected")
     @dtypes(*datatypes)
     def test_reduce_scatter(self, device, dtype):
@@ -280,7 +279,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
         )
         cls.pg = c10d.distributed_c10d._get_default_group()
 
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_symmetric_memory_device_API
     @skip_if_lt_x_gpu(2)
     def test_nccl_symmem_alloc(self):
@@ -305,7 +304,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
         symm_mem.rendezvous(out, group=group_name)
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_nccl_version(
         (2, 28), "NCCL Symmetric Memory support device API from nccl 2.28"
     )
@@ -338,7 +337,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
         )
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_symmetric_memory_device_API
     @skip_if_lt_x_gpu(2)
     def test_nccl_symmem_rendezvous_world(self):
@@ -359,7 +358,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
         self.assertTrue(buf.eq(peer_rank).all())
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_nccl_version((2, 27), "NCCL Symmetric Memory support from nccl 2.27")
     @skip_if_lt_x_gpu(2)
     def test_nccl_symmem_barrier(self):
@@ -383,7 +382,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
         handle.barrier()
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_symmetric_memory_device_API
     @skip_if_lt_x_gpu(2)
     def test_nccl_symmem_barrier_channel_out_of_bounds(self):
@@ -405,7 +404,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
         handle.barrier(channel=max_channel - 1)
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_nccl_version((2, 29), "NCCL one-sided host API support from nccl 2.29")
     @skip_if_lt_x_gpu(2)
     def test_nccl_symmem_signal_rank_out_of_bounds(self):
@@ -424,7 +423,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
                 handle.wait_signal(src_rank=bad_rank)
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_symmetric_memory_device_API
     @skip_if_lt_x_gpu(2)
     def test_nccl_symmem_rendezvous_subgroup(self):
@@ -446,7 +445,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
         self.assertTrue(buf.eq(peer_rank).all())
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_symmetric_memory_device_API
     @skip_if_lt_x_gpu(2)
     def test_nccl_symmem_collective(self):
@@ -475,7 +474,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
         self.assertEqual(out, res)
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_symmetric_memory_device_API
     @skip_if_lt_x_gpu(2)
     def test_nccl_symmem_collective_cuda_graph(self):
@@ -522,7 +521,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
             self.assertEqual(res, out)
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_symmetric_memory_device_API
     @skip_if_lt_x_gpu(2)
     def test_nccl_symmem_tensor_creation_and_collective_cuda_graph(self):
@@ -583,7 +582,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
             self.assertEqual(out, torch.full_like(out, expected_sum))
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_symmetric_memory_device_API
     @skip_if_lt_x_gpu(2)
     def test_nccl_symmem_put(self):
@@ -624,7 +623,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
             )
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_nccl_version((2, 29), "NCCL one-sided host API support from nccl 2.29")
     @skip_if_lt_x_gpu(2)
     def test_nccl_symmem_handle_signal(self):
@@ -664,7 +663,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
         c10d.barrier()
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @skip_if_lt_x_gpu(2)
     @requires_nccl_version(
         (2, 28), "NCCL Symmetric Memory multicast support from nccl 2.28"
@@ -698,7 +697,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
             c10d.barrier()
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_nccl_version(
         (2, 28), "NCCL Symmetric Memory support device API from nccl 2.28"
     )
@@ -742,7 +741,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
         c10d.barrier()
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_nccl_version(
         (2, 28), "NCCL Symmetric Memory device API support from nccl 2.28"
     )
@@ -823,7 +822,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
         c10d.barrier()
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_nccl_version(
         (2, 29, 7), "nccl_reduce_scatter_offset requires nccl 2.29.7"
     )
@@ -902,7 +901,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
             )
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_nccl_version(
         (2, 29, 7), "nccl_reduce_scatter_offset requires nccl 2.29.7"
     )
@@ -971,7 +970,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
             )
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_nccl_version((2, 28, 0), "nccl_all_to_all_nd requires nccl 2.28")
     @skip_if_lt_x_gpu(2)
     @parametrize(
@@ -1072,7 +1071,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
                 )
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_nccl_version((2, 29), "NCCL one-sided host API support from nccl 2.29")
     @skip_if_lt_x_gpu(2)
     def test_put_wait_signal(self):
@@ -1101,7 +1100,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
         c10d.barrier()
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_nccl_version(
         (2, 28), "NCCL Symmetric Memory support device API from nccl 2.28"
     )
@@ -1132,7 +1131,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
         self.assertEqual(tensor, expected)
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_nccl_version(
         (2, 28), "NCCL Symmetric Memory support device API from nccl 2.28"
     )
@@ -1162,7 +1161,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
         self.assertEqual(y, expected)
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_nccl_version((2, 27), "NCCL Symmetric Memory support from nccl 2.27")
     @skip_if_lt_x_gpu(2)
     def test_mempool_recycled_barrier(self):
@@ -1200,7 +1199,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
         del hdl2, t2
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @skip_but_pass_in_sandcastle_if(
         os.environ.get("NCCL_NVLS_ENABLE", "1") == "0",
         "NCCL_NVLS_ENABLE=0",
@@ -1252,7 +1251,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
         return [e.name for e in prof.events() if e.device_type == DeviceType.CUDA]
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_nccl_version((2, 28), "NCCL symmetric kernels need nccl 2.28")
     @skip_if_lt_x_gpu(2)
     @parametrize("backend", ["nccl", "nccl-legacy"])
@@ -1270,7 +1269,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
             nccl_backend.deregister_mem_pool(pool)
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_nccl_version((2, 28), "NCCL copy-engine collectives need nccl 2.28")
     @skip_if_lt_x_gpu(2)
     @parametrize("backend", ["nccl", "nccl-legacy"])
@@ -1338,7 +1337,7 @@ class NCCLSymmetricMemoryNccl2Test(MultiProcContinuousTest):
         cls.pg = c10d.distributed_c10d._get_default_group()
 
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+    @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_nccl_version((2, 27), "NCCL Symmetric Memory support from nccl 2.27")
     @skip_if_lt_x_gpu(2)
     def test_nccl_symmem_rendezvous(self):

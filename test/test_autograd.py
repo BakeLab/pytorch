@@ -69,10 +69,8 @@ from torch.testing._internal.common_utils import (
     gradgradcheck,
     HardwareClassification,
     instantiate_parametrized_tests,
-    IS_ARM64,
     IS_LINUX,
     IS_MACOS,
-    IS_WINDOWS,
     parametrize,
     run_tests,
     scoped_load_inline,
@@ -7674,7 +7672,6 @@ Done""",
         ):
             a.data = c
 
-    @unittest.skipIf(IS_WINDOWS, "Skipping because doesn't work for windows")
     def test_thread_shutdown(self):
         code = """import torch
 from torch.autograd import Function
@@ -14059,11 +14056,8 @@ class TestAutogradDeviceType(TestCase):
         IS_LINUX or TEST_WITH_SLOW, "https://github.com/pytorch/pytorch/issues/181229"
     )
     @unittest.skipIf(
-        TEST_WITH_ASAN or IS_LINUX or IS_MACOS or IS_WINDOWS,
+        TEST_WITH_ASAN or IS_LINUX or IS_MACOS,
         "https://github.com/pytorch/pytorch/issues/181203",
-    )
-    @unittest.skipIf(
-        IS_WINDOWS and IS_ARM64, "Fails on Windows ARM64; see issue #181228"
     )
     def test_strided_leaf_grad_layout(self, device):
         # (1) If leaf is non-overlapping and dense, grad's layout should match its leaf.
@@ -17964,11 +17958,8 @@ class TestAutogradMultipleDispatchGeneric(TestCase):
         IS_LINUX or TEST_WITH_SLOW, "https://github.com/pytorch/pytorch/issues/181323"
     )
     @unittest.skipIf(
-        TEST_WITH_ASAN or IS_LINUX or IS_MACOS or IS_WINDOWS,
+        TEST_WITH_ASAN or IS_LINUX or IS_MACOS,
         "https://github.com/pytorch/pytorch/issues/181228",
-    )
-    @unittest.skipIf(
-        IS_WINDOWS and IS_ARM64, "Fails on Windows ARM64; see issue #181228"
     )
     def test_is_retain_graph(self):
         retain_graph_set = False

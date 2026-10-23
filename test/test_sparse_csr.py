@@ -54,7 +54,6 @@ from torch.testing._internal.common_utils import (
     IS_FBCODE,
     IS_LINUX,
     IS_REMOTE_GPU,
-    IS_WINDOWS,
     instantiate_parametrized_tests,
     load_tests,
     parametrize,
@@ -89,7 +88,7 @@ if TEST_NUMPY:
 # sharding on sandcastle. This line silences flake warnings
 load_tests = load_tests  # noqa: PLW0127
 
-no_mkl_sparse = IS_WINDOWS or not TEST_MKL
+no_mkl_sparse = not TEST_MKL
 
 
 def _check_cusparse_spgemm_available():

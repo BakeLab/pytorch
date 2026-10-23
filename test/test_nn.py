@@ -37,8 +37,7 @@ from torch.testing._internal.common_dtype import integral_types, get_all_math_dt
 from torch.testing._internal.common_utils import dtype_name, freeze_rng_state, run_tests, TestCase, \
     skipIfNoLapack, skipIfRocm, getRocmVersion, TEST_NUMPY, TEST_SCIPY, TEST_WITH_CROSSREF, TEST_WITH_ROCM, TEST_MULTIACCELERATOR, \
     download_file, get_function_arglist, load_tests, skipIfMPS, MACOS_VERSION, \
-    IS_ARM64, IS_MACOS, IS_WINDOWS, \
-    parametrize as parametrize_test, subtest, instantiate_parametrized_tests, \
+    IS_MACOS, parametrize as parametrize_test, subtest, instantiate_parametrized_tests, \
     skipIfTorchDynamo, gcIfJetson, set_default_dtype, skipIfNoCuteDSL, \
     TEST_WITH_TORCHDYNAMO
 from torch.testing._internal.common_cuda import TEST_CUDA, TEST_CUDNN, \
@@ -5146,7 +5145,6 @@ tensor(..., device='meta', size=(1,), requires_grad=True)""")
         expected_out_t = torch.tensor([[[[2.5]]]])
         self.assertEqual(expected_out_t, out_t)
 
-    @unittest.skipIf(IS_WINDOWS and IS_ARM64, "Fails as 'Unexpected success' on Windows ARM64")
     # see https://github.com/pytorch/pytorch/issues/177250
     def test_upsampling_bfloat16(self, dtype=torch.bfloat16):
         def helper(size, scale_factor, mode, device, memory_format=torch.contiguous_format):
@@ -5258,7 +5256,6 @@ tensor(..., device='meta', size=(1,), requires_grad=True)""")
                         helper(size, dtype, mode, device, is_channels_last)
 
 
-    @unittest.skipIf(IS_WINDOWS, "requires mmap/mprotect")
     @unittest.skipUnless(TEST_NUMPY, "requires numpy")
     def test_interpolate_uint8_overread(self):
         # Regression test for vectorized resize overreads (NEON vld3_u8 and

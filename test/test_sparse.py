@@ -10,7 +10,7 @@ import unittest
 import warnings
 from torch.testing import make_tensor
 from torch.testing._internal.common_utils import HardwareClassification, TestCase, run_tests, do_test_dtypes, \
-    load_tests, TEST_NUMPY, TEST_SCIPY, IS_WINDOWS, gradcheck, coalescedonoff, \
+    load_tests, TEST_NUMPY, TEST_SCIPY, gradcheck, coalescedonoff, \
     DeterministicGuard, first_sample, TEST_WITH_CROSSREF, TEST_WITH_ROCM, skipIfTorchDynamo, skipIfMPS, \
     parametrize, subtest, is_coalesced_indices, suppress_warnings, instantiate_parametrized_tests, \
     skipIfCrossRef, set_warn_always_context
@@ -130,9 +130,7 @@ def _make_lowp_aware_gradcheck(gradcheck_fn):
 gradcheck = functools.partial(gradcheck, check_batched_grad=False)
 gradcheck = _make_lowp_aware_gradcheck(gradcheck)
 
-CUSPARSE_SPMM_COMPLEX128_SUPPORTED = (
-    IS_WINDOWS and torch.version.cuda
-) or (not IS_WINDOWS and not TEST_WITH_ROCM)
+CUSPARSE_SPMM_COMPLEX128_SUPPORTED = not TEST_WITH_ROCM
 
 HIPSPARSE_SPMM_COMPLEX128_SUPPORTED = bool(torch.version.hip)
 
@@ -2014,7 +2012,7 @@ class TestSparse(TestSparseBase):
         test_shape(7, 8, 9, 20, False)
         test_shape(7, 8, 9, 20, True)
 
-    @unittest.skipIf(IS_LINUX or IS_MACOS or TEST_WITH_ROCM or IS_WINDOWS, "https://github.com/pytorch/pytorch/issues/174389")
+    @unittest.skipIf(IS_LINUX or IS_MACOS or TEST_WITH_ROCM, "https://github.com/pytorch/pytorch/issues/174389")
     @coalescedonoff
     @dtypes(torch.double)
     @dtypesIfMPS(torch.float32)
@@ -5453,7 +5451,7 @@ class TestSparseAny(TestCase):
                 mth(inp)
 
     @onlyNativeDeviceTypes
-    @all_sparse_layouts('layout', include_strided=not True)
+    @all_sparse_layouts('layout', include_strided=False)
     @dtypes(torch.float64, torch.cdouble)
     @parametrize("masked", [subtest(False, name='sparse'), subtest(True, name='masked')])
     @parametrize("fast_mode", [subtest(False, name='slow'), subtest(True, name='fast')])

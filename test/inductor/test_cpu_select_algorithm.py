@@ -28,7 +28,6 @@ from torch.testing._internal.common_utils import (
     HardwareClassification,
     IS_ARM64,
     IS_MACOS,
-    IS_WINDOWS,
     parametrize,
     requires_mkl,
     requires_onednn,
@@ -1377,7 +1376,6 @@ class TestSelectAlgorithm(BaseTestSelectAlgorithm):
             "gelu",
         ),
     )
-    @unittest.skipIf(IS_WINDOWS, "Not supported on Windows")
     def test_quantized_linear_with_pointwise(
         self, batch_size, in_features, out_features, bias, input_3d, dtype, epilogue
     ):
@@ -1460,7 +1458,6 @@ class TestSelectAlgorithm(BaseTestSelectAlgorithm):
             "relu",
         ),
     )
-    @unittest.skipIf(IS_WINDOWS, "Not supported on Windows")
     def test_quantized_linear_with_pointwise_binary(
         self,
         batch_size,
@@ -1622,7 +1619,6 @@ class TestSelectAlgorithm(BaseTestSelectAlgorithm):
     @parametrize("in_features", (4, 68, 128))  # k should be a multiple of 4
     @parametrize("out_features", (64, 65))
     @parametrize("bias", (True, False))
-    @unittest.skipIf(IS_WINDOWS, "Not supported on Windows")
     def test_quantized_linear_amx(self, batch_size, in_features, out_features, bias):
         v = torch.randn(batch_size, in_features).to(dtype=torch.float32)
 
@@ -2219,10 +2215,6 @@ class TestSelectAlgorithm(BaseTestSelectAlgorithm):
 
         # each linear has different num of out features, thus invalid grouped gemm
         dtypes = []
-        if False:
-            dtypes.append(torch.bfloat16)
-        if False:
-            dtypes.append(torch.float16)
         for dtype in dtypes:
             torch._dynamo.reset()
             torch._inductor.metrics.reset()
@@ -2272,10 +2264,6 @@ class TestSelectAlgorithm(BaseTestSelectAlgorithm):
                 return [linear(x) for linear in self.linears]
 
         dtypes = []
-        if False:
-            dtypes.append(torch.bfloat16)
-        if False:
-            dtypes.append(torch.float16)
         for dtype in dtypes:
             if dtype == torch.float16 and input_3d:
                 # reduce the number of tests
@@ -2355,10 +2343,6 @@ class TestSelectAlgorithm(BaseTestSelectAlgorithm):
                     return res0, res1
 
         dtypes = []
-        if False:
-            dtypes.append(torch.bfloat16)
-        if False:
-            dtypes.append(torch.float16)
         for dtype in dtypes:
             if input_3d and dtype == torch.float16:
                 # Reduce the number of test cases
@@ -3025,7 +3009,6 @@ class TestSelectAlgorithm(BaseTestSelectAlgorithm):
     @skipIfNoONEDNN
     @unittest.skipIf(not TEST_MKL, "Test requires MKL")
     @unittest.skip("MKLDNN is not enabled")
-    @unittest.skipIf(IS_WINDOWS, "Not supported on Windows")
     @inductor_config.patch({"freezing": True})
     @patches
     @torch.no_grad
@@ -3108,7 +3091,6 @@ class TestSelectAlgorithm(BaseTestSelectAlgorithm):
     @skipIfNoONEDNN
     @unittest.skipIf(not TEST_MKL, "Test requires MKL")
     @unittest.skip("MKLDNN is not enabled")
-    @unittest.skipIf(IS_WINDOWS, "Not supported on Windows")
     @inductor_config.patch({"freezing": True})
     @patches
     @torch.no_grad
@@ -3198,7 +3180,6 @@ class TestSelectAlgorithm(BaseTestSelectAlgorithm):
     @skipIfNoONEDNN
     @unittest.skipIf(not TEST_MKL, "Test requires MKL")
     @unittest.skip("MKLDNN is not enabled")
-    @unittest.skipIf(IS_WINDOWS, "Not supported on Windows")
     @inductor_config.patch({"freezing": True})
     @patches
     @torch.no_grad
@@ -3291,7 +3272,6 @@ class TestSelectAlgorithm(BaseTestSelectAlgorithm):
     @skipIfNoONEDNN
     @unittest.skipIf(not TEST_MKL, "Test requires MKL")
     @unittest.skip("MKLDNN is not enabled")
-    @unittest.skipIf(IS_WINDOWS, "Not supported on Windows")
     @inductor_config.patch({"freezing": True})
     @patches
     @torch.no_grad
@@ -3597,5 +3577,5 @@ instantiate_device_type_tests(
 if __name__ == "__main__":
     from torch.testing._internal.inductor_utils import HAS_CPU
 
-    if HAS_CPU and not (IS_MACOS or IS_WINDOWS):
+    if HAS_CPU and not IS_MACOS:
         run_tests()

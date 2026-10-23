@@ -44,9 +44,7 @@ from torch.testing._internal.common_cuda import (
 from torch.testing._internal.common_utils import (
     instantiate_parametrized_tests,
     IS_ARM64,
-    IS_CI,
     IS_LINUX,
-    IS_WINDOWS,
     IS_X86,
     parametrize,
     skipIfRocm,
@@ -56,15 +54,6 @@ from torch.testing._internal.inductor_utils import HAS_CUDA_AND_TRITON
 from torch.testing._internal.logging_utils import logs_to_string
 from torch.utils._mode_utils import no_dispatch
 from torch.utils._python_dispatch import TorchDispatchMode
-
-
-if IS_WINDOWS and IS_CI:
-    sys.stderr.write(
-        "Windows CI does not have necessary dependencies for test_torchinductor yet\n"
-    )
-    if __name__ == "__main__":
-        sys.exit(0)
-    raise unittest.SkipTest("requires sympy/functorch/filelock")
 
 importlib.import_module("functorch")
 importlib.import_module("filelock")

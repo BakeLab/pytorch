@@ -10,7 +10,6 @@ from torch.fx.experimental.proxy_tensor import make_fx
 from torch.testing._internal.common_utils import (
     HardwareClassification,
     IS_FBCODE,
-    IS_WINDOWS,
     IS_REMOTE_GPU,
     run_tests,
     TestCase,
@@ -194,7 +193,6 @@ class TestOutDtypeOp(TestCase):
 class TestOutDtypeOpDevice(TestCase):
     hw_classification = HardwareClassification.ACCELERATOR
 
-    @unittest.skipIf(IS_WINDOWS, "_int_mm unavailable")
     @unittest.skipIf(TEST_CUDA and not SM80OrLater, "_int_mm unavailable")
     @unittest.skipIf(IS_FBCODE and IS_REMOTE_GPU, "cublas runtime error")
     @skipIfNoDynamoSupport

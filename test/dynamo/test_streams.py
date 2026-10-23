@@ -25,7 +25,6 @@ from torch.testing._internal.common_device_type import instantiate_device_type_t
 from torch.testing._internal.common_utils import (
     IS_LINUX,
     IS_MACOS,
-    IS_WINDOWS,
     parametrize,
     requires_accelerator,
     requires_cuda,
@@ -2361,7 +2360,7 @@ class GraphModule(torch.nn.Module):
             )
 
     @unittest.skipIf(
-        IS_LINUX or IS_MACOS or TEST_WITH_ROCM or IS_WINDOWS,
+        IS_LINUX or IS_MACOS or TEST_WITH_ROCM,
         "https://github.com/pytorch/pytorch/issues/178155",
     )
     @unittest.skip("https://github.com/pytorch/pytorch/issues/177771")

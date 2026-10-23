@@ -17,7 +17,6 @@ from torch.testing._internal.common_device_type import instantiate_device_type_t
 from torch.testing._internal.common_utils import (
     HardwareClassification,
     IS_LINUX,
-    IS_WINDOWS,
     run_tests,
     skipIfTorchDynamo,
     TEST_WITH_ROCM,
@@ -678,7 +677,7 @@ class TestMinDevice(TestBase):
     hw_classification = HardwareClassification.ACCELERATOR
 
     @unittest.skipIf(
-        IS_LINUX or TEST_WITH_ROCM or TEST_WITH_SLOW or IS_WINDOWS,
+        IS_LINUX or TEST_WITH_ROCM or TEST_WITH_SLOW,
         "https://github.com/pytorch/pytorch/issues/86710",
     )
     def test_attn_device(self, device):

@@ -10,7 +10,6 @@ from torch.export import export
 from torch.export.exported_program import InputKind, InputSpec, TensorArgument
 from torch.testing._internal.common_utils import (
     HardwareClassification,
-    IS_WINDOWS,
     run_tests,
     TestCase,
 )
@@ -65,7 +64,6 @@ class TestVerifier(TestCase):
         with self.assertRaises(SpecViolationError):
             verifier.check(ep)
 
-    @unittest.skipIf(IS_WINDOWS, "Windows not supported for this test")
     def test_verifier_higher_order(self) -> None:
         class Foo(torch.nn.Module):
             def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
@@ -84,7 +82,6 @@ class TestVerifier(TestCase):
         verifier = Verifier()
         verifier.check(ep)
 
-    @unittest.skipIf(IS_WINDOWS, "Windows not supported for this test")
     def test_verifier_nested_invalid_module(self) -> None:
         class Foo(torch.nn.Module):
             def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:

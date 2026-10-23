@@ -2,7 +2,6 @@
 import copy
 import re
 import tempfile
-import unittest
 from unittest.mock import patch
 
 import torch
@@ -19,7 +18,6 @@ from torch.testing._internal.common_device_type import (
 )
 from torch.testing._internal.common_utils import (
     HardwareClassification,
-    IS_WINDOWS,
     run_tests,
     TestCase,
 )
@@ -718,7 +716,6 @@ class TestDraftExport(TestCase):
                 ep.run_decompositions()
 
     # https://github.com/pytorch/pytorch/issues/140625
-    @unittest.skipIf(IS_WINDOWS, "aoti_compile_and_package not supported on Windows")
     def test_constantify_unbacked_symbol(self):
         class M(torch.nn.Module):
             def forward(self, x, y):

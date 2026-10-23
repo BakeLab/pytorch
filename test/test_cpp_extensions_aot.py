@@ -15,7 +15,6 @@ from torch.testing._internal.common_cuda import TEST_CUDA
 from torch.testing._internal.common_utils import (
     HardwareClassification,
     instantiate_parametrized_tests,
-    IS_WINDOWS,
     parametrize,
     skipIfTorchDynamo,
     xfailIfTorchDynamo,
@@ -100,7 +99,6 @@ class TestCppExtensionAOT(common.TestCase):
         expected_tensor_grad = torch.ones([4, 4], dtype=torch.double).mm(weights.t())
         self.assertEqual(tensor.grad, expected_tensor_grad)
 
-    @unittest.skipIf(IS_WINDOWS, "Not available on Windows")
     def test_no_python_abi_suffix_sets_the_correct_library_name(self):
         # For this test, run_test.py will call
         # `python -m pip install . -v --no-build-isolation` in the
@@ -144,7 +142,6 @@ class TestCppExtensionAOTDevice(common.TestCase):
 class TestCppExtensionAOTCUDA(common.TestCase):
     hw_classification = HardwareClassification.CUDA
 
-    @unittest.skipIf(common.IS_WINDOWS, "Windows not supported")
     @unittest.skipIf(not TEST_CUDA, "CUDA not found")
     def test_cublas_extension(self):
         from torch_test_cpp_extension import cublas_extension
@@ -153,7 +150,6 @@ class TestCppExtensionAOTCUDA(common.TestCase):
         z = cublas_extension.noop_cublas_function(x)
         self.assertEqual(z, x)
 
-    @unittest.skipIf(common.IS_WINDOWS, "Windows not supported")
     @unittest.skipIf(not TEST_CUDA, "CUDA not found")
     def test_cusolver_extension(self):
         from torch_test_cpp_extension import cusolver_extension
@@ -163,7 +159,6 @@ class TestCppExtensionAOTCUDA(common.TestCase):
         self.assertEqual(z, x)
 
     @common.skipIfRocm(msg="dlink build path has no ROCm arch handling")
-    @unittest.skipIf(common.IS_WINDOWS, "Windows not supported")
     @unittest.skipIf(not TEST_CUDA, "CUDA not found")
     @unittest.skipIf(
         os.getenv("USE_NINJA", "0") == "0",

@@ -1,7 +1,6 @@
 # Owner(s): ["module: inductor"]
 
 import functools
-import sys
 import unittest
 from collections import namedtuple
 from collections.abc import Callable
@@ -45,16 +44,7 @@ from torch.testing._internal.common_device_type import (
     skipXPUIf,
 )
 from torch.testing._internal.common_quantized import _snr
-from torch.testing._internal.common_utils import IS_CI, IS_WINDOWS
 from torch.utils._triton import has_triton_tma_device
-
-
-if IS_WINDOWS and IS_CI:
-    # TODO(xuhancn) : Need track if it is a requirement on windows.
-    sys.stderr.write("This UT is validated on windows, a lot of crash. Skip it.\n")
-    if __name__ == "__main__":
-        sys.exit(0)
-    raise unittest.SkipTest("skip on Windows")
 
 
 Tolerances = namedtuple("Tolerances", ["atol", "rtol"])

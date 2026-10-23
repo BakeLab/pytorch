@@ -28,7 +28,6 @@ from torch._dynamo.device_interface import get_interface_for_device
 from torch._dynamo.testing import normalize_gm
 from torch._dynamo.utils import counters
 from torch._inductor import config as inductor_config
-from torch._inductor.cpp_builder import is_msvc_cl
 from torch._inductor.test_case import run_tests, TestCase
 from torch.nn.attention.flex_attention import flex_attention
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -41,7 +40,6 @@ from torch.testing._internal.common_device_type import (
 )
 from torch.testing._internal.common_utils import (
     instantiate_parametrized_tests,
-    IS_WINDOWS,
     noncontiguous_like,
     parametrize,
     scoped_load_inline,
@@ -264,16 +262,7 @@ main()
         self.assertFalse(any("_unique" in reason for reason in counters["graph_break"]))
 
     def gen_cache_miss_log_prefix(self):
-        if IS_WINDOWS:
-            if is_msvc_cl():
-                return "Cache miss due to new autograd node: struct "
-            else:
-                self.fail(
-                    "Compilers other than msvc have not yet been verified on Windows."
-                )
-                return ""
-        else:
-            return "Cache miss due to new autograd node: "
+        return "Cache miss due to new autograd node: "
 
     def test_reset(self):
         compiled_autograd.compiled_autograd_enabled = True

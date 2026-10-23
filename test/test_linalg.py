@@ -26,12 +26,12 @@ from torch.testing._internal.common_device_type import (
 )
 
 from torch.testing._internal.common_utils import \
-    (TestCase, run_tests, TEST_SCIPY, IS_MACOS, IS_WINDOWS, slowTest,
+    (TestCase, run_tests, TEST_SCIPY, IS_MACOS, slowTest,
      TEST_WITH_ROCM, IS_FBCODE, IS_REMOTE_GPU, iter_indices,
      make_fullrank_matrices_with_distinct_singular_values,
      freeze_rng_state, IS_ARM64, IS_SANDCASTLE, TEST_OPT_EINSUM, isRocmArchAnyOf, parametrize, subtest, skipIfTorchDynamo,
      skipIfRocmArch, skipIfRocmVersionInRange, setBlasBackendsToDefaultFinally, setLinalgBackendsToDefaultFinally, serialTest, skipIfRocm,
-     MI200_ARCH, MI300_ARCH, MI350_ARCH, NAVI_ARCH, TEST_CUDA,
+     MI350_ARCH, NAVI_ARCH, TEST_CUDA,
      skipIfNoNvmath, _restore_fp32_precision, _snapshot_fp32_precision)
 from torch.testing._internal.common_device_type import \
     (instantiate_device_type_tests, dtypes, has_cusolver, onlyCPU, skipCPUIfNoLapack, precisionOverride,
@@ -2064,7 +2064,6 @@ class TestLinalg(TestCase):
 
     # Test that linal.norm gives the same result as numpy when inputs
     # contain extreme values (inf, -inf, nan)
-    @unittest.skipIf(IS_WINDOWS, "Skipped on Windows!")
     @unittest.skipIf(IS_MACOS, "Skipped on MacOS!")
     @skipCUDAIfNoLinalgsolver
     @skipCPUIfNoLapack
@@ -7028,7 +7027,6 @@ scipy_lobpcg  | {eq_err_scipy:10.2e}  | {eq_err_general_scipy:10.2e}  | {iters2:
         torch.matmul(a, b, out=c)
         self.assertEqual(c, cpu_result)
 
-    @unittest.skipIf(IS_WINDOWS, "Skipped on Windows!")
     @unittest.skipIf(SM90OrLater and not TEST_WITH_ROCM, "Expected failure on sm90")
     @unittest.skipIf(IS_FBCODE and IS_REMOTE_GPU, "cublas runtime error")
     @onlyCUDA
@@ -7101,7 +7099,6 @@ scipy_lobpcg  | {eq_err_scipy:10.2e}  | {eq_err_general_scipy:10.2e}  | {iters2:
                                                 "CUDA error: CUBLAS_STATUS_NOT_SUPPORTED when calling cublasLtMatmul"):
                         _test(17, k, n, use_transpose_a, use_transpose_b)
 
-    @unittest.skipIf(IS_WINDOWS, "Skipped on Windows!")
     @unittest.skipIf(IS_FBCODE and IS_REMOTE_GPU, "cublas runtime error")
     @onlyCUDA
     def test__int_mm_errors(self, device):
@@ -7236,7 +7233,6 @@ scipy_lobpcg  | {eq_err_scipy:10.2e}  | {eq_err_general_scipy:10.2e}  | {iters2:
             self.assertEqual(out[i], out_ref)
             start = offs[i]
 
-    @unittest.skipIf(IS_WINDOWS, "Skipped on Windows!")
     @unittest.skipIf(IS_FBCODE and IS_REMOTE_GPU, "cublas runtime error")
     @onlyNativeDeviceTypes
     @parametrize("m", [32, 64])
@@ -7295,7 +7291,6 @@ scipy_lobpcg  | {eq_err_scipy:10.2e}  | {eq_err_general_scipy:10.2e}  | {iters2:
             mean_err = ((res - ref).abs() / ref).mean()
             self.assertTrue(mean_err < 0.05)
 
-    @unittest.skipIf(IS_WINDOWS, "Skipped on Windows!")
     @unittest.skipIf(IS_FBCODE and IS_REMOTE_GPU, "cublas runtime error")
     @onlyNativeDeviceTypes
     @parametrize("m", [32, 64])
@@ -8613,7 +8608,6 @@ scipy_lobpcg  | {eq_err_scipy:10.2e}  | {eq_err_general_scipy:10.2e}  | {iters2:
 
     # FIXME One of the backends of lu_factor fails in windows. I haven't investigated which or why
     # https://github.com/pytorch/pytorch/issues/75225
-    @unittest.skipIf(IS_WINDOWS, "Skipped on Windows!")
     @skipCPUIfNoLapack
     @dtypes(torch.double)
     def test_det_logdet_slogdet(self, device, dtype):
@@ -11877,8 +11871,8 @@ class TestGroupedMM(TestCase):
     @dtypes(torch.bfloat16, torch.float16)
     def test_grouped_gemm_rocm_backend(self, device, backend, strided, a_row_major, b_row_major, a_shape, b_shape, offsets,
                                        backward, dtype):
-        if backend == "ck_tile" and not isRocmArchAnyOf(MI300_ARCH + MI350_ARCH):
-            self.skipTest("ck_tile grouped gemm is only dispatched on gfx942 and gfx950")
+        if backend == "ck_tile" and not isRocmArchAnyOf(MI350_ARCH):
+            self.skipTest("ck_tile grouped gemm is only dispatched on gfx950")
         env_var = {"ck": "ROCM_ALLOW_GROUP_GEMM_CK", "ck_tile": "ROCM_ALLOW_GROUP_GEMM_CK_TILE"}[backend]
         with mock.patch.dict(os.environ, {env_var: "1"}):
             self._check_grouped_gemm(device, strided, a_row_major, b_row_major, a_shape, b_shape, offsets, backward, dtype)

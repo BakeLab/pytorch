@@ -6,10 +6,9 @@ import torch
 import torch.utils.cpp_extension
 from torch.testing._internal.common_device_type import (
     instantiate_device_type_tests,
-    skipCUDAIf,
     skipXPUIf,
 )
-from torch.testing._internal.common_utils import IS_WINDOWS, run_tests, TestCase
+from torch.testing._internal.common_utils import run_tests, TestCase
 
 
 old_working_dir = os.getcwd()
@@ -160,10 +159,6 @@ class CppThreadTest(TestCase):
                         "not enough event recorded",
                     )
 
-    @skipCUDAIf(
-        IS_WINDOWS,
-        "Failing on windows cuda, see https://github.com/pytorch/pytorch/pull/130037 for slightly more context",
-    )
     @skipXPUIf(
         True,
         "The XPU Profiler will not cover this case for now. Will support it in next period.",
@@ -178,10 +173,6 @@ class CppThreadTest(TestCase):
             }
         )
 
-    @skipCUDAIf(
-        IS_WINDOWS,
-        "Failing on windows cuda, see https://github.com/pytorch/pytorch/pull/130037 for slightly more context",
-    )
     @skipXPUIf(
         True,
         "The XPU Profiler will not cover this case for now. Will support it in next period.",
@@ -196,10 +187,6 @@ class CppThreadTest(TestCase):
             }
         )
 
-    @skipCUDAIf(
-        IS_WINDOWS,
-        "Failing on windows cuda, see https://github.com/pytorch/pytorch/pull/130037 for slightly more context",
-    )
     @skipXPUIf(
         True,
         "The XPU Profiler will not cover this case for now. Will support it in next period.",
