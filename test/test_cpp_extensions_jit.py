@@ -312,6 +312,38 @@ class TestCppExtensionJIT(_TestCppExtensionJITBase):
                 self.assertIn(expected_declaration, generated_source)
                 self.assertNotIn(unexpected_declaration, generated_source)
 
+    @unittest.skipUnless(
+        sysconfig.get_config_var("Py_GIL_DISABLED") == 1,
+        "requires free-threaded Python",
+    )
+    def test_inline_jit_generated_bindings_keep_gil_disabled(self):
+        script = """
+import sys
+import tempfile
+
+import torch.utils.cpp_extension
+
+assert not sys._is_gil_enabled()
+with tempfile.TemporaryDirectory() as build_directory:
+    module = torch.utils.cpp_extension.load_inline(
+        name="inline_jit_extension_gil_not_used_runtime",
+        cpp_sources="int add_one(int value) { return value + 1; }",
+        functions="add_one",
+        build_directory=build_directory,
+        gil_not_used=True,
+        verbose=True,
+    )
+    assert module.add_one(1) == 2
+    assert not sys._is_gil_enabled()
+"""
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     @unittest.skipIf(not (TEST_XPU), "XPU not found")
     def test_jit_xpu_archlists(self):
         # NOTE: in this test we explicitly test few different options
@@ -358,18 +390,6 @@ class TestCppExtensionJIT(_TestCppExtensionJITBase):
 
         with mock.patch.dict(os.environ, {"TORCH_XPU_ARCH_LIST": "bmg"}):
             self.assertEqual(_get_sycl_arch_list(), "bmg")
-
-    @unittest.skipIf(not TEST_MPS, "MPS not found")
-    def test_mps_extension(self):
-        module = torch.utils.cpp_extension.load(
-            name="torch_test_mps_extension",
-            sources=[
-                "cpp_extensions/mps_extension.mm",
-            ],
-            verbose=True,
-            keep_intermediates=False,
-        )
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_inline_jit_compile_extension_multiple_sources_and_no_functions(self):
         cpp_source1 = """

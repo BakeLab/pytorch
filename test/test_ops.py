@@ -66,7 +66,6 @@ from torch.testing._internal.common_utils import (
     IS_CI,
     IS_FBCODE,
     is_iterable_of_tensors,
-    IS_S390X,
     IS_SANDCASTLE,
     noncontiguous_like,
     parametrize,
@@ -832,9 +831,7 @@ class TestCommon(TestCase):
     @onlyNativeDeviceTypesAnd(["hpu"])
     @suppress_warnings
     @skipOps(
-        {skip("grid_sampler_2d", device_type="cpu", dtypes=(torch.float32,))}
-        if IS_S390X
-        else set()
+        set()
     )
     @ops(op_db, allowed_dtypes=(torch.float32, torch.long, torch.complex64))
     def test_noncontiguous_samples(self, device, dtype, op):

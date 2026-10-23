@@ -2,7 +2,6 @@
 import gc
 import math
 import pickle
-import unittest
 import warnings
 import weakref
 from collections import namedtuple, OrderedDict
@@ -17,7 +16,6 @@ from torch.testing._internal.common_nn import _create_basic_net, NNTestCase
 from torch.testing._internal.common_utils import (
     HardwareClassification,
     instantiate_parametrized_tests,
-    IS_WINDOWS,
     parametrize as parametrize_test,
     run_tests,
     skipIfTorchDynamo,
@@ -774,7 +772,6 @@ class TestStateDictHooks(TestCase):
         self.assertEqual([], ret.missing_keys)
         self.assertEqual([], ret.unexpected_keys)
 
-    @unittest.skipIf(IS_WINDOWS, "Tempfile permission issue on windows")
     @swap([True, False])
     def test_load_state_dict_post_hook_backward_compatibility(self):
         def my_post_load_hook(mod, _):
@@ -862,7 +859,6 @@ class TestStateDictHooks(TestCase):
         mod = MyLazyModule()
         self._test_register_state_dict_pre_hook(mod, mod.layer1)
 
-    @unittest.skipIf(IS_WINDOWS, "Tempfile permission issue on windows")
     def test_register_state_dict_pre_hook_backward_compat(self):
         called = False
 

@@ -21,6 +21,7 @@ from torch.testing._internal.common_utils import (
     subtest,
     TestCase,
 )
+from torch._subclasses.fake_tensor import is_fake_tensor
 
 
 # Various data types (preserved over operations).

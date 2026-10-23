@@ -63,6 +63,7 @@ from torch.testing._internal.common_utils import (
     TestCase,
 )
 import torch.utils._pytree as pytree
+from torch.testing._internal.common_device_type import onlyCPU
 
 try:
     import torchvision.models  # noqa: F401
@@ -2107,7 +2108,7 @@ class TestModule(torch.nn.Module):
             self.assertEqual(test_out, ref_out)
 
 
-class TestNormalizeOperatorsGeneric(JitTestCase):
+class TestNormalizeOperatorsGeneric(TestCase):
     hw_classification = HardwareClassification.GENERIC
 
     def test_normalize_quantized_eb(self):

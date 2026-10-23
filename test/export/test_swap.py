@@ -15,13 +15,11 @@ from torch.export import export, register_dataclass
 from torch.export._swap import _swap_modules
 from torch.testing._internal.common_utils import (
     HardwareClassification,
-    IS_WINDOWS,
     run_tests,
     TestCase,
 )
 
 
-@unittest.skipIf(IS_WINDOWS, "Windows not supported for this test")
 @unittest.skipIf(not torchdynamo.is_dynamo_supported(), "dynamo isn't support")
 @parameterized_class(
     [

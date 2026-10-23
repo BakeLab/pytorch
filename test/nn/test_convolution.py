@@ -56,7 +56,6 @@ from torch.testing._internal.common_utils import (
     run_tests,
     serialTest,
     set_default_dtype,
-    skipIfRocmArch,
     subtest,
     TEST_SCIPY,
     TEST_WITH_ROCM,
@@ -3011,9 +3010,6 @@ class TestConvolutionNNDevice(NNTestCase):
     @largeTensorTest("12GB")
     @serialTest()
     @skipXPU
-    # MI200-specific MIOpen failure, addressed by
-    # https://github.com/ROCm/rocm-libraries/pull/11809
-    @skipIfRocmArch(MI200_ARCH)
     def test_conv_large(self, device):
         dtype = torch.half if self.device_type != "cpu" else torch.float
         conv = nn.Conv2d(2, 2, 8, 8, bias=False).to(device).to(dtype)

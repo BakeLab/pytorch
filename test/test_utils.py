@@ -34,7 +34,6 @@ from torch.testing._internal.common_methods_invocations import op_db
 from torch.testing._internal.common_utils import (  # type: ignore[attr-defined]
     IS_FBCODE,
     IS_SANDCASTLE,
-    IS_WINDOWS,
     load_tests,
     skipIfTorchDynamo,
     TEST_WITH_ASAN,
@@ -683,7 +682,6 @@ class TestHipify(TestCase):
     def test_import_hipify(self):
         from torch.utils.hipify import hipify_python  # noqa: F401
 
-    @unittest.skipIf(IS_WINDOWS, "Creating symlinks may require privileges on Windows")
     def test_canonicalize_hip_source(self):
         # `_canonicalize_hip_source` must leave a source that already lives under
         # the build dir untouched (return its abspath), so a source symlinked
@@ -967,7 +965,7 @@ class TestStandaloneCPPJIT(TestCase):
                 is_standalone=True,
             )
 
-            ext = ".exe" if IS_WINDOWS else ""
+            ext = ""
             self.assertEqual(
                 exec_path, os.path.join(build_dir, f"standalone_load_test{ext}")
             )
@@ -1153,12 +1151,11 @@ class TestTorchPathResolution(TestCase):
             loader = types.SimpleNamespace(paths=[checkout, installed])
             with mock.patch.object(torch, "__loader__", loader):
                 self.assertEqual(installed_torch_dir(checkout), installed)
-            if not IS_WINDOWS:
-                os.symlink(os.path.join(root, "src"), os.path.join(root, "alias"))
-                aliased = os.path.join(root, "alias", "torch")
-                loader = types.SimpleNamespace(paths=[aliased, installed])
-                with mock.patch.object(torch, "__loader__", loader):
-                    self.assertEqual(installed_torch_dir(checkout), installed)
+            os.symlink(os.path.join(root, "src"), os.path.join(root, "alias"))
+            aliased = os.path.join(root, "alias", "torch")
+            loader = types.SimpleNamespace(paths=[aliased, installed])
+            with mock.patch.object(torch, "__loader__", loader):
+                self.assertEqual(installed_torch_dir(checkout), installed)
             # Only an entry holding lib/ is an install tree; otherwise the
             # extension module's spec decides, as it does without any paths.
             loader = types.SimpleNamespace(paths=[checkout, os.path.join(root, "x")])
@@ -1190,7 +1187,6 @@ class TestTorchPathResolution(TestCase):
             os.makedirs(os.path.join(clean, "lib", "libshm"))
             self.assertEqual(torch._utils_internal._stale_checkout_artifacts(clean), [])
 
-    @unittest.skipIf(IS_WINDOWS, "_load_global_deps is a no-op on Windows")
     def test_load_global_deps_reports_missing_library(self):
         real_exists = os.path.exists
 
@@ -1594,7 +1590,6 @@ class TestUtilsInternal(TestCase):
 
 
 class TestDeviceLazyInit(TestCase):
-    @unittest.skipIf(IS_WINDOWS, "pthread_atfork not available on Windows")
     def test_fork_poison_on_lazy_init(self, device):
         torch.empty(1, device=device)
 

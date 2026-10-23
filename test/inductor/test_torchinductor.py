@@ -4228,8 +4228,6 @@ class CommonTemplate:
             self.common(fn, (a, b))
             b_neg = torch.full_like(a, -divisor)
             self.common(fn, (a, b_neg))
-
-    @skip_if_halide  # floordiv goes through floats, inexact for large values
     def test_floordiv_int_min_negative_divisor(self):
         # Regression test for https://github.com/pytorch/pytorch/issues/198545
         def fn(a, b):
@@ -6908,7 +6906,6 @@ for dtype in (torch.int32, torch.int64):
     # halide/mps take the non-logical-index path in _pool_argmax_inner_fn, so the
     # window offsets are still physical there; halide additionally fails to schedule
     # the fallback argmax for this shape.
-    @skip_if_halide
     @skip_if_mps
     def test_adaptive_max_pool2d_transposed_indices(self):
         # transposed input, indices must be logical and not physical offsets
@@ -7281,7 +7278,6 @@ for dtype in (torch.int32, torch.int64):
     # same as test_adaptive_max_pool2d_transposed_indices: halide/mps take the
     # non-logical-index path in _pool_argmax_inner_fn and still return physical
     # window offsets.
-    @skip_if_halide
     @skip_if_mps
     def test_max_pool2d_transposed_indices(self):
         # transposed input, indices must be logical and not physical offsets
@@ -11685,8 +11681,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
         x = torch.tensor([-2, 0, 1, 2]).repeat(16).view(8, 8).float()
         w = 2 * torch.eye(8)
         self.common(fn, (x, w))
-
-    @skip_if_halide  # won't fuse a read of the buffer it writes in place
     def test_masked_fill_of_realized_buffer_kernel_count(self):
         # The fill writes the realized mm output in place, in one kernel.
         def fn(x, w, m):
@@ -11774,13 +11768,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
 
         if case == "fsdp_copy_then_mutate" and not hasattr(torch.ops.fsdp, "copy_"):
             self.skipTest("needs torch.ops.fsdp.copy_")
-        if case in (
-            "foreach_reads_sibling_input",
-            "foreach_reads_sibling_across_groups",
-        ) and is_halide_backend(self.device):
-            # Halide gets the inputs right but not x + 0, which misses x's
-            # in-place update.
-            self.skipTest("halide: an output misses its input's in-place update")
         fn = {
             f.__name__: f
             for f in (
@@ -14694,8 +14681,6 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
 
         x = torch.ones(8, dtype=torch.bfloat16)
         self.common(fn, (x, torch.zeros_like(x), torch.tensor(0.95)))
-
-    @skip_if_halide
     def test_fp16_cast_log1p(self):
         self.common(lambda x: x.half().log1p(), (torch.rand(8) * 1e-3,))
 

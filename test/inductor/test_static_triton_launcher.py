@@ -44,7 +44,6 @@ from torch._inductor.test_case import TestCase
 from torch.testing._internal.common_cuda import SM80OrLater, SM90OrLater
 from torch.testing._internal.common_utils import (
     instantiate_parametrized_tests,
-    IS_WINDOWS,
     parametrize,
     skipIfRocm,
     skipIfXpu,
@@ -1637,7 +1636,4 @@ class TestFastCudaLauncherCompileResult(TestCase):
 
 if __name__ == "__main__":
     from torch._inductor.test_case import run_tests
-
-    # TODO: Enable test on XPU windows once supported.
-    if not (HAS_XPU_AND_TRITON and IS_WINDOWS):
-        run_tests()
+    run_tests()

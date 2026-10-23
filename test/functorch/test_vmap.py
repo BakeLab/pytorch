@@ -66,7 +66,6 @@ from torch.testing._internal.common_methods_invocations import op_db
 from torch.testing._internal.common_utils import (
     HardwareClassification,
     instantiate_parametrized_tests,
-    IS_WINDOWS,
     markDynamoStrictTest,
     parametrize,
     run_tests,
@@ -2472,7 +2471,6 @@ class TestVmapOperators(Namespace.TestVmapBase):
         self.assertEqual(vmap(foo)(float_tensor), torch.tensor([1, 1, 1]))
         self.assertEqual(vmap(foo)(long_tensor), torch.tensor([0, 0, 0]))
 
-    @unittest.skipIf(IS_WINDOWS, reason="Windows not yet supported for torch.compile")
     def test_is_contiguous(self):
         def foo(x):
             if x.is_contiguous():

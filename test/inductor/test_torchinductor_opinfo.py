@@ -36,10 +36,8 @@ from torch.testing._internal.common_methods_invocations import op_db
 from torch.testing._internal.common_utils import (
     HardwareClassification,
     IS_ARM64,
-    IS_CI,
     IS_LINUX,
     IS_MACOS,
-    IS_WINDOWS,
     IS_X86,
     skipCUDAMemoryLeakCheckIf,
     skipIfCrossRef,
@@ -59,6 +57,7 @@ from torch.testing._internal.inductor_utils import (
 from torch.utils._dtype_abbrs import dtype_abbrs
 from torch.utils._python_dispatch import TorchDispatchMode
 from torch.utils._pytree import tree_leaves, tree_map
+from torch.testing._internal.common_utils import parametrize
 
 
 try:
@@ -74,15 +73,6 @@ except (unittest.SkipTest, ImportError) as e:
     if __name__ == "__main__":
         sys.exit(0)
     raise
-
-if IS_WINDOWS and IS_CI:
-    # TODO(xuhancn) : improve the compiler build performance on windows.
-    sys.stderr.write(
-        "This UT is too slow on windows, and will cause out of time in CI. So skip it now.\n"
-    )
-    if __name__ == "__main__":
-        sys.exit(0)
-    raise unittest.SkipTest("skip slow test")
 
 bf16 = torch.bfloat16  # not tested
 f64 = torch.float64

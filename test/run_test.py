@@ -31,7 +31,6 @@ from torch.testing._internal.common_utils import (
     _get_test_report_path,
     IS_CI,
     IS_MACOS,
-    IS_WINDOWS,
     retry_shell,
     sanitize_test_filename,
     set_cwd,
@@ -103,6 +102,7 @@ HAS_TORCHCI_REPORTS = bool(importlib.util.find_spec("torch.testing._internal.tor
 
 
 from torch.testing._internal.common_utils import HardwareClassification
+import subprocess
 
 
 _HC_CHOICES = [e.name for e in HardwareClassification]
@@ -1858,60 +1858,7 @@ def get_selected_tests(options) -> list[str]:
 
     selected_tests = exclude_tests(options.exclude, selected_tests)
 
-    if IS_WINDOWS and not options.ignore_win_blocklist:
-        from torch.testing._internal.common_cuda import SM120OrLater, SM89OrLater
-
-        # Disable tests on Windows for SM89 and later - tests failing in ci
-        # Enable tests after fixing the failures
-        if SM89OrLater:
-            WINDOWS_BLOCKLIST.extend(
-                [
-                    # Windows fatal exception / access violation
-                    "functorch/test_aotdispatch",
-                    "functorch/test_control_flow",
-                    "nn/test_convolution",
-                    "profiler/test_profiler",
-                    "test_modules",
-                    "test_expanded_weights",
-                                    "test_nested_tensor",
-                    "test_nestedtensor",
-                    "test_nn",
-                    # DLL load failed errors, missing dependencies
-                    "test_custom_ops",
-                    "test_testing",
-                    # Features not supported on Windows ( e.g. rowwise scaling)
-                    "test_decomp",
-                    "test_transformers",
-                    "test_ops",
-                    # Output mismatch errors and long running tests
-                    "test_linalg",
-                    "test_matmul_cuda",
-                    "functorch/test_ops",
-                    "test_scaled_matmul_cuda",
-                ]
-            )
-
-        # Disable tests on Windows for SM120 and later - tests failing in ci
-        # Enable tests after fixing the failures
-        if SM120OrLater:
-            WINDOWS_BLOCKLIST.extend(
-                [
-                    # test_api fails on Windows SM120+. Triage pending.
-                    "cpp/test_api",
-                ]
-            )
-
-        target_arch = os.environ.get("VSCMD_ARG_TGT_ARCH")
-        if target_arch != "x64":
-            WINDOWS_BLOCKLIST.append("cpp_extensions_aot_no_ninja")
-            WINDOWS_BLOCKLIST.append("cpp_extensions_aot_ninja")
-            WINDOWS_BLOCKLIST.append("cpp_extensions_jit")
-            WINDOWS_BLOCKLIST.append("jit")
-            WINDOWS_BLOCKLIST.append("jit_fuser")
-
-        selected_tests = exclude_tests(WINDOWS_BLOCKLIST, selected_tests, "on Windows")
-
-    elif TEST_WITH_ROCM:
+    if TEST_WITH_ROCM:
         selected_tests = exclude_tests(ROCM_BLOCKLIST, selected_tests, "on ROCm")
 
     # skip all distributed tests if distributed package is not available.

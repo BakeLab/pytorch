@@ -16,7 +16,6 @@ from functools import partial, wraps
 
 # NB: numpy is a testing dependency!
 import numpy as np
-from common_utils import expectedFailureIf
 
 import functorch
 import torch
@@ -47,7 +46,6 @@ from torch._subclasses.fake_tensor import FakeTensorMode
 from torch.func import functional_call, linearize, stack_module_state
 from torch.testing import make_tensor
 from torch.testing._internal.common_cuda import (
-    TEST_CUDA,
     tf32_on_and_off,
     with_tf32_off,
 )
@@ -63,7 +61,6 @@ from torch.testing._internal.common_utils import (
     HardwareClassification,
     instantiate_parametrized_tests,
     IS_FBCODE,
-    IS_WINDOWS,
     markDynamoStrictTest,
     parametrize,
     run_tests,
@@ -3763,7 +3760,6 @@ class TestComposability(TestCase):
         self.assertEqual(fx_f(new_cotangent, True, True), vjp_fn(new_cotangent))
 
     # FIXME: test fails in Windows
-    @unittest.skipIf(IS_WINDOWS, "fails in Windows; needs investigation")
     @unittest.skipIf(IS_FBCODE, "can't subprocess in fbcode")
     # it is redundant to run this test twice on a machine that has GPUs
     @onlyCPU
@@ -5507,7 +5503,6 @@ def traceable(f):
 @markDynamoStrictTest
 class TestCompileTransformsDevice(TestCase):
     # torch.compile is not supported on Windows CUDA.
-    @expectedFailureIf(IS_WINDOWS and TEST_CUDA)
     @unittest.skipIf(
         TEST_CUDA_MEM_LEAK_CHECK,
         "Leaking memory, see https://github.com/pytorch/pytorch/pull/150059 for example",
@@ -5808,12 +5803,6 @@ instantiate_device_type_tests(
 )
 instantiate_device_type_tests(
     TestHessianDevice,
-    globals(),
-    only_for=only_for,
-    allow_xpu=True,
-)
-instantiate_device_type_tests(
-    TestComposabilityDevice,
     globals(),
     only_for=only_for,
     allow_xpu=True,

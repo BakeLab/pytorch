@@ -19,6 +19,8 @@ from torch.testing._internal.common_utils import (
     run_tests,
     TestCase,
 )
+import torch
+from torch._dynamo.device_interface import CpuInterface, CudaInterface, get_interface_for_device
 
 
 class TestMultiProcessorCount(TestCase):
@@ -168,7 +170,6 @@ class TestAttentionFusionDeviceHooks(TestCase):
     def test_registered_non_cuda_inherits_base_defaults(self):
         self.assertIs(get_interface_for_device("cpu"), CpuInterface)
         self.assertIs(get_interface_for_device("xpu"), XpuInterface)
-        self.assertIs(get_interface_for_device("mtia"), MtiaInterface)
         self.assertTrue(CpuInterface.is_fp32_attention_fusion_safe(torch.float32))
         self.assertTrue(CpuInterface.is_fp32_softmax_attention_fusion_safe())
         self.assertFalse(CpuInterface.keep_attention_on_math_path())

@@ -26,7 +26,6 @@ from torch.testing._internal.common_utils import (
     instantiate_parametrized_tests,
     IS_LINUX,
     IS_MACOS,
-    IS_WINDOWS,
     load_tests,
     parametrize,
     run_tests,
@@ -569,7 +568,6 @@ class TestMultiprocessingDevice(_MultiprocessingTestMixin, TestCase):
         ctx = self._get_ctx(device)
         self._test_sharing(ctx, device, torch.float)
 
-    @skipXPUIf(IS_WINDOWS, "https://github.com/intel/torch-xpu-ops/issues/4068")
     @dtypes(torch.float32, torch.int64)
     def test_empty_tensor_sharing(self, device, dtype):
         self._test_empty_tensor_sharing(dtype, torch.device(device))
@@ -634,7 +632,6 @@ class TestMultiprocessingDevice(_MultiprocessingTestMixin, TestCase):
         self.assertTrue(t.is_shared())
 
     @onlyAccelerator
-    @unittest.skipIf(IS_WINDOWS, "not applicable to Windows (only fails with fork)")
     def test_device_bad_call(self, device):
         # Initialize device
         t = torch.zeros(5, 5).to(device).cpu()
@@ -647,7 +644,6 @@ class TestMultiprocessingDevice(_MultiprocessingTestMixin, TestCase):
         self.assertIsInstance(outq.get(), RuntimeError)
 
     @onlyAccelerator
-    @unittest.skipIf(IS_WINDOWS, "not applicable to Windows (only fails with fork)")
     def test_wrong_device_fork(self, device):
         stderr = TestCase.runWithPytorchAPIUsageStderr(
             f"""\
@@ -800,7 +796,6 @@ class TestMultiprocessing(_MultiprocessingTestMixin, TestCase):
         with ctx.Pool(3) as pool:
             pool.map(simple_autograd_function, [1, 2, 3])
 
-    @unittest.skipIf(IS_WINDOWS, "Test needs to use fork multiprocessing")
     def test_autograd_errors(self):
         ctx = mp.get_context("fork")
         simple_autograd_function()

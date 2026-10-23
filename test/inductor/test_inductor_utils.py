@@ -15,6 +15,10 @@ from torch._inductor.test_case import run_tests, TestCase
 from torch._inductor.utils import do_bench_using_profiling
 from torch._inductor.virtualized import NullHandler, V
 from torch.autograd import DeviceType
+from torch.fx.experimental._constant_symnode import ConstantIntNode
+from torch.fx.experimental.symbolic_shapes import DimDynamic, ShapeEnv
+from torch.testing._internal.common_utils import instantiate_parametrized_tests, parametrize
+from types import SimpleNamespace
 
 
 log = logging.getLogger(__name__)

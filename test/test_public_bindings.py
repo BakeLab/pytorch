@@ -14,7 +14,6 @@ from torch._utils_internal import get_file_path_2  # @manual
 from torch.testing._internal.common_utils import (
     IS_JETSON,
     IS_MACOS,
-    IS_WINDOWS,
     run_tests,
     skipIfTorchDynamo,
     TestCase,
@@ -244,7 +243,7 @@ class TestPublicBindings(TestCase):
         return True
 
     @unittest.skipIf(
-        IS_WINDOWS or IS_MACOS,
+        IS_MACOS,
         "Inductor/Distributed modules hard fail on windows and macos",
     )
     @skipIfTorchDynamo("Broken and not relevant for now")
@@ -373,7 +372,7 @@ class TestPublicBindings(TestCase):
         self.assertEqual("", "\n".join(errors))
 
     # AttributeError: module 'torch.distributed' has no attribute '_shard'
-    @unittest.skipIf(IS_WINDOWS or IS_JETSON, "Distributed Attribute Error")
+    @unittest.skipIf(IS_JETSON, "Distributed Attribute Error")
     @skipIfTorchDynamo("Broken and not relevant for now")
     def test_correct_module_names(self):
         """

@@ -42,7 +42,6 @@ from torch.testing._internal.common_utils import (
     find_library_location,
     instantiate_parametrized_tests,
     IS_LINUX,
-    IS_WINDOWS,
     IS_X86,
     parametrize,
     run_tests,
@@ -200,7 +199,6 @@ class TestXpu(TestCase):
         if torch.xpu.is_bf16_supported(including_emulation=True):
             self.assertIn(torch.bfloat16, supported_dtypes)
 
-    @unittest.skipIf(IS_WINDOWS, "not applicable to Windows (only fails with fork)")
     def test_wrong_xpu_fork(self):
         stderr = TestCase.runWithPytorchAPIUsageStderr(
             """\
@@ -223,9 +221,6 @@ if __name__ == "__main__":
         )
         self.assertRegex(stderr, "Cannot re-initialize XPU in forked subprocess.")
 
-    @unittest.skipIf(
-        IS_WINDOWS, "Only for lazy initialization on Linux, not applicable on Windows."
-    )
     def test_lazy_init(self):
         """Validate that no XPU calls are made during `import torch` call"""
 
@@ -523,9 +518,6 @@ print(match1, match0)
                 with self.assertRaisesRegex(RuntimeError, "Failed to import pyzes"):
                     api()
 
-    @unittest.skipIf(
-        IS_WINDOWS, "Only for lazy initialization on Linux, not applicable on Windows."
-    )
     def test_no_xpu_device_query_on_inductor_import(self):
         """Validate that importing torch._inductor.lowering does not trigger XPU device queries"""
 
@@ -734,20 +726,6 @@ print(torch.xpu.is_initialized())
             ):
                 e1 = torch.xpu.Event(enable_timing=False, interprocess=True)
                 e1.ipc_handle()
-            return
-
-        if IS_WINDOWS:
-            with self.assertRaisesRegex(
-                RuntimeError, "XPU IPC events are not supported on Windows"
-            ):
-                e2 = torch.xpu.Event(enable_timing=False, interprocess=True)
-                e2.record()
-
-            with self.assertRaisesRegex(
-                RuntimeError, "XPU IPC events are not supported on Windows"
-            ):
-                e3 = torch.xpu.Event(enable_timing=False, interprocess=True)
-                e3.ipc_handle()
             return
 
         # IPC and timing cannot both be enabled; error fires at record() time.
@@ -3149,7 +3127,6 @@ class TestBlockStateAbsorption(TestCase):
 
 @instantiate_parametrized_tests
 @unittest.skipIf(not Xe2_Or_Later, "XPU IPC not available")
-@unittest.skipIf(IS_WINDOWS, "XPU IPC not available on non-Linux platforms")
 @unittest.skipIf(
     TEST_WITH_TSAN,
     "TSAN is not fork-safe since we're forking in a multi-threaded environment",

@@ -32,7 +32,6 @@ from torch.testing._internal.common_utils import (
     IS_LINUX,
     IS_MACOS,
     IS_SANDCASTLE,
-    IS_WINDOWS,
     load_tests,
     parametrize,
     run_tests,
@@ -650,10 +649,9 @@ class TestConcatDataset(TestCase):
 # takes in dummy var so this can also be used as a `worker_init_fn`
 def set_faulthander_if_available(_=None):
     faulthandler.enable(sys.__stderr__)
-    if not IS_WINDOWS:
-        # windows does not have faulthandler.register
-        # chain=False prevents the default behavior of killing the process
-        faulthandler.register(signal.SIGUSR1, file=sys.__stderr__, chain=False)
+    # windows does not have faulthandler.register
+    # chain=False prevents the default behavior of killing the process
+    faulthandler.register(signal.SIGUSR1, file=sys.__stderr__, chain=False)
 
 
 set_faulthander_if_available()
@@ -661,13 +659,8 @@ set_faulthander_if_available()
 
 # Process `pid` must have called `set_faulthander_if_available`
 def print_traces_of_all_threads(pid):
-    if not IS_WINDOWS:
-        # use the custom signal if available
-        os.kill(pid, signal.SIGUSR1)
-    else:
-        # otherwise we can still use the handler given by faulthandler.enable()
-        # at the cost of killing the process.
-        os.kill(pid, signal.SIGSEGV)
+    # use the custom signal if available
+    os.kill(pid, signal.SIGUSR1)
 
     # wait in parent process to give subprocess some time to print
     time.sleep(5)
@@ -1320,7 +1313,6 @@ class TestDataLoader(TestCase):
             pass
 
     @unittest.skipIf(IS_SANDCASTLE, "subprocess doesn't work in FB internal CI")
-    @unittest.skipIf(IS_WINDOWS, "No 'resource' module on Windows")
     def test_fd_limit_exceeded(self):
         # See NOTE [ DataLoader on Linux and open files limit ]
         import subprocess
@@ -1429,15 +1421,11 @@ except RuntimeError as e:
         try:
             self.assertFalse(p.is_alive())
             self.assertNotEqual(p.exitcode, 0)
-            if IS_WINDOWS:
-                self.assertIsInstance(p.exception, OSError)
-                self.assertRegex(str(p.exception), r"access violation reading ")
-            else:
-                self.assertIsInstance(p.exception, RuntimeError)
-                self.assertRegex(
-                    str(p.exception),
-                    r"DataLoader worker \(pid \d+\) is killed by signal: ",
-                )
+            self.assertIsInstance(p.exception, RuntimeError)
+            self.assertRegex(
+                str(p.exception),
+                r"DataLoader worker \(pid \d+\) is killed by signal: ",
+            )
         finally:
             p.terminate()
 
@@ -1446,7 +1434,6 @@ except RuntimeError as e:
     # After forking, set_num_threads(1) in the child process entails handling some inherited data-structures
     # of the Caffe2 thread-pool of the parent process, culminating in a segfault.
     # Reference: https://github.com/pytorch/pytorch/issues/54752
-    @unittest.skipIf(IS_WINDOWS, "Needs fork")
     def test_no_segfault(self):
         p = ErrorTrackingProcess(target=_test_no_segfault)
         p.start()
@@ -1937,7 +1924,7 @@ except RuntimeError as e:
             self.assertEqual(12345, batch[1])
 
     @unittest.skipIf(
-        IS_WINDOWS or IS_MACOS,
+        IS_MACOS,
         "`ValueError: cannot find context for 'forkserver'` in Windows",
     )
     def test_worker_init_fn_forkserver(self):
@@ -2506,7 +2493,6 @@ except RuntimeError as e:
         self.assertIn("__getitem__", error_message)
         self.assertIn("__getitems__", error_message)
 
-    @unittest.skipIf(IS_WINDOWS, "FIXME: stuck test")
     def test_partial_workers(self):
         r"""Check that workers exit even if the iterator is not exhausted."""
         if TEST_PIN_MEMORY:
@@ -2559,7 +2545,7 @@ except RuntimeError as e:
             # not be called before process end. It is important to see that the
             # processes still exit in both cases.
 
-            if pin_memory and (not TEST_PIN_MEMORY or IS_WINDOWS):
+            if pin_memory and not TEST_PIN_MEMORY:
                 # This test runs in a subprocess, which can only initialize the
                 # accelerator with spawn. DataLoader with pin_memory=True initializes
                 # the accelerator when its iterator is constructed.
@@ -3215,7 +3201,6 @@ class TestDataLoaderPersistentWorkers(TestDataLoader):
         self.persistent_workers = True
 
     @unittest.skipIf(IS_SANDCASTLE, "subprocess doesn't work in FB internal CI")
-    @unittest.skipIf(IS_WINDOWS, "No 'resource' module on Windows")
     def test_fd_limit_exceeded(self):
         # See NOTE [ DataLoader on Linux and open files limit ]
         import subprocess
@@ -3381,7 +3366,6 @@ except RuntimeError as e:
                 dataset.start = i
 
     @unittest.skipIf(IS_SANDCASTLE, "subprocess doesn't work in FB internal CI")
-    @unittest.skipIf(IS_WINDOWS, "Needs fork")
     def test_early_exit(self):
         import subprocess
 
@@ -3486,7 +3470,6 @@ class TestDataLoaderCUDA(TestCase):
             if (
                 ctx in ["spawn", "forkserver"]
                 and TEST_CUDA
-                and not IS_WINDOWS
                 and not IS_JETSON
             ):
                 ds_cls = CUDACountingDataset
@@ -3715,7 +3698,7 @@ class TestIndividualWorkerQueue(TestCase):
                 current_worker_idx = 0
 
     @unittest.skipIf(
-        IS_WINDOWS or IS_MACOS,
+        IS_MACOS,
         "Flaky on Windows and MacOS https://github.com/pytorch/pytorch/issues/68643",
     )
     def test_ind_worker_queue(self):
@@ -3785,7 +3768,6 @@ class ConvDataset(Dataset):
         return torch.nn.functional.conv1d(self.x, torch.ones(1, 1, 2))
 
 
-@unittest.skipIf(IS_WINDOWS, "Needs fork")
 class TestConvAfterFork(TestCase):
     hw_classification = HardwareClassification.GENERIC
 

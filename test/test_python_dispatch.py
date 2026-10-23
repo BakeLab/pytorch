@@ -55,6 +55,7 @@ from torch.utils._python_dispatch import (
     TorchDispatchMode,
 )
 from torch.utils._pytree import tree_map, tree_map_only
+import unittest
 
 
 # used as DataLoader collate_fn below; named here to avoid trying to pickle a lambda

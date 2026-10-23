@@ -11,7 +11,6 @@ from torch.testing._internal.common_device_type import (
 )
 from torch.testing._internal.common_utils import (
     IS_MACOS,
-    IS_WINDOWS,
     slowTest,
     TEST_MKL,
     TEST_WITH_ROCM,
@@ -231,7 +230,7 @@ if RUN_CPU:
         BaseTest("test_multihead_attention", "cpu", test_cpu_repro.CPUReproTests()),
         BaseTest(
             "test_multi_threading",
-            condition=not IS_WINDOWS,
+            condition=True,
             # Two threads compile, so we expect the output code to be printed twice.
             code_string_count={"py::gil_scoped_release_simple release;": 2},
         ),

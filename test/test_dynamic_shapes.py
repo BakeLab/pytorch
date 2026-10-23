@@ -59,7 +59,6 @@ from torch.testing._internal.common_utils import (
     instantiate_parametrized_tests,
     IS_LINUX,
     IS_MACOS,
-    IS_WINDOWS,
     parametrize,
     run_tests,
     skipIfTorchDynamo,
@@ -4442,8 +4441,7 @@ class TestUnbacked(TestCase):
         or IS_LINUX
         or IS_MACOS
         or TEST_WITH_ROCM
-        or TEST_WITH_SLOW
-        or IS_WINDOWS,
+        or TEST_WITH_SLOW,
         "https://github.com/pytorch/pytorch/issues/163953",
     )
     @skipIfTorchDynamo("mark_unbacked is not traceable")

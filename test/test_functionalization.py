@@ -20,7 +20,6 @@ from torch.fx.passes.reinplace import reinplace
 from torch.multiprocessing.reductions import StorageWeakRef
 from torch.testing._internal.common_utils import (
     HardwareClassification,
-    IS_WINDOWS,
     run_tests,
     skipIfTorchDynamo,
     TEST_WITH_TORCHDYNAMO,
@@ -1877,16 +1876,12 @@ def forward(self, arg0_1):
         self.assert_functionalization(
             f, torch.randn(20, size, 35, 45), torch.zeros(size), torch.ones(size)
         )
-        # On Windows, for instance_norm, the alias_copy's are reordered to come right before they need to be used
-        # whereas on other platforms, the alias_copy's are before the view_copy's.
-        # e.g., the alias_copy after the getitem_4 assignment would be moved to be right before the copy assignment.
-        if not IS_WINDOWS:
-            logs = self.get_logs(
-                f, torch.randn(20, size, 35, 45), torch.zeros(size), torch.ones(size)
-            )
-            self.assertExpectedInline(
-                logs,
-                """\
+        logs = self.get_logs(
+            f, torch.randn(20, size, 35, 45), torch.zeros(size), torch.ones(size)
+        )
+        self.assertExpectedInline(
+            logs,
+            """\
 
 
 
@@ -1920,19 +1915,19 @@ def forward(self, arg0_1, arg1_1, arg2_1):
     copy__1 = torch.ops.aten.copy_.default(arg2_1, alias_copy_4);  arg2_1 = alias_copy_4 = copy__1 = None
     return view_copy_5
     """,
-            )
+        )
 
-            reinplaced_logs = self.get_logs(
-                f,
-                torch.randn(20, size, 35, 45),
-                torch.zeros(size),
-                torch.ones(size),
-                reapply_views=True,
-                run_reinplace=True,
-            )
-            self.assertExpectedInline(
-                reinplaced_logs,
-                """\
+        reinplaced_logs = self.get_logs(
+            f,
+            torch.randn(20, size, 35, 45),
+            torch.zeros(size),
+            torch.ones(size),
+            reapply_views=True,
+            run_reinplace=True,
+        )
+        self.assertExpectedInline(
+            reinplaced_logs,
+            """\
 
 
 
@@ -1966,7 +1961,7 @@ def forward(self, arg0_1, arg1_1, arg2_1):
     copy__1 = torch.ops.aten.copy_.default(arg2_1, alias_4);  arg2_1 = alias_4 = copy__1 = None
     return view_5
     """,
-            )
+        )
 
     def test_mutation_overlapping_mem(self):
         def fn(x):
