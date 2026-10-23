@@ -466,10 +466,22 @@ endif()
 
 # _rocm_init.py is gitignored (injected by ROCm build scripts to bootstrap
 # torch/__init__.py). See https://github.com/ROCm/TheRock/blob/main/docs/packaging/python_packaging.md
-# When building against the ROCm SDK wheels, PYTORCH_ROCM_SDK_VERSION names
-# their version: generate the file so `import torch` preloads the SDK's
-# libraries from those wheels and checks that the installed SDK matches.
-if(USE_ROCM AND NOT "$ENV{PYTORCH_ROCM_SDK_VERSION}" STREQUAL "")
+# Generate it for the ROCm SDK wheels this build targets, so `import torch`
+# preloads their libraries and checks the installed SDK matches. The version is
+# PYTORCH_ROCM_SDK_VERSION, else the rocm package in the build environment,
+# matching tools/metadata/dependencies.py.
+set(_rocm_sdk_version "$ENV{PYTORCH_ROCM_SDK_VERSION}")
+if(USE_ROCM AND _rocm_sdk_version STREQUAL "")
+  execute_process(
+    COMMAND "${Python_EXECUTABLE}" -c "from importlib.metadata import version; print(version('rocm'), end='')"
+    OUTPUT_VARIABLE _rocm_sdk_version
+    RESULT_VARIABLE _rocm_sdk_result
+    ERROR_QUIET)
+  if(NOT _rocm_sdk_result EQUAL 0)
+    set(_rocm_sdk_version "")
+  endif()
+endif()
+if(USE_ROCM AND NOT _rocm_sdk_version STREQUAL "")
   set(_rocm_preloads
       amd_comgr amd_smi amdhip64 hiprtc hipblas hipfft hiprand hipsparse
       hipsparselt hipsolver hipblaslt miopen rocm_sysdeps_liblzma rocm-openblas
@@ -482,7 +494,7 @@ if(USE_ROCM AND NOT "$ENV{PYTORCH_ROCM_SDK_VERSION}" STREQUAL "")
        "    import rocm_sdk\n"
        "    rocm_sdk.initialize_process(\n"
        "        preload_shortnames=[${_rocm_preloads}],\n"
-       "        check_version='$ENV{PYTORCH_ROCM_SDK_VERSION}')\n")
+       "        check_version='${_rocm_sdk_version}')\n")
 endif()
 # scikit-build-core won't include it via Python package collection. Install it
 # explicitly via cmake instead.
