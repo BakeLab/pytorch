@@ -61,6 +61,7 @@ from torch.testing._internal.common_utils import (
 )
 from torch.testing._internal.inductor_utils import HAS_TRITON
 from torch.testing._internal.torchbind_impls import init_torchbind_implementations
+from torch._export.utils import wrap_method
 
 
 try:

@@ -17,6 +17,7 @@ from torch.fx._lazy_graph_module import (
 )
 from torch.fx.experimental.proxy_tensor import make_fx
 from torch.testing._internal.common_utils import TestCase
+from torch.testing._internal.common_utils import HardwareClassification
 
 
 class TestLazyGraphModule(TestCase):

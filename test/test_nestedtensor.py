@@ -74,6 +74,7 @@ from torch.testing._internal.opinfo.core import (
 from torch.testing._internal.opinfo.definitions.nested import _sample_njts, njt_op_db
 from torch.utils._pytree import tree_flatten, tree_map_only
 from torch.utils.checkpoint import checkpoint
+from torch._inductor.codegen.common import BackendFeature, has_backend_feature
 
 
 # Tests are ported from pytorch/nestedtensor.
