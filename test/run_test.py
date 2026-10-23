@@ -102,6 +102,7 @@ HAS_TORCHCI_REPORTS = bool(importlib.util.find_spec("torch.testing._internal.tor
 
 
 from torch.testing._internal.common_utils import HardwareClassification
+import subprocess
 
 
 _HC_CHOICES = [e.name for e in HardwareClassification]

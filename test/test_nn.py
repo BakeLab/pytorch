@@ -60,6 +60,9 @@ from torch.testing._internal.common_utils import dtype2prec_DONTUSE
 from torch.testing._internal.common_cuda import tf32_on_and_off, tf32_off, tf32_on
 from torch.types import _TensorOrTensors
 from torch.testing._internal.common_mkldnn import reduced_f32_on_and_off
+from torch._subclasses.fake_tensor import FakeTensorMode
+from torch.testing._internal.common_device_type import largeMPSBufferTest, skipCUDAIfNotRocm
+from torch.testing._internal.common_utils import HardwareClassification, skipIfRocmVersionLessThan
 
 if TEST_WITH_ROCM:
     os.environ["PYTORCH_MIOPEN_SUGGEST_NHWC"] = "1"

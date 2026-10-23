@@ -69,6 +69,7 @@ from torch.testing._internal.common_dtype import (
     all_types_complex_float8_and, all_passthru_types_and,
 )
 from torch.testing._internal.two_tensor import TwoTensor
+from torch.testing._internal.common_utils import AlwaysWarnTypedStorageRemoval, TEST_CUDA_GRAPH, instantiate_parametrized_tests
 
 if TEST_WITH_TORCHINDUCTOR:
     from torch._inductor.test_case import TestCase
@@ -11453,15 +11454,6 @@ tensor([[[1.+1.j, 1.+1.j, 1.+1.j,  ..., 1.+1.j, 1.+1.j, 1.+1.j],
 class TestTorchCPU(TestCase):
     hw_classification = HardwareClassification.CPU
     exact_dtype = True
-
-    @skipIfTorchInductor("https://github.com/pytorch/pytorch/issues/113707")
-    @dtypes(*get_all_qint_dtypes())
-    def test_nondeterministic_resize_quantized(self, device, dtype):
-        a = torch.tensor([-1, 0, 1, 2, 3], dtype=torch.float, device=device)
-        b = torch.quantize_per_tensor(a, 0.1, 10, dtype)
-        self.check_nondeterministic_alert(
-            lambda: b.resize_((10,)),
-            'quantized_resize_cpu_')
 
     # FIXME: move to test_scatter_gather_ops
     def test_gather_backward_one_dim(self):

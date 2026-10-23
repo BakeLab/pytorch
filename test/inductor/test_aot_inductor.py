@@ -118,6 +118,7 @@ from torch.utils._triton import (
     has_triton_experimental_host_tma,
     has_triton_tensor_descriptor_host_tma,
 )
+from torch.testing._internal.common_utils import TEST_WITH_ROCM
 
 
 requires_cuda_tma = unittest.skipIf(

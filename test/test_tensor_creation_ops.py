@@ -49,6 +49,7 @@ from torch.testing._internal.common_dtype import (
 )
 
 from torch.utils.dlpack import to_dlpack
+from torch.testing._internal.common_device_type import onlyCPU, onlyNativeDeviceTypes
 
 # TODO: replace with make_tensor
 def _generate_input(shape, dtype, device, with_extremal):

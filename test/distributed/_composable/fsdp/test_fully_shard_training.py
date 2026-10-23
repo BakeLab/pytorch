@@ -85,6 +85,7 @@ c10d_ops = torch.ops.c10d
 funcol = torch.ops.c10d_functional
 
 from torch.testing._internal.common_fsdp import get_devtype
+from torch.testing._internal.common_utils import instantiate_parametrized_tests, parametrize
 
 
 device_type = torch.device(get_devtype())
