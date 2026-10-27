@@ -225,5 +225,5 @@ aten_shimified_ops: dict[str, dict[str, str | dict[str, list[str] | str]]] = {
     "aten.new_zeros.default": {},
     "aten.full.default": {},
     "aten.subtract.Tensor": {},
-    "aten.add.Tensor": {},
+    "aten.add.Tensor": {"since": "TORCH_VERSION_2_16_0"},
 }
