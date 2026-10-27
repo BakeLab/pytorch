@@ -1417,7 +1417,7 @@ class TestZeroRedundancyOptimizerDistributedFreshPG(DistributedTestBase):
         layers are assigned to different devices."""
         if self.rank >= 2:
             return
-        self.create_pg(self.device, world_size=2, backend="nccl-legacy")
+        self.create_pg(self.device, world_size=2, backend="nccl")
         self._test_zero_model_parallel(parameters_as_bucket_view, self.device)
 
 

@@ -723,11 +723,6 @@ class ProcessGroupNCCLLazyCommPtrTest(ProcessGroupNCCL2CommPtrTest):
         return "nccl-lazy"
 
 
-class ProcessGroupNCCLLegacyCommPtrTest(ProcessGroupNCCL2CommPtrTest):
-    @classmethod
-    def backend_str(cls) -> str:
-        return "nccl-legacy"
-
 
 class ProcessGroupNCCL2LazyInitTest(_ProcessGroupNCCL2OptionsTest):
     """With lazy_init, communicators are created on first use."""
@@ -1583,11 +1578,6 @@ class ProcessGroupNCCL2NonblockingOptionPrecedenceTest(_ProcessGroupNCCL2Options
         self.assertEqual(backend.options.config.blocking, 1)
         self._check_all_reduce()
 
-
-class ProcessGroupNCCLLegacyNonblockingTest(ProcessGroupNCCL2NonblockingTest):
-    @classmethod
-    def backend_str(cls) -> str:
-        return "nccl-legacy"
 
 
 class ProcessGroupNCCL2ScalableInitTest(_ProcessGroupNCCL2OptionsTest):

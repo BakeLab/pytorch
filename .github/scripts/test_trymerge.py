@@ -2397,7 +2397,7 @@ class TestGreenlightGuardCallSite(TestCase):
         pr.pr_num = pr_num
         pr.is_ghstack_pr.return_value = ghstack
         pr.is_closed.return_value = False
-            pr.is_dependabot_pr.return_value = False
+        pr.is_dependabot_pr.return_value = False
         pr.get_approved_by.return_value = [GREENLIGHT_LOGIN]
         pr.get_changes_requested_by.return_value = []
         pr.get_labels.return_value = []
@@ -2666,7 +2666,7 @@ class TestGreenlightGuardWiring(TestCase):
         pr.pr_num = 1
         pr.is_ghstack_pr.return_value = False
         pr.is_dependabot_pr.return_value = False
-            pr.merge_changes_locally.side_effect = RuntimeError("stop after gates")
+        pr.merge_changes_locally.side_effect = RuntimeError("stop after gates")
 
         with self.assertRaisesRegex(RuntimeError, "stop after gates"):
             GitHubPR.merge_into(

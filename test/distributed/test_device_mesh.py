@@ -229,7 +229,7 @@ class DeviceMeshTest(DTensorTestBase):
         self.assertTrue(is_initialized())
         self.destroy_pg(self.rank)
 
-    @with_comms(backend="nccl-legacy")
+    @with_comms(backend="nccl")
     def test_2d_mesh_non_eager_init_subgroup(self):
         mesh_shape = (2, self.world_size // 2)
         mesh_2d = init_device_mesh(self.device_type, mesh_shape)
@@ -281,8 +281,8 @@ class DeviceMeshTest(DTensorTestBase):
             ordered_mesh.get_local_rank(1), ordered_mesh.get_coordinate()[1]
         )
 
-    @with_comms(eager_init=True, backend="nccl-legacy")
-    def test_device_mesh_preserve_rank_order_eager_nccl_legacy(self):
+    @with_comms(eager_init=True, backend="nccl")
+    def test_device_mesh_preserve_rank_order_eager_nccl(self):
         mesh_tensor = torch.arange(4).reshape(2, 2).flip(-1)
         group = DeviceMesh(self.device_type, mesh_tensor).get_group(1)
         global_ranks = [get_global_rank(group, i) for i in range(get_world_size(group))]

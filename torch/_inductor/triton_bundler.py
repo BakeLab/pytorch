@@ -372,18 +372,18 @@ class TritonBundler:
 
         from torch._precompile import PrecompileError
 
-            for artifact in artifacts.artifacts:
-                payload = artifact.payload
-                if artifact.filename.endswith(".json"):
-                    payload = payload.replace(
-                        TritonBundler._REPLACE_BYTES, str.encode(directory)
-                    )
-                path = Path(directory) / artifact.filename
-                if not path.is_file() or path.read_bytes() != payload:
-                    raise PrecompileError(
-                        "precompile.no_compilation() found an incomplete or "
-                        f"incompatible Triton kernel file in the cache: {path}"
-                    )
+        for artifact in artifacts.artifacts:
+            payload = artifact.payload
+            if artifact.filename.endswith(".json"):
+                payload = payload.replace(
+                    TritonBundler._REPLACE_BYTES, str.encode(directory)
+                )
+            path = Path(directory) / artifact.filename
+            if not path.is_file() or path.read_bytes() != payload:
+                raise PrecompileError(
+                    "precompile.no_compilation() found an incomplete or "
+                    f"incompatible Triton kernel file in the cache: {path}"
+                )
 
     @staticmethod
     def read_and_emit(bundle: TritonBundle) -> TritonBundlerMetadata | None:

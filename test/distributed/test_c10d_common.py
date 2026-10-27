@@ -263,7 +263,6 @@ class BackendEntryPointTest(TestCase):
         )
         self._custom_backend_attrs = {
             "ENTRYPOINT_TEST": hasattr(dist.Backend, "ENTRYPOINT_TEST"),
-            "NCCL-LEGACY": hasattr(dist.Backend, "NCCL-LEGACY"),
         }
 
     def tearDown(self):
@@ -366,7 +365,7 @@ class BackendEntryPointTest(TestCase):
         self.assertIn("nccl", looked_up)
         self.assertEqual(str(backend_config), "cpu:gloo,cuda:nccl")
 
-    @parametrize("backend", ["nccl", "nccl-legacy", "nccl2", "nccl-lazy"])
+    @parametrize("backend", ["nccl", "nccl2", "nccl-lazy"])
     def test_nccl_backend_default_timeout(self, backend):
         timeout = timedelta(seconds=1)
         with unittest.mock.patch.object(c10d, "default_pg_nccl_timeout", timeout):
@@ -409,19 +408,6 @@ class BackendEntryPointTest(TestCase):
         ):
             os.environ.pop("LOCAL_RANK", None)
             self.assertEqual(c10d._nccl2_device(opts), torch.device("cuda:3"))
-
-    def test_nccl_legacy_backend_registration(self):
-        c10d._register_builtin_nccl_legacy_backend()
-
-        self.assertIs(
-            dist.Backend._plugins["NCCL-LEGACY"].creator_fn,
-            c10d._create_nccl_process_group,
-        )
-        self.assertEqual(dist.Backend.backend_capability["nccl-legacy"], ["cuda"])
-        self.assertEqual(
-            dist.Backend.backend_type_map["nccl-legacy"],
-            dist.ProcessGroup.BackendType.CUSTOM,
-        )
 
 
 instantiate_parametrized_tests(BackendEntryPointTest)

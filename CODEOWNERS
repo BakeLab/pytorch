@@ -156,7 +156,6 @@
 /aten/src/ATen/SparseTensorImpl.cpp @amjames @pearu @nikitaved
 # /aten/src/ATen/SparseTensorImpl.h
 # label: oncall: quantization
-/aten/src/ATen/native/ao_sparse/ @salilsdesai @digantdesai @jianyuh
 #
 # [core_aten_optimizers]
 # label: module: mta
@@ -403,7 +402,6 @@
 # /test/HowToWriteTestsUsingFileCheck.md
 /test/allowlist_for_publicAPI.json @albanD
 # /test/backends/
-# /test/complex_tensor/
 # /test/conftest.py
 # /test/error_messages/
 # /test/expect/HasDecompTest.test_aten_core_operators.expect
@@ -502,7 +500,6 @@
 # /test/test_function_schema.py
 # /test/test_functionalization.py
 # /test/test_futures.py
-/test/test_hop_infra.py @zou3519 @aorenste @bohnstingl
 # /test/test_img/
 # /test/test_import_stats.py
 # /test/test_indexing.py
@@ -526,7 +523,6 @@
 # /test/test_opaque_obj_v2.py
 # /test/test_openmp.py
 # /test/test_ops.py
-# /test/test_ops_jit.py
 # /test/test_ops_unbacked.py
 # /test/test_out_dtype_op.py
 # /test/test_overrides.py
@@ -576,9 +572,11 @@
 /test/test_ops_gradients.py @soulitzer
 #
 # [backend_device_runtime]
+# /test/test_gpu_trace.py
 # /torch/backends/
 #
 # [backend_cuda]
+# /test/test_gds.py
 # label: module: cuda
 /aten/src/ATen/cuda/ @eqy @syed-ahmed @Aidyn-A
 /aten/src/ATen/native/cuda/ @eqy @syed-ahmed @Aidyn-A
@@ -618,9 +616,7 @@
 # /torch/csrc/mps/
 # /torch/mps/
 # label: oncall: mobile
-# /aten/src/ATen/metal/
 # /test/metal/
-# /test/test_metal.py
 #
 # [backend_xpu]
 # label: module: xpu
@@ -688,8 +684,6 @@
 # /torch/functional.py
 # /torch/futures/
 # /torch/hub.py
-/torch/header_only_apis.txt @janeyx99
-/torch/headeronly/ @janeyx99
 # /torch/multiprocessing/
 # /torch/nested/
 # /torch/numa/
@@ -745,9 +739,6 @@
 # /test/cpython/
 # /test/distributions/
 # /test/nn/
-/test/optim/ @janeyx99
-/test/test_autograd.py @soulitzer
-/test/test_autograd_fallback.py @soulitzer
 # /test/test_hub_compat.py
 # /test/test_modules.py
 # /test/test_nn.py
@@ -772,7 +763,7 @@
 # /test/cpp/
 #
 # [jit_torchscript]
-# /test/test_jiterator.py
+# /test/jit/
 # /test/test_jit_stub.py
 # /torch/csrc/jit/
 # /torch/jit/
@@ -834,14 +825,13 @@
 # label: module: ci
 /.ci/ @pytorch/pytorch-dev-infra
 /.ci/pins/rocm-*.txt @jeffdaily
-/.ci/pins/triton.txt @desertfire @Chillee @eellison @jeffdaily @jataylo @jithunnair-amd @pruthvistony
-/.ci/pins/triton-xpu.txt @EikanWang @gujinghui
 #
 # [infra_github_automation]
 # label: module: ci
 /.github/ @pytorch/pytorch-dev-infra
 #
 # [infra_build_packaging]
+# /mkldnn.bzl
 # label: module: build
 # /.ci/wheel/
 # /.coveragerc
@@ -952,6 +942,7 @@
 # /torchgen/
 #
 # [infra_test]
+# /test/junit_xml_testdata/
 # /test/scripts/
 # /test/spincli/
 /test/test_public_bindings.py @albanD
@@ -1004,9 +995,10 @@
 # /torch/serialization.py
 #
 # [compiler_export_fx]
+# /torch/_export/
+# /torch/export/
 # /test/export/
 # /test/fx/
-# /test/higher_order_ops/
 # /test/test_dynamic_spec_make_fx.py
 # /test/test_fx.py
 # /test/test_fx_experimental.py
@@ -1039,7 +1031,6 @@
 # label: oncall: pt2, module: dynamo, module: complex
 /test/dynamo/test_complex.py @hameerabbasi @amjames
 # label: oncall: pt2, module: dynamo, module: onnx
-/torch/_dynamo/backends/onnxrt.py @titaiwangms @xadupre @justinchuby
 # label: oncall: pt2, module: dynamo, module: higher order operators
 /torch/_dynamo/variables/higher_order_ops.py @aorenste @bohnstingl
 # label: oncall: pt2, module: dynamo, module: pytree
