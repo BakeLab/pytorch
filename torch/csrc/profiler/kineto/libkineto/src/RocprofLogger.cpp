@@ -6,6 +6,12 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#include <time.h>
+#include <unistd.h>
+#include <chrono>
+#include <cstring>
+#include <mutex>
+
 #include "RocprofLogger.h"
 
 #include <rocprofiler-sdk/context.h>

@@ -8,7 +8,7 @@
 
 #pragma once
 
-#ifdef HAS_ROCTRACER
+#ifdef HAS_ROCPROFILER
 
 #include <cstdint>
 #include <unordered_map>
@@ -138,4 +138,4 @@ void backfillAsyncStreams(
 } // namespace detail
 } // namespace KINETO_NAMESPACE
 
-#endif // HAS_ROCTRACER
+#endif // HAS_ROCPROFILER

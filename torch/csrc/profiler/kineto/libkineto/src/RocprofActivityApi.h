@@ -7,7 +7,7 @@
  */
 
 #pragma once
-#ifdef HAS_ROCTRACER
+#ifdef HAS_ROCPROFILER
 
 #include <atomic>
 #include <chrono>

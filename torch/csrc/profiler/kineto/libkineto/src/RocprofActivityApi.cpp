@@ -6,8 +6,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#include "RocprofActivityApi.h"
-
 #include <time.h>
 #include <chrono>
 #include <cstdint>
@@ -15,6 +13,9 @@
 #include <functional>
 #include <unordered_map>
 #include <vector>
+
+#include "RocprofActivityApi.h"
+
 #include "ApproximateClock.h"
 #include "Demangle.h"
 #include "DeviceUtil.h"
@@ -54,7 +55,7 @@ bool RocprofActivityApi::isAvailable() const {
 }
 
 void RocprofActivityApi::pushCorrelationID(int id, CorrelationFlowType type) {
-#ifdef HAS_ROCTRACER
+#ifdef HAS_ROCPROFILER
   if (!singleton().d->externalCorrelationEnabled_) {
     return;
   }
@@ -64,7 +65,7 @@ void RocprofActivityApi::pushCorrelationID(int id, CorrelationFlowType type) {
 }
 
 void RocprofActivityApi::popCorrelationID(CorrelationFlowType type) {
-#ifdef HAS_ROCTRACER
+#ifdef HAS_ROCPROFILER
   if (!singleton().d->externalCorrelationEnabled_) {
     return;
   }
@@ -213,7 +214,7 @@ void RocprofActivityApi::clearActivities() {
 
 void RocprofActivityApi::enableActivities(
     const std::set<ActivityType>& selected_activities) {
-#ifdef HAS_ROCTRACER
+#ifdef HAS_ROCPROFILER
   d->startLogging();
 
   for (const auto& activity : selected_activities) {
@@ -227,7 +228,7 @@ void RocprofActivityApi::enableActivities(
 
 void RocprofActivityApi::disableActivities(
     const std::set<ActivityType>& selected_activities) {
-#ifdef HAS_ROCTRACER
+#ifdef HAS_ROCPROFILER
   d->stopLogging();
 
   activityMaskSnapshot_ = activityMask_;

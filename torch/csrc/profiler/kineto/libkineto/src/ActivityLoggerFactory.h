@@ -9,6 +9,7 @@
 #pragma once
 
 #include "ThrowUtil.h"
+#include "output_base.h"
 
 #include <fmt/format.h>
 #include <algorithm>
@@ -21,8 +22,6 @@
 #include <utility>
 
 namespace KINETO_NAMESPACE {
-
-class ActivityLogger;
 
 class ActivityLoggerFactory {
  public:
