@@ -29,7 +29,6 @@ through the `torch.distributed.backends` entry point group and loaded on first u
 - `nccl`: CUDA.
 - `nccl-lazy`: CUDA. Variant of `nccl` that runs collectives on one communicator and
   creates a 2-rank communicator per point-to-point peer pair on first use.
-- `nccl-legacy`: CUDA. The legacy `ProcessGroupNCCL` implementation.
 - `xccl`: Intel XPU.
 - `fake`: no-op backend for testing.
 
@@ -158,8 +157,7 @@ You can tune NCCL communicators even further using `torch.distributed.ProcessGro
 set through the `config` attribute of `torch.distributed.ProcessGroupNCCL.Options`.
 Pass the `Options` to {func}`torch.distributed.init_process_group` or
 {func}`torch.distributed.new_group` as `pg_options`.
-The same `Options` type is used by the `nccl`, `nccl-lazy` and `nccl-legacy`
-backends. Learn more about them using `help`
+The same `Options` type is used by the `nccl` and `nccl-lazy` backends. Learn more about them using `help`
 (e.g. `help(torch.distributed.ProcessGroupNCCL.NCCLConfig)`) in the interpreter.
 
 (nccl-collective-config)=
@@ -191,7 +189,7 @@ agree on `cga_cluster_size`. Passing `None` preserves existing behavior and does
 not require nccl4py.
 
 Backends receive `config` as its attribute dictionary (`vars(config)`); a plain
-`dict` with the same keys is equivalent. `nccl-legacy`, `gloo` and the other built-in backends ignore it.
+`dict` with the same keys is equivalent. `gloo` and the other built-in backends ignore it.
 `nccl` rejects vendor options and unsupported operations. `all_to_all_single`
 with a config requires even splits on every rank. External NCCL group scopes are unsupported.
 
@@ -603,8 +601,7 @@ A window exposes a tensor on every rank of a group for one-sided (RMA) writes:
 a rank can write into a peer's tensor with {meth}`~torch.distributed.distributed_c10d.Window.put` without the peer
 posting a matching receive. Peers synchronize with {meth}`~torch.distributed.distributed_c10d.Window.signal` and
 {meth}`~torch.distributed.distributed_c10d.Window.wait_signal`. The `nccl` and `nccl-lazy` backends support
-windows when PyTorch is built against, and runs with, NCCL 2.29 or later. `nccl-legacy` does not, nor does `nccl`
-when `TORCH_DIST_USE_NCCL2=0` selects the legacy implementation.
+windows when PyTorch is built against, and runs with, NCCL 2.29 or later. The `nccl` backend does not support windows when `TORCH_DIST_USE_NCCL2=0` selects the legacy implementation.
 {func}`~torch.distributed.distributed_c10d._supports_window` only checks the backend and NCCL version:
 registration can still fail if no transport between the ranks supports
 symmetric memory (e.g. no NVLink or InfiniBand).

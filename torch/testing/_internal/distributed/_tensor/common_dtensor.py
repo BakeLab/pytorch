@@ -817,7 +817,7 @@ class DTensorTestBase(DTensorTestMixin, MultiProcessTestCase):
 
         if backend not in [
             "nccl",
-            "nccl-legacy",
+            "nccl",
             "gloo",
             "fake",
             f"cpu:gloo,{self.device_type}:{curr_backend}",

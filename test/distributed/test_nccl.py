@@ -1369,7 +1369,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
     @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_nccl_version((2, 28), "NCCL symmetric kernels need nccl 2.28")
     @skip_if_lt_x_gpu(2)
-    @parametrize("backend", ["nccl", "nccl-legacy"])
+    @parametrize("backend", ["nccl", "nccl-lazy"])
     def test_nccl_symmem_mem_pool_all_reduce_symk(self, backend: str):
         pg, nccl_backend, pool = self._symm_mem_pool_group(backend)
         try:
@@ -1387,7 +1387,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
     @skip_but_pass_in_sandcastle_if(False, "NCCL doesn't support Windows")
     @requires_nccl_version((2, 28), "NCCL copy-engine collectives need nccl 2.28")
     @skip_if_lt_x_gpu(2)
-    @parametrize("backend", ["nccl", "nccl-legacy"])
+    @parametrize("backend", ["nccl", "nccl-lazy"])
     def test_nccl_symmem_mem_pool_all_gather_copy_engine(self, backend: str):
         pg, nccl_backend, pool = self._symm_mem_pool_group(
             backend, c10d.ProcessGroupNCCL.NCCL_CTA_POLICY_ZERO

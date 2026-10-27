@@ -25,7 +25,7 @@ class ProcessGroupNCCLSingleRankTest(TestCase):
         self, device, dtype, collective, tensor_factor, async_op
     ):
         dist.init_process_group(
-            "nccl-legacy",
+            "nccl",
             store=dist.HashStore(),
             rank=0,
             world_size=1,

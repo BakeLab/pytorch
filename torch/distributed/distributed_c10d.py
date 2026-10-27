@@ -939,27 +939,6 @@ def _register_builtin_nccl_backend() -> None:
     )
 
 
-def _register_builtin_nccl_legacy_backend() -> None:
-    Backend.register_backend(
-        "nccl-legacy",
-        _create_nccl_process_group,
-        extended_api=True,
-        devices=["cuda"],
-        _backend_type=ProcessGroup.BackendType.CUSTOM,
-    )
-
-
-def _register_builtin_nccl_as_legacy() -> None:
-    _FR_SELF_RECORDING_BACKENDS.add(Backend.NCCL)
-    Backend.register_backend(
-        Backend.NCCL,
-        _create_nccl_process_group,
-        extended_api=True,
-        devices=Backend.backend_capability[Backend.NCCL],
-        _backend_type=ProcessGroup.BackendType.NCCL,
-    )
-
-
 def _register_builtin_nccl2_backend() -> None:
     Backend.register_backend(
         "nccl2",
@@ -1478,7 +1457,7 @@ class GroupMember(metaclass=_WorldMeta):
 
 def _get_default_timeout(backend: str) -> timedelta:
     # see note on nccl vs other backend timeout (constants.py)
-    if backend in (Backend.NCCL, "nccl-legacy", "nccl2", "nccl-lazy"):
+    if backend in (Backend.NCCL, "nccl2", "nccl-lazy"):
         if not isinstance(default_pg_nccl_timeout, timedelta):
             # TODO moco benchmark on CPU initializes pgnccl backend today, triggered this assert in CI before it was
             # changed to be a warning.  We should fix the moco model.
@@ -2753,7 +2732,6 @@ def _get_backend_name_for_device(
 # record itself".
 _FR_SELF_RECORDING_BACKENDS = {
     Backend.GLOO,
-    "nccl-legacy",
     Backend.XCCL,
     Backend.FAKE,
     Backend.UNDEFINED,
