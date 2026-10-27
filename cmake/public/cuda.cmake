@@ -72,8 +72,16 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 # overloads hidden, then restore C++23 mode for the rest of each CUDA source.
 set(PYTORCH_CUDA_HOST_COMPILER_COMPAT
     "${PROJECT_SOURCE_DIR}/cmake/cuda_host_compiler_compat.h")
+# nvcc cannot lower libstdc++ 16's extended floating-point overloads. Undefine
+# their feature macros on the command line, before nvcc's implicit includes.
+set(PYTORCH_CUDA_HOST_COMPILER_COMPAT_FLAGS
+    "--pre-include=${PYTORCH_CUDA_HOST_COMPILER_COMPAT}")
+foreach(_type FLOAT16 FLOAT32 FLOAT64 FLOAT128 BFLOAT16)
+  string(APPEND PYTORCH_CUDA_HOST_COMPILER_COMPAT_FLAGS
+         " -U__STDCPP_${_type}_T__")
+endforeach()
 string(APPEND CMAKE_CUDA_FLAGS
-       " --pre-include=${PYTORCH_CUDA_HOST_COMPILER_COMPAT}")
+       " ${PYTORCH_CUDA_HOST_COMPILER_COMPAT_FLAGS}")
 
 
 if(NOT CMAKE_CUDA_COMPILER_VERSION VERSION_EQUAL CUDAToolkit_VERSION)
