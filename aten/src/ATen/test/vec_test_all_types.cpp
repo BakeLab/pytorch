@@ -178,7 +178,7 @@ namespace {
         for (const auto i : c10::irange(size)) {
             const VT expected = mask_bits[i] < 0 ? base[i] : VT(-1);
             ASSERT_EQ(expected, actual[i]);
-            ASSERT_EQ(mask_bits[i], c10::bit_cast<int_t>(mask_after[i]));
+            ASSERT_EQ(mask_bits[i], std::bit_cast<int_t>(mask_after[i]));
         }
     }
     TYPED_TEST(SignManipulation, Absolute) {
