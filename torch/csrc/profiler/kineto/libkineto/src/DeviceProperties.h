@@ -23,7 +23,7 @@ const std::string& devicePropertiesJson();
 
 int smCount(uint32_t deviceId);
 
-// TODO: Implement the below for HAS_ROCTRACER
+// TODO: Implement the below for HAS_ROCPROFILER
 #ifdef HAS_CUPTI
 
 // Use newer CUPTI activity structs for extended fields

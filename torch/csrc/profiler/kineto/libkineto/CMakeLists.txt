@@ -163,15 +163,6 @@ elseif(KINETO_BACKEND STREQUAL "rocm")
   message(STATUS "ROCM minor: ${ROCM_VERSION_DEV_MINOR}")
   message(STATUS "ROCM patch: ${ROCM_VERSION_DEV_PATCH}")
 
-  # Kineto uses rocprofiler-sdk, which is supported on ROCm 7.0 and later.
-  # roctracer was the only pre-7.0 path and has been removed, so older ROCm
-  # versions are no longer supported.
-  if(ROCM_VERSION_DEV_MAJOR LESS 7)
-    message(FATAL_ERROR
-      "KINETO_BACKEND=rocm requires ROCm >= 7.0 (rocprofiler-sdk); detected "
-      "ROCm ${ROCM_VERSION_DEV_MAJOR}.${ROCM_VERSION_DEV_MINOR}. "
-      "Upgrade ROCm or set KINETO_BACKEND=cpu.")
-  endif()
   message(STATUS "Building with: rocprofiler-sdk")
 elseif(KINETO_BACKEND STREQUAL "xpu")
   # XPU plugin
@@ -219,7 +210,7 @@ endif()
 if(KINETO_BACKEND STREQUAL "cuda")
   list(APPEND KINETO_DEFINITIONS "HAS_CUPTI")
 elseif(KINETO_BACKEND STREQUAL "rocm")
-  list(APPEND KINETO_DEFINITIONS "HAS_ROCTRACER")
+  list(APPEND KINETO_DEFINITIONS "HAS_ROCPROFILER")
   target_compile_definitions(kineto_base PRIVATE "__HIP_PLATFORM_AMD__")
 elseif(KINETO_BACKEND STREQUAL "xpu")
   if(MSVC)
@@ -308,7 +299,7 @@ if(NOT WIN32 AND NOT APPLE AND NOT KINETO_BACKEND STREQUAL "xpu")
 endif()
 
 set_target_properties(kineto kineto_base kineto_api PROPERTIES
-      CXX_STANDARD 20
+      CXX_STANDARD 26
       CXX_STANDARD_REQUIRED YES
       CXX_EXTENSIONS NO)
 

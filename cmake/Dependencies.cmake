@@ -1202,11 +1202,6 @@ if(USE_KINETO)
     add_subdirectory("${CAFFE2_THIRD_PARTY_ROOT}/nlohmann"
                      "${CMAKE_BINARY_DIR}/third_party/nlohmann")
   endif()
-  apply_third_party_patches(
-      "${CAFFE2_THIRD_PARTY_ROOT}/kineto_patches"
-      "${CAFFE2_THIRD_PARTY_ROOT}/kineto"
-      Kineto)
-
   message(STATUS "Configuring Kineto dependency:")
   message(STATUS "  KINETO_SOURCE_DIR = ${KINETO_SOURCE_DIR}")
   message(STATUS "  KINETO_BUILD_TESTS = ${KINETO_BUILD_TESTS}")

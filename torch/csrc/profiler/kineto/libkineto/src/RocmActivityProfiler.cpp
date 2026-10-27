@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#ifdef HAS_ROCTRACER
+#ifdef HAS_ROCPROFILER
 
 #include "RocmActivityProfiler.h"
 #include <fmt/format.h>
@@ -230,4 +230,4 @@ void RocmActivityProfiler::handleRocprofActivity(
 
 } // namespace KINETO_NAMESPACE
 
-#endif // HAS_ROCTRACER
+#endif // HAS_ROCPROFILER
