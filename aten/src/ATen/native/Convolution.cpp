@@ -475,9 +475,6 @@ struct ConvParams {
     return !(input.dim() == 4 && native_fits_32_bit_indexing()
              && miopen_conv_suggest_memory_format(input, weight) == at::MemoryFormat::Contiguous);
   }
-  bool use_mkldnn(const at::Tensor& input, const at::Tensor& weight) const  {
-    return false;
-  }
   bool use_xnnpack(const at::Tensor& /*input*/, const at::Tensor& /*weight*/,
                    const at::OptionalArrayRef<T> /*bias_sizes_opt*/) const {
     return false;
@@ -1142,13 +1139,13 @@ static ConvBackend _select_conv_backend(
   if constexpr (std::is_same_v<T, c10::SymInt>) {
     if (TORCH_GUARD_OR_FALSE(at::symint::size<T>(input, 0).sym_eq(0)) ||
         TORCH_GUARD_OR_FALSE(at::symint::size<T>(input, 1).sym_eq(0))) {
-      return input.is_mkldnn() ? ConvBackend::MkldnnEmpty : ConvBackend::Empty;
+      return ConvBackend::Empty;
     } else if (TORCH_GUARD_OR_FALSE(at::symint::numel<T>(input).sym_eq(0))) {
       TORCH_CHECK(false, "Only zero batch or zero channel inputs are supported, but got input shape: ", at::symint::sizes<T>(input));
     }
   } else {
     if (at::symint::size<T>(input, 0) == 0 || at::symint::size<T>(input, 1) == 0) {
-      return input.is_mkldnn() ? ConvBackend::MkldnnEmpty : ConvBackend::Empty;
+      return ConvBackend::Empty;
     } else if (at::symint::numel<T>(input) == 0) {
       TORCH_CHECK(false, "Only zero batch or zero channel inputs are supported, but got input shape: ", at::symint::sizes<T>(input));
     }
@@ -1179,12 +1176,6 @@ static ConvBackend _select_conv_backend(
       return ConvBackend::MiopenTranspose;
     } else {
       return ConvBackend::Miopen;
-    }
-  } else if (params.use_mkldnn(input, weight)) {
-    if (params.transposed) {
-      return ConvBackend::MkldnnTranspose;
-    } else {
-      return ConvBackend::Mkldnn;
     }
   // 3x3 depthwith convolutions implementation is inference only
   } else if (!need_backward && params.use_cpu_depthwise3x3_winograd(input, weight, bias)) {
