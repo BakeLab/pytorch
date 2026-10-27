@@ -1606,7 +1606,13 @@ static PyObject* THPModule_getAllDtypes(PyObject* _unused, PyObject* noargs) {
   THPObjectPtr result(PyList_New(0));
   TORCH_CHECK_PYTHON(result);
   for (auto scalar_type : all_scalar_types) {
-    if (c10::isQIntType(scalar_type) || c10::isSubByteIntType(scalar_type)) {
+    // Quantized enum values remain for serialization, but have no Python dtype.
+    if (scalar_type == at::ScalarType::QInt8 ||
+        scalar_type == at::ScalarType::QUInt8 ||
+        scalar_type == at::ScalarType::QInt32 ||
+        scalar_type == at::ScalarType::QUInt4x2 ||
+        scalar_type == at::ScalarType::QUInt2x4 ||
+        c10::isSubByteIntType(scalar_type)) {
       continue;
     }
     auto* dtype = reinterpret_cast<PyObject*>(torch::getTHPDtype(scalar_type));
