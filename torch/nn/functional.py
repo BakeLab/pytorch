@@ -5155,15 +5155,15 @@ def interpolate(  # noqa: F811
     if input.dim() == 5 and mode == "trilinear":
         if align_corners is None:
             raise AssertionError("align_corners is unexpectedly None")
-if (
-    input.device.type not in ("cpu", "mps")
-) and torch.are_deterministic_algorithms_enabled():
-    # Use slow decomp whose backward will be in terms of index_put
-    # importlib is required because the import cannot be top level
-    # (cycle) and cannot be nested (TS doesn't support)
-    return importlib.import_module(
-        "torch._decomp.decompositions"
-    )._upsample_linear_vec(input, output_size, align_corners, scale_factors)
+        if (
+            input.device.type not in ("cpu", "mps")
+        ) and torch.are_deterministic_algorithms_enabled():
+            # Use slow decomp whose backward will be in terms of index_put
+            # importlib is required because the import cannot be top level
+            # (cycle) and cannot be nested (TS doesn't support)
+            return importlib.import_module(
+                "torch._decomp.decompositions"
+            )._upsample_linear_vec(input, output_size, align_corners, scale_factors)
         return torch._C._nn.upsample_trilinear3d(
             input,
             # pyrefly: ignore [bad-argument-type]
@@ -5182,19 +5182,19 @@ if (
                 align_corners,
                 scale_factors,
             )
-# Select the decomposition during forward so autograd records its
-# deterministic backward. The native CPU backward is deterministic.
-if (
-    input.device.type not in ("cpu", "mps")
-) and torch.are_deterministic_algorithms_enabled():
-    # The decomposition accumulates through deterministic index_put.
-    # Import it lazily: a top-level import creates a cycle, while a
-    # nested import statement is unsupported by TorchScript.
-    return importlib.import_module(
-        "torch._decomp.decompositions"
-    ).upsample_bicubic2d_vec(
-        input, output_size, align_corners, scale_factors
-    )
+        # Select the decomposition during forward so autograd records its
+        # deterministic backward. The native CPU backward is deterministic.
+        if (
+            input.device.type not in ("cpu", "mps")
+        ) and torch.are_deterministic_algorithms_enabled():
+            # The decomposition accumulates through deterministic index_put.
+            # Import it lazily: a top-level import creates a cycle, while a
+            # nested import statement is unsupported by TorchScript.
+            return importlib.import_module(
+                "torch._decomp.decompositions"
+            ).upsample_bicubic2d_vec(
+                input, output_size, align_corners, scale_factors
+            )
         return torch._C._nn.upsample_bicubic2d(
             input,
             # pyrefly: ignore [bad-argument-type]

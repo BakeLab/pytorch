@@ -114,7 +114,8 @@ if TEST_WITH_DEV_DBG_ASAN:
 BFLOAT16_AVAILABLE = torch.cuda.is_available() and (
     torch.version.cuda is not None or torch.version.hip is not None
 )
-NCCL_BACKEND = "nccl-legacy"
+os.environ["TORCH_DIST_USE_NCCL2"] = "0"
+NCCL_BACKEND = "nccl"
 
 _start_time = time.time()
 _logger = logging.getLogger(__name__)
@@ -1397,7 +1398,7 @@ class ProcessGroupNCCLGroupTest(MultiProcessTestCase):
         # pg = self._create_process_group_nccl(store, self.opts(), device_id=device)
         # create nccl processgroup with opts
         c10d.init_process_group(
-            "cpu:gloo,cuda:nccl-legacy",
+            "cpu:gloo,cuda:nccl",
             world_size=self.world_size,
             rank=self.rank,
             store=store,
@@ -1469,13 +1470,13 @@ class ProcessGroupNCCLGroupTest(MultiProcessTestCase):
     @requires_nccl_version((2, 18), "Need NCCL 2.18+ for ncclCommSplit")
     @skip_but_pass_in_sandcastle_if(not TEST_MULTIGPU, "NCCL test requires 2+ GPUs")
     def test_comm_split_group_backend_filter(self):
-        # Hybrid parent (cpu:gloo + cuda:nccl-legacy); request only cuda:nccl-legacy in the
+        # Hybrid parent (cpu:gloo + cuda:nccl); request only cuda:nccl in the
         # child via the new `backend` arg. The child should only have the cuda
         # backend, and the gloo backend should not be split.
         store = c10d.FileStore(self.file_name, self.world_size)
         device = torch.device(f"cuda:{self.rank}")
         c10d.init_process_group(
-            "cpu:gloo,cuda:nccl-legacy",
+            "cpu:gloo,cuda:nccl",
             world_size=self.world_size,
             rank=self.rank,
             store=store,
@@ -1486,7 +1487,7 @@ class ProcessGroupNCCLGroupTest(MultiProcessTestCase):
         cuda_backend = pg._get_backend(torch.device("cuda"))
 
         subg_ranks = [0, 1]
-        ng = c10d.split_group(pg, [subg_ranks], backend="cuda:nccl-legacy")
+        ng = c10d.split_group(pg, [subg_ranks], backend="cuda:nccl")
         if self.rank in subg_ranks:
             self.assertIsNotNone(ng)
             ng_cuda = ng._get_backend(torch.device("cuda"))
@@ -1495,7 +1496,7 @@ class ProcessGroupNCCLGroupTest(MultiProcessTestCase):
             with self.assertRaises(Exception):
                 ng._get_backend(torch.device("cpu"))
             self.assertEqual(
-                c10d.distributed_c10d._world.pg_backend_config[ng], "cuda:nccl-legacy"
+                c10d.distributed_c10d._world.pg_backend_config[ng], "cuda:nccl"
             )
 
             cuda_tensor = torch.full((1,), self.rank).cuda(device)
@@ -1527,7 +1528,7 @@ class ProcessGroupNCCLGroupTest(MultiProcessTestCase):
         store = c10d.FileStore(self.file_name, self.world_size)
         device = torch.device(f"cuda:{self.rank}")
         c10d.init_process_group(
-            "cpu:gloo,cuda:nccl-legacy",
+            "cpu:gloo,cuda:nccl",
             world_size=self.world_size,
             rank=self.rank,
             store=store,
@@ -1536,7 +1537,7 @@ class ProcessGroupNCCLGroupTest(MultiProcessTestCase):
         )
         pg = c10d.distributed_c10d._get_default_group()
 
-        # Backend name mismatch (parent has cuda:nccl-legacy, request cuda:gloo).
+        # Backend name mismatch (parent has cuda:nccl, request cuda:gloo).
         with self.assertRaisesRegex(ValueError, "Backend mismatch"):
             c10d.split_group(pg, [[0, 1]], backend="cuda:gloo")
 
