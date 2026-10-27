@@ -2804,8 +2804,6 @@ Call this whenever a new thread is created in order to propagate values from
       .value("Miopen", at::native::ConvBackend::Miopen)
       .value("MiopenDepthwise", at::native::ConvBackend::MiopenDepthwise)
       .value("MiopenTranspose", at::native::ConvBackend::MiopenTranspose)
-      .value("Mkldnn", at::native::ConvBackend::Mkldnn)
-      .value("MkldnnEmpty", at::native::ConvBackend::MkldnnEmpty)
       .value("Overrideable", at::native::ConvBackend::Overrideable)
       .value("Slow2d", at::native::ConvBackend::Slow2d)
       .value("Slow3d", at::native::ConvBackend::Slow3d)
