@@ -5,9 +5,9 @@
 #include <ATen/native/TensorIterator.h>
 #include <ATen/native/cuda/Loops.cuh>
 
-#include <c10/util/bit_cast.h>
 #include <c10/util/irange.h>
 
+#include <bit>
 #include <cstdint>
 
 #ifndef AT_PER_OPERATOR_HEADERS
@@ -50,14 +50,14 @@ Tensor round_gfx942_tf32_rne_cuda(const Tensor& input) {
                   .build();
 
   gpu_kernel(iter, [] GPU_LAMBDA(float value) -> float {
-    auto bits = c10::bit_cast<uint32_t>(value);
+    auto bits = std::bit_cast<uint32_t>(value);
     if (~bits & 0x7f800000U) {
       bits += 0xfffU + ((bits >> 13) & 1U);
     } else if (bits & 0x1fffU) {
       bits |= 0x2000U;
     }
     bits &= 0xffffe000U;
-    return c10::bit_cast<float>(bits);
+    return std::bit_cast<float>(bits);
   });
   return has_expanded_dimension ? output.expand(input.sizes()) : output;
 }
