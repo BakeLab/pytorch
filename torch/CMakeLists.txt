@@ -515,25 +515,5 @@ if(SKBUILD AND USE_ROCM AND EXISTS "${TORCH_SRC_DIR}/_rocm_init.py")
           DESTINATION "${SKBUILD_PLATLIB_DIR}/torch")
 endif()
 
-# Skip building this library under MacOS, since it is currently failing to build on Mac
-# Github issue #61930
-if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  # Add Android Nnapi delegate library
-  add_library(nnapi_backend SHARED
-          ${TORCH_SRC_DIR}/csrc/jit/backends/nnapi/nnapi_backend_lib.cpp
-          ${TORCH_SRC_DIR}/csrc/jit/backends/nnapi/nnapi_backend_preprocess.cpp
-          )
-  # Pybind11 requires explicit linking of the torch_python library
-  if(BUILD_LIBTORCHLESS)
-    target_link_libraries(nnapi_backend PRIVATE ${TORCH_LIB})
-  else()
-    target_link_libraries(nnapi_backend PRIVATE torch)
-  endif()
-  target_link_libraries(nnapi_backend PRIVATE torch_python pybind::pybind11 fmt::fmt-header-only)
-  if(MSVC AND TORCH_PYTHON_LINK_OPTIONS)
-    target_link_options(nnapi_backend PRIVATE ${TORCH_PYTHON_LINK_OPTIONS})
-  endif()
-endif()
-
 set(TORCH_PYTHON_COMPILE_OPTIONS ${TORCH_PYTHON_COMPILE_OPTIONS} PARENT_SCOPE)
 set(TORCH_PYTHON_LINK_OPTIONS "${TORCH_PYTHON_LINK_OPTIONS}" PARENT_SCOPE)
