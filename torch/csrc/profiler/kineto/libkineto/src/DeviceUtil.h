@@ -69,7 +69,7 @@
   } while (false)
 // clang-format on
 
-#elif defined(HAS_ROCTRACER)
+#elif defined(HAS_ROCPROFILER)
 #include <hip/hip_runtime.h>
 #include <rocprofiler-sdk/version.h>
 

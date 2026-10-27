@@ -20,7 +20,7 @@
 #ifdef HAS_CUPTI
 #include <cuda_occupancy.h>
 #include <cuda_runtime.h>
-#elif defined(HAS_ROCTRACER)
+#elif defined(HAS_ROCPROFILER)
 #include <hip/hip_runtime.h>
 #elif defined(HAS_XPUPTI)
 #include "plugin/xpupti/XpuptiActivityProfiler.h"
@@ -38,7 +38,7 @@ namespace DevicePropertyFields = libkineto::DevicePropertyMetadataFields;
 #define gpuSuccess cudaSuccess
 #define gpuGetDeviceCount cudaGetDeviceCount
 #define gpuGetDeviceProperties cudaGetDeviceProperties
-#elif defined(HAS_ROCTRACER)
+#elif defined(HAS_ROCPROFILER)
 #define gpuDeviceProp hipDeviceProp_t
 #define gpuError_t hipError_t
 #define gpuSuccess hipSuccess
@@ -46,7 +46,7 @@ namespace DevicePropertyFields = libkineto::DevicePropertyMetadataFields;
 #define gpuGetDeviceProperties hipGetDeviceProperties
 #endif
 
-#if defined(HAS_CUPTI) || defined(HAS_ROCTRACER)
+#if defined(HAS_CUPTI) || defined(HAS_ROCPROFILER)
 static std::vector<gpuDeviceProp> createDeviceProps() {
   std::vector<gpuDeviceProp> props;
   int device_count = 0;
@@ -117,7 +117,7 @@ static void visitDeviceMetadata(
   visitor.visit(
       DevicePropertyFields::kSharedMemPerMultiprocessor,
       static_cast<uint64_t>(props.sharedMemPerMultiprocessor));
-#elif defined(HAS_ROCTRACER)
+#elif defined(HAS_ROCPROFILER)
   visitor.visit(
       DevicePropertyFields::kMaxSharedMemoryPerMultiProcessor,
       static_cast<uint64_t>(props.maxSharedMemoryPerMultiProcessor));
@@ -135,10 +135,10 @@ static std::string createDevicePropertiesJson() {
   }
   return fmt::format("{}", fmt::join(jsonProps, ","));
 }
-#endif // HAS_CUPTI || HAS_ROCTRACER
+#endif // HAS_CUPTI || HAS_ROCPROFILER
 
 const std::string& devicePropertiesJson() {
-#if defined(HAS_CUPTI) || defined(HAS_ROCTRACER)
+#if defined(HAS_CUPTI) || defined(HAS_ROCPROFILER)
   static std::string devicePropsJson = createDevicePropertiesJson();
 #elif defined(HAS_XPUPTI)
   static std::string devicePropsJson = getXpuDeviceProperties();
@@ -149,7 +149,7 @@ const std::string& devicePropertiesJson() {
 }
 
 int smCount([[maybe_unused]] uint32_t deviceId) {
-#if defined(HAS_CUPTI) || defined(HAS_ROCTRACER)
+#if defined(HAS_CUPTI) || defined(HAS_ROCPROFILER)
   const std::vector<gpuDeviceProp>& props = deviceProps();
   return deviceId >= props.size() ? 0 : props[deviceId].multiProcessorCount;
 #else

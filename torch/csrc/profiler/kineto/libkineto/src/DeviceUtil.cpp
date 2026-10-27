@@ -16,7 +16,7 @@ static bool amdGpuAvailable = false;
 static bool cudaGpuAvailable = false;
 
 bool isAMDGpuAvailable() {
-#ifdef HAS_ROCTRACER
+#ifdef HAS_ROCPROFILER
   static std::once_flag once;
   std::call_once(once, [] {
     // determine AMD GPU availability on the system

@@ -19,7 +19,7 @@
 #ifdef HAS_CUPTI_PM_SAMPLING
 #include "CuptiPMSamplingProfiler.h"
 #endif
-#ifdef HAS_ROCTRACER
+#ifdef HAS_ROCPROFILER
 #include "RocprofLogger.h"
 #endif
 #ifdef HAS_XPUPTI
@@ -82,7 +82,7 @@ void libkineto_init(bool cpuOnly, [[maybe_unused]] bool logOnError) {
   }
 #endif // HAS_CUPTI
 
-#ifdef HAS_ROCTRACER
+#ifdef HAS_ROCPROFILER
   if (!cpuOnly) {
     RocprofLogger::ensureRegistered();
   }

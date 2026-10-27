@@ -20,7 +20,7 @@
 #include "CuptiActivityApi.h"
 #include "CuptiActivityProfiler.h"
 
-#elif defined(HAS_ROCTRACER)
+#elif defined(HAS_ROCPROFILER)
 #include "RocmActivityProfiler.h"
 #include "RocprofActivityApi.h"
 
@@ -83,7 +83,7 @@ ActivityProfilerController::ActivityProfilerController(
 #if defined(HAS_CUPTI)
   profiler_ = std::make_unique<CuptiActivityProfiler>(
       CuptiActivityApi::singleton(), cpuOnly);
-#elif defined(HAS_ROCTRACER)
+#elif defined(HAS_ROCPROFILER)
   profiler_ = std::make_unique<RocmActivityProfiler>(
       RocprofActivityApi::singleton(), cpuOnly);
 #else

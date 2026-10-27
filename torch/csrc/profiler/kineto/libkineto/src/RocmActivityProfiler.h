@@ -10,7 +10,7 @@
 
 // TODO DEVICE_AGNOSTIC: The build system should be strict enough that we don't
 //                       need this guard in the header file.
-#ifdef HAS_ROCTRACER
+#ifdef HAS_ROCPROFILER
 
 #include <cstdint>
 #include <mutex>
@@ -66,4 +66,4 @@ class RocmActivityProfiler : public GenericActivityProfiler {
 
 } // namespace KINETO_NAMESPACE
 
-#endif // HAS_ROCTRACER
+#endif // HAS_ROCPROFILER
