@@ -3896,7 +3896,6 @@ class CppCodeCache:
             # below and never built, so it needs no header.
             if (
                 config.cpp_cache_precompile_headers
-                and not _IS_WINDOWS
                 and not has_frozen_cpp_kernel(key)
             ):
                 if header := cls._get_uncompiled_header(device_type):
