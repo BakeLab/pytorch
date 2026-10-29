@@ -5,6 +5,19 @@ matrix. Generated workflows come from
 `.github/scripts/generate_ci_workflows.py`; do not edit generated workflow
 files directly.
 
+## Trim CUDA CI
+
+`.github/workflows/cuda-ci.yml` tests the triggering commit in Gitea on pushes
+to `trim` or manual dispatch, using `[self-hosted, linux, x64, bb, cuda]`.
+It selects the CUDA Docker image
+from this repository's binary build matrix, builds an editable Python 3.14
+installation, verifies its source SHA and GPU availability, then runs
+`test/test_cuda.py`. The SHA, image name and XML reports are uploaded.
+
+BB supplies Docker and GPU access; this repository owns its build environment.
+No Breadkernel action, cross-repository checkout, or package publishing is involved.
+The controller reclaims the sandbox after completion or cancellation.
+
 ## Supported matrix
 
 | Platform | Backend | Variant | Python |

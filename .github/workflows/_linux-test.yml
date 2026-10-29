@@ -4,6 +4,14 @@ name: linux-test
 on:
   workflow_call:
     inputs:
+      runner-labels:
+        required: false
+        type: string
+        default: ""
+        description: |
+          JSON array of runner labels overriding matrix.runner for every shard,
+          for example ["bb", "cuda"]. Required for BakeLab callers; use a
+          homogeneous test matrix matching these runners' hardware.
       build-environment:
         required: true
         type: string
@@ -135,13 +143,13 @@ env:
 
 jobs:
   test:
-    # Don't run on forked repos or empty test matrix
-    if: github.repository_owner == 'pytorch' && toJSON(fromJSON(inputs.test-matrix).include) != '[]'
+    # BakeLab must explicitly select its own runners; other forks stay disabled.
+    if: (github.repository_owner == 'pytorch' || (github.repository == 'BakeLab/pytorch' && inputs.runner-labels != '')) && toJSON(fromJSON(inputs.test-matrix).include) != '[]'
     strategy:
       matrix: ${{ fromJSON(inputs.test-matrix) }}
       fail-fast: false
     environment: ${{ github.ref == 'refs/heads/main' && 'scribe-protected' || startsWith(github.ref, 'refs/heads/release/') && 'scribe-protected' || contains(github.event.pull_request.labels.*.name, 'ci-scribe') && 'scribe-pr' || '' }}
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ inputs.runner-labels != '' && fromJSON(inputs.runner-labels) || matrix.runner }}
     container:
       image: ${{ inputs.docker-image }}
       options: "--gpus all"

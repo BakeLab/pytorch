@@ -60,6 +60,13 @@ on:
         default: "l-x86iavx512-8-64"
         description: |
           Label of the runner this job should run on.
+      runner-labels:
+        required: false
+        type: string
+        default: ""
+        description: |
+          JSON array of runner labels overriding runner and runner_prefix,
+          for example ["bb", "cuda"]. Required for BakeLab callers.
       flash-attention-large-memory-build:
         required: false
         type: boolean
@@ -167,9 +174,9 @@ jobs:
       id-token: write
       contents: read
       actions: read
-    # Don't run on forked repos
-    if: github.repository_owner == 'pytorch'
-    runs-on: ${{ inputs.runner_prefix }}${{ inputs.runner }}
+    # BakeLab must explicitly select its own runners; other forks stay disabled.
+    if: github.repository_owner == 'pytorch' || (github.repository == 'BakeLab/pytorch' && inputs.runner-labels != '')
+    runs-on: ${{ inputs.runner-labels != '' && fromJSON(inputs.runner-labels) || format('{0}{1}', inputs.runner_prefix, inputs.runner) }}
     container:
       image: 308535385114.dkr.ecr.us-east-1.amazonaws.com/pytorch/${{ inputs.docker-image-name }}${{ inputs.ci-docker-hash && format('-{0}', inputs.ci-docker-hash) || '' }}
     timeout-minutes: 480
