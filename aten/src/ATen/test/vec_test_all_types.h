@@ -47,6 +47,10 @@ template <>
 struct OpMathType<c10::Half> {
   using type = float;
 };
+template <>
+struct OpMathType<c10::BFloat16> {
+  using type = float;
+};
 
 
 template<typename T>
@@ -474,7 +478,21 @@ std::enable_if_t < !is_complex<T>::value, void> filter_sub_overflow(T& a, T& b) 
 template <typename T>
 std::enable_if_t<is_complex<T>::value, void>
 filter_mult_overflow(T& val1, T& val2) {
-    //missing
+    // Keep the partial products ac, bd, ad, bc and their sums finite. Once they
+    // overflow, the sign of the infinite result depends on how the compiler
+    // contracted (ac - bd) and (ad + bc) into FMAs, which differs between the
+    // reference and the vectorized code.
+    // Scale rather than clamp each part: clamping maps both parts to the same
+    // magnitude, which makes ac - bd cancel exactly and leaves only the FMA
+    // rounding error, whose sign differs too.
+    using VT = typename T::value_type;
+    const VT limit = std::sqrt(std::numeric_limits<VT>::max()) / 2;
+    auto shrink = [limit](T v) {
+        const VT m = std::max(std::abs(v.real()), std::abs(v.imag()));
+        return m > limit ? v * (limit / m) : v;
+    };
+    val1 = shrink(val1);
+    val2 = shrink(val2);
 }
 
 template <typename T>
@@ -493,8 +511,12 @@ std::enable_if_t<!is_complex<T>::value, void>
 filter_mult_overflow(T& val1, T& val2) {
     if constexpr (std::is_integral_v<T> == false) return;
     if (!is_zero(val2)) {
+        // Only ever shrink val1: test_binary filters the same scalar against
+        // several values, and pairs it already checked must stay in range.
+        // c is negative when val2 is, so compare against its magnitude.
         T c = (std::numeric_limits<T>::max() - 1) / val2;
-        if (std::abs(val1) >= c) {
+        T limit = c < 0 ? T(-c) : c;
+        if (val1 > limit || val1 < -limit) {
             // correct first;
             val1 = c;
         }
