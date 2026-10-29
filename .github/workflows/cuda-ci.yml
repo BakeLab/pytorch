@@ -1,0 +1,73 @@
+name: Trim CUDA CI
+
+on:
+  push:
+    branches: [trim]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trim-cuda-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cuda:
+    if: github.repository == 'BakeLab/pytorch' && github.server_url != 'https://github.com'
+    runs-on: [self-hosted, linux, x64, bb, cuda]
+    timeout-minutes: 360
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.sha }}
+          path: pytorch
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Build and test this commit in the repository CUDA image
+        run: |
+          mkdir -p cuda-ci-results
+          git -C pytorch rev-parse HEAD > cuda-ci-results/pytorch.sha
+          image=$(python3 - <<'PYTHON'
+          import runpy
+          matrix = runpy.run_path("pytorch/.github/scripts/generate_binary_build_matrix.py")
+          print("pytorch/" + matrix["WHEEL_CONTAINER_IMAGES"][matrix["CUDA_STABLE"]])
+          PYTHON
+          )
+          printf '%s\n' "$image" > cuda-ci-results/build-image.txt
+          arch=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader | sort -u | paste -sd ' ' -)
+          [[ "$arch" =~ ^[0-9]+\.[0-9]+(\ [0-9]+\.[0-9]+)*$ ]]
+          docker run --name "pytorch-cuda-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --gpus all --shm-size=8g --volume "$GITHUB_WORKSPACE:/workspace" \
+            --workdir /workspace/pytorch --env "TORCH_CUDA_ARCH_LIST=$arch" \
+            --env MAX_JOBS=4 --env FLASH_ATTENTION_MAX_JOBS=2 \
+            --env USE_CUDA=1 --env USE_BUNDLED_LIBUV=1 \
+            "$image" bash -euc '
+              /opt/python/cp314-cp314/bin/python -m venv /opt/venv
+              export PATH="/opt/venv/bin:$PATH"
+              python -m pip install -r requirements.txt pytest scipy pillow unittest-xml-reporting "cuda-bindings>=13,<14"
+              CMAKE_ARGS="-DTORCH_X86_BASELINE=x86-64-v3" \
+                python -m pip install -e . -v --no-build-isolation --no-deps
+              test "$(python -c "import torch; print(torch.version.git_version)")" = "$(git rev-parse HEAD)"
+              python -c "import torch; assert torch.cuda.is_available()"
+              python test/test_cuda.py -v --save-xml /workspace/cuda-ci-results/pytorch
+            '
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: trim-cuda-${{ github.sha }}
+          path: cuda-ci-results/
+          if-no-files-found: warn
+
+      - name: Stop the build container
+        if: always()
+        run: |
+          container="pytorch-cuda-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          if docker container inspect "$container" > /dev/null 2>&1; then
+            docker rm -f "$container"
+          fi
