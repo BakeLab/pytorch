@@ -105,7 +105,7 @@ inline Vectorized<float> mask_gather(
 template <>
 Vectorized<int64_t> inline convert_to_int_of_same_size<double>(
     const Vectorized<double>& src) {
-  return _mm512_cvtpd_epi64(src);
+  return _mm512_cvttpd_epi64(src);
 }
 
 template <>

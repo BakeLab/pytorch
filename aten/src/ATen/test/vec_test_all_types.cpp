@@ -963,6 +963,26 @@ namespace {
             createDefaultTernaryTestCase<vec>(TestSeed()),
                 RESOLVE_OVERLOAD(filter_clamp));
     }
+    template<int lanes, typename F>
+    void test_lane_masks(F check_mask) {
+        static_assert(lanes > 0 && lanes <= 32);
+        // Exhaust each group of at most 16 lanes, with the remaining lanes
+        // either all zero or all nonzero. Avoid enumerating 2^32 masks for
+        // AVX512 reduced floats, while still covering the sign bit.
+        const auto all_lanes = static_cast<uint32_t>((uint64_t{1} << lanes) - 1);
+        for (int offset = 0; offset < lanes; offset += 16) {
+            const int width = std::min(16, lanes - offset);
+            const uint32_t power_sets = uint32_t{1} << width;
+            const uint32_t other_lanes = all_lanes ^ ((power_sets - 1) << offset);
+            for (const auto pattern : c10::irange(power_sets)) {
+                const uint32_t expected = pattern << offset;
+                ASSERT_NO_FATAL_FAILURE(check_mask(expected));
+                if (other_lanes != 0) {
+                    ASSERT_NO_FATAL_FAILURE(check_mask(expected | other_lanes));
+                }
+            }
+        }
+    }
     TYPED_TEST(BitwiseFloatsAdditional, ZeroMask) {
         using vec = TypeParam;
         using VT = ValueType<TypeParam>;
@@ -986,25 +1006,7 @@ namespace {
                 << std::hex << "Expected:\n#\t" << expected
                 << "\nActual:\n#\t" << actual;
         };
-
-        if constexpr (vec::size() <= 16) {
-            for (const auto expected : c10::irange(uint32_t{1} << vec::size())) {
-                check_mask(expected);
-            }
-        }
-        else {
-            constexpr auto all = std::numeric_limits<uint32_t>::max() >>
-                (std::numeric_limits<uint32_t>::digits - vec::size());
-            check_mask(0);
-            check_mask(all);
-            check_mask(0xaaaaaaaa & all);
-            check_mask(0x55555555 & all);
-            for (const auto i : c10::irange(vec::size())) {
-                const auto bit = uint32_t{1} << i;
-                check_mask(bit);
-                check_mask(all ^ bit);
-            }
-        }
+        ASSERT_NO_FATAL_FAILURE(test_lane_masks<vec::size()>(check_mask));
     }
     TYPED_TEST(BitwiseFloatsAdditional, Convert) {
         using vec = TypeParam;
@@ -1182,8 +1184,8 @@ namespace {
         if (AssertVectorized<vec>(std::string(NAME_INFO(test_blend)) + mask_str, expected, actual).check()) return;
         test_blend<vec, VT, mask - 1>(expected_val, a, b);
     }
-    template<typename vec, typename VT, int64_t idx, int64_t N>
-    std::enable_if_t<(!is_complex<VT>::value && idx == N), bool>
+    template<typename vec, typename VT>
+    std::enable_if_t<!is_complex<VT>::value, bool>
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
     test_blendv(VT expected_val[vec::size()], VT a[vec::size()], VT b[vec::size()], VT mask[vec::size()]) {
         using bit_rep = BitType<VT>;
@@ -1208,24 +1210,6 @@ namespace {
         }
         return true;
     }
-    template<typename vec, typename VT, int64_t idx, int64_t N>
-    std::enable_if_t<(!is_complex<VT>::value && idx != N), bool>
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
-    test_blendv(VT expected_val[vec::size()], VT a[vec::size()], VT b[vec::size()], VT mask[vec::size()]) {
-        // shuffle mask and do blendv test
-        VT m = mask[idx];
-        if (!test_blendv<vec, VT, idx+1, N>(expected_val, a, b, mask)) return false;
-        if (m != (VT)0) {
-          mask[idx] = (VT)0;
-        }
-        else {
-          uint64_t hex_mask = 0xFFFFFFFFFFFFFFFF;
-          std::memcpy(&mask[idx], &hex_mask, sizeof(VT));
-        }
-        if (!test_blendv<vec, VT, idx+1, N>(expected_val, a, b, mask)) return false;
-        mask[idx] = m;
-        return true;
-    }
     template<typename T, int N>
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
     void blend_init(T(&a)[N], T(&b)[N]) {
@@ -1248,7 +1232,16 @@ namespace {
         // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
         CACHE_ALIGN VT expected_val[vec::size()];
         blend_init(a, b);
-        test_blendv<vec, VT, 0, vec::size()>(expected_val, a, b, mask);
+        auto check_mask = [&](uint32_t bits) {
+            using bit_rep = BitType<VT>;
+            for (int i = 0; i < vec::size(); ++i) {
+                const bit_rep value = (bits & (uint32_t{1} << i))
+                    ? static_cast<bit_rep>(~bit_rep{0}) : bit_rep{0};
+                mask[i] = c10::bit_cast<VT>(value);
+            }
+            ASSERT_TRUE((test_blendv<vec, VT>(expected_val, a, b, mask)));
+        };
+        ASSERT_NO_FATAL_FAILURE(test_lane_masks<vec::size()>(check_mask));
     }
     TYPED_TEST(BitwiseFloatsAdditional2, Blend) {
         using vec = TypeParam;
