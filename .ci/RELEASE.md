@@ -18,6 +18,14 @@ BB supplies Docker and GPU access; this repository owns its build environment.
 No Breadkernel action, cross-repository checkout, or package publishing is involved.
 The controller reclaims the sandbox after completion or cancellation.
 
+CUDA, XPU and ROCm remain supported test backends. Gitea currently schedules
+only CUDA jobs; XPU and ROCm jobs need their own runners before being enabled
+there. Runner availability does not change which backends this fork supports.
+
+CI omits the removed TorchScript executor shards, JIT hook suite and ONNX
+runner dispatch. The retained C++ `test_jit` target still tests schema and parser
+utilities, so it remains part of libtorch testing.
+
 ## Supported matrix
 
 | Platform | Backend | Variant | Python |
