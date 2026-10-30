@@ -2059,6 +2059,9 @@ class UserMethodVariable(BaseUserFunctionVariable):
             )
             if reconstructed is not None:
                 return reconstructed
+        if isinstance(self.im_func, WrapperUserFunctionVariable):
+            # Wrappers must preserve their own tracing and nested-compile policy.
+            return self.im_func.call_function(tx, [self.im_self, *args], kwargs)
         # method_call calls im_func with im_self prepended. Inline this VT
         # rather than im_func so a nested graph break resumes the bound method;
         # self_args() supplies im_self.

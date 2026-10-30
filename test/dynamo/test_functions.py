@@ -6032,6 +6032,43 @@ class GraphModule(torch.nn.Module):
         self.assertIs(WrapperUserMethodVariable._cpython_type, types.MethodType)
         self.assertIs(WrapperUserFunctionVariable._cpython_type, types.FunctionType)
 
+    def test_cached_classmethod_compile(self):
+        class Base:
+            offset = 1
+
+            @classmethod
+            @functools.cache
+            def get_offset(cls):
+                return cls.offset
+
+        class Derived(Base):
+            offset = 3
+
+        obj = Derived()
+
+        def fn(x):
+            return x + obj.get_offset() + Derived.get_offset() + Base.get_offset()
+
+        x = torch.randn(8)
+        self.assertEqual(torch.compile(fn, fullgraph=True)(x), fn(x))
+
+    def test_compiled_classmethod_preserves_fullgraph(self):
+        class Base:
+            @classmethod
+            @torch.compile(fullgraph=True)
+            def method(cls, x):
+                torch._dynamo.graph_break()
+                return x + 1
+
+        class Derived(Base):
+            pass
+
+        def fn(x):
+            return Derived.method(x)
+
+        with self.assertRaises(torch._dynamo.exc.Unsupported):
+            torch.compile(fn)(torch.randn(8))
+
     def test_wrapper_user_method_torchdynamo_inline(self):
         # Dynamo traces the _torchdynamo_inline target instead of meth, so the
         # targets return different values to prove that path was taken.
