@@ -9,14 +9,25 @@ files directly.
 
 `.github/workflows/cuda-ci.yml` tests the triggering commit in Gitea on pushes
 to `trim` or manual dispatch, using `[self-hosted, linux, x64, bb, cuda]`.
-It selects the CUDA Docker image
-from this repository's binary build matrix, builds an editable Python 3.14
-installation, verifies its source SHA and GPU availability, then runs
-`test/test_cuda.py`. The SHA, image name and XML reports are uploaded.
+It uses a digest-pinned CUDA 13.4 manylinux builder and installs GCC/G++ 16.2.0
+from conda-forge with the glibc 2.28 sysroot. `CC`, `CXX` and `CUDAHOSTCXX`
+select this compiler for both C++ and CUDA host code. OpenBLAS is installed
+in the same environment and located through `OpenBLAS_HOME`. It builds an editable
+Python 3.14 installation, verifies its source SHA and GPU availability, then
+runs `test/test_cuda.py`. The SHA, image name, compiler version and XML reports
+are uploaded.
 
 BB supplies Docker and GPU access; this repository owns its build environment.
 No Breadkernel action, cross-repository checkout, or package publishing is involved.
 The controller reclaims the sandbox after completion or cancellation.
+
+CUDA, XPU and ROCm remain supported test backends. Gitea currently schedules
+only CUDA jobs; XPU and ROCm jobs need their own runners before being enabled
+there. Runner availability does not change which backends this fork supports.
+
+CI omits the removed TorchScript executor shards, JIT hook suite and ONNX
+runner dispatch. The retained C++ `test_jit` target still tests schema and parser
+utilities, so it remains part of libtorch testing.
 
 ## Supported matrix
 
