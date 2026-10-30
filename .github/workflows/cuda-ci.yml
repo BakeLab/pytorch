@@ -1,0 +1,68 @@
+name: Trim CUDA CI
+
+on:
+  push:
+    branches: [trim]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trim-cuda-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cuda:
+    if: github.repository == 'BakeLab/pytorch' && github.server_url != 'https://github.com'
+    runs-on: [self-hosted, linux, x64, bb, cuda]
+    timeout-minutes: 360
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.sha }}
+          path: pytorch
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Checkout shared CI infrastructure
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: BakeLab/breadkernel
+          ref: 551bee53ff70429c7abb8e83e5e280bd9a63211a
+          path: .cuda-ci/infra
+          persist-credentials: false
+
+      - name: Prepare the triggering PyTorch commit
+        id: cuda
+        uses: ./.cuda-ci/infra/.github/actions/cuda-env
+        with:
+          pytorch-ref: ${{ github.sha }}
+
+      - name: Test the source-built CUDA wheel
+        env:
+          CONTAINER: ${{ steps.cuda.outputs.container }}
+        run: |
+          git -C pytorch rev-parse HEAD > cuda-ci-results/pytorch.sha
+          docker exec --workdir /workspace "$CONTAINER" bash -euc '
+              uv pip install --python /opt/venv/bin/python \
+                -r pytorch/requirements.txt pytest scipy pillow unittest-xml-reporting "cuda-bindings>=13,<14"
+              /opt/venv/bin/python pytorch/test/test_cuda.py -v \
+                --save-xml /workspace/cuda-ci-results/pytorch
+            '
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: trim-cuda-${{ github.sha }}
+          path: cuda-ci-results/
+          if-no-files-found: warn
+
+      - name: Stop the build container
+        if: always() && steps.cuda.outputs.container != ''
+        env:
+          CONTAINER: ${{ steps.cuda.outputs.container }}
+        run: docker rm -f "$CONTAINER"

@@ -5,6 +5,26 @@ matrix. Generated workflows come from
 `.github/scripts/generate_ci_workflows.py`; do not edit generated workflow
 files directly.
 
+## Trim CUDA CI
+
+`.github/workflows/cuda-ci.yml` runs in Gitea when `trim` updates are mirrored,
+or on manual dispatch, using `[self-hosted, linux, x64, bb, cuda]`. It is skipped
+on github.com. It passes the triggering SHA to Breadkernel's shared `cuda-env`
+action and runs the existing `test/test_cuda.py` suite against the resulting
+wheel. Dependency SHAs, checksums, constraints, and JUnit results are retained
+as artifacts. This is a single-GPU CI lane, not a wheel release or the full matrix.
+
+Breadkernel owns the CUDA/Python toolchain, wheel builds, and exact-match cache.
+A cache miss builds the requested source commit; it never substitutes upstream
+nightly or an older wheel. The action checks `torch.version.git_version` and
+CUDA execution before tests start. No package publishing occurs.
+
+Mirror the pinned Breadkernel infrastructure commit first, and allow owner-level
+Actions cross-repo reads of breadkernel, pytorch, vision, and triton in Gitea.
+The job uses its short-lived token without repository variables or new secrets.
+The BB sandbox needs Docker and NVIDIA Container Toolkit; its controller must
+reclaim the VM on completion or cancellation.
+
 ## Supported matrix
 
 | Platform | Backend | Variant | Python |
