@@ -3259,8 +3259,7 @@ class WrapperUserFunctionVariable(BaseUserFunctionVariable):
 
         all_args = self.self_args() + list(args)
         # Do not resume inside _torchdynamo_inline when the wrapper changes call
-        # semantics. Inner torch.compile preserves options such as fullgraph,
-        # while ScriptFunction must preserve TorchScript semantics.
+        # semantics. Inner torch.compile preserves options such as fullgraph.
         # Skip this for recursive calls to the same compiled function
         # (the wrapper's original callable matches the root frame's code).
         is_inner_torch_compile = (
@@ -3277,10 +3276,7 @@ class WrapperUserFunctionVariable(BaseUserFunctionVariable):
         )
         polyfill = (
             polyfills.getattr_and_trace_no_nested_graph_breaks
-            if (
-                is_inner_torch_compile
-                or isinstance(self.wrapper_obj, torch.jit.ScriptFunction)
-            )
+            if is_inner_torch_compile
             else polyfills.getattr_and_trace
         )
         return VariableTracker.build(
