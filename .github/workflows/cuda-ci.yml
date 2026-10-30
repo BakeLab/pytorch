@@ -42,6 +42,14 @@ jobs:
             --env MAX_JOBS=4 --env FLASH_ATTENTION_MAX_JOBS=2 \
             --env USE_CUDA=1 --env USE_BUNDLED_LIBUV=1 \
             "$image" bash -euc '
+              /opt/conda/bin/conda create --yes --prefix /opt/gcc16 \
+                --override-channels --channel conda-forge \
+                gcc_linux-64=16.2.0 gxx_linux-64=16.2.0 sysroot_linux-64=2.28
+              export CC=/opt/gcc16/bin/x86_64-conda-linux-gnu-gcc
+              export CXX=/opt/gcc16/bin/x86_64-conda-linux-gnu-g++
+              export CUDAHOSTCXX="$CXX"
+              export LD_LIBRARY_PATH="/opt/gcc16/lib:${LD_LIBRARY_PATH:-}"
+              "$CXX" --version > /workspace/cuda-ci-results/compiler.txt
               /opt/python/cp314-cp314/bin/python -m venv /opt/venv
               export PATH="/opt/venv/bin:$PATH"
               python -m pip install -r requirements.txt pytest scipy pillow unittest-xml-reporting "cuda-bindings>=13,<14"

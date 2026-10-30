@@ -9,9 +9,12 @@ files directly.
 
 `.github/workflows/cuda-ci.yml` tests the triggering commit in Gitea on pushes
 to `trim` or manual dispatch, using `[self-hosted, linux, x64, bb, cuda]`.
-It uses a digest-pinned CUDA 13.4 manylinux builder, builds an editable Python 3.14
-installation, verifies its source SHA and GPU availability, then runs
-`test/test_cuda.py`. The SHA, image name and XML reports are uploaded.
+It uses a digest-pinned CUDA 13.4 manylinux builder and installs GCC/G++ 16.2.0
+from conda-forge with the glibc 2.28 sysroot. `CC`, `CXX` and `CUDAHOSTCXX`
+select this compiler for both C++ and CUDA host code. It builds an editable
+Python 3.14 installation, verifies its source SHA and GPU availability, then
+runs `test/test_cuda.py`. The SHA, image name, compiler version and XML reports
+are uploaded.
 
 BB supplies Docker and GPU access; this repository owns its build environment.
 No Breadkernel action, cross-repository checkout, or package publishing is involved.
