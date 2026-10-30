@@ -37,6 +37,27 @@ add_custom_target(merge_compile_commands ALL
 )
 
 
+# --- Linux oneTBB runtime embedding ---
+# libtorch_cpu links oneTBB when libstdc++ parallel algorithms are enabled.
+# Its $ORIGIN rpath resolves the runtime from torch/lib in installed wheels.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND BUILD_PYTHON AND USE_TBB)
+  if(TARGET TBB::tbb)
+    set(_tbb_runtime_target TBB::tbb)
+  elseif(TARGET tbb)
+    set(_tbb_runtime_target tbb)
+  endif()
+  if(_tbb_runtime_target)
+    get_target_property(_tbb_runtime_type ${_tbb_runtime_target} TYPE)
+    if(_tbb_runtime_type STREQUAL "SHARED_LIBRARY")
+      install(FILES "$<TARGET_FILE:${_tbb_runtime_target}>"
+              DESTINATION "${TORCH_INSTALL_LIB_DIR}"
+              RENAME "$<TARGET_SONAME_FILE_NAME:${_tbb_runtime_target}>")
+    endif()
+    unset(_tbb_runtime_target)
+    unset(_tbb_runtime_type)
+  endif()
+endif()
+
 # --- macOS OpenMP embedding ---
 # Copy libomp.dylib / libiomp5.dylib into the wheel and fix rpaths so the
 # wheel is self-contained (replicates setup.py's _embed_libomp).
