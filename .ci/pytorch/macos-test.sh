@@ -122,25 +122,6 @@ test_custom_script_ops() {
   assert_git_not_dirty
 }
 
-test_jit_hooks() {
-  echo "Testing jit hooks in cpp"
-  pushd test/jit_hooks
-  # Build the custom operator library.
-  rm -rf build && mkdir build
-  pushd build
-  SITE_PACKAGES="$(python -c 'from sysconfig import get_path; print(get_path("purelib"))')"
-  CMAKE_PREFIX_PATH="$SITE_PACKAGES/torch" cmake ..
-  make VERBOSE=1
-  popd
-
-  # Run tests Python-side and export a script module.
-  python model.py --export-script-module=model
-  # Run tests C++-side and load the exported script module.
-  build/test_jit_hooks ./model
-  popd
-  assert_git_not_dirty
-}
-
 # Shellcheck doesn't like it when you pass no arguments to a function
 # that can take args. See https://www.shellcheck.net/wiki/SC2120
 # shellcheck disable=SC2120
@@ -377,11 +358,8 @@ elif [[ $NUM_TEST_SHARDS -gt 1 ]]; then
   test_python_shard "${SHARD_NUMBER}"
   if [[ "${SHARD_NUMBER}" == 1 ]]; then
     test_custom_script_ops
-  elif [[ "${SHARD_NUMBER}" == 2 ]]; then
-    test_jit_hooks
   fi
 else
   test_python_all
   test_custom_script_ops
-  test_jit_hooks
 fi

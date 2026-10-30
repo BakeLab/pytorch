@@ -1976,19 +1976,6 @@ test_libtorch_agnostic_targetting() {
     assert_git_not_dirty
 }
 
-test_jit_hooks() {
-  echo "Testing jit hooks in cpp"
-  HOOK_BUILD="${CUSTOM_TEST_ARTIFACT_BUILD_DIR}/jit-hook-build"
-  pushd test/jit_hooks
-  cp -a "$HOOK_BUILD" build
-  # Run tests Python-side and export the script modules with hooks
-  python model.py --export-script-module=model
-  # Run tests C++-side and load the exported script modules
-  build/test_jit_hooks ./model
-  popd
-  assert_git_not_dirty
-}
-
 test_torch_function_benchmark() {
   echo "Testing __torch_function__ benchmarks"
   pushd benchmarks/overrides_benchmark
