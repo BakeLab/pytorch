@@ -9,8 +9,7 @@ files directly.
 
 `.github/workflows/cuda-ci.yml` tests the triggering commit in Gitea on pushes
 to `trim` or manual dispatch, using `[self-hosted, linux, x64, bb, cuda]`.
-It selects the CUDA Docker image
-from this repository's binary build matrix, builds an editable Python 3.14
+It uses a digest-pinned CUDA 13.4 manylinux builder, builds an editable Python 3.14
 installation, verifies its source SHA and GPU availability, then runs
 `test/test_cuda.py`. The SHA, image name and XML reports are uploaded.
 
