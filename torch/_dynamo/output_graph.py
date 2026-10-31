@@ -4303,7 +4303,7 @@ class SubgraphTracer(fx.Tracer):
                     # Traceback formats multiline source spans starting in Python 3.13.
                     last_source_line = (
                         end_lineno
-                        if sys.version_info >= (3, 13) and end_lineno is not None
+                        if end_lineno is not None
                         else start_lineno
                     )
                     source_lines = tuple(

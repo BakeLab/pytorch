@@ -15,7 +15,6 @@ for better performance while maintaining correct semantics.
 import bisect
 import dataclasses
 import dis
-import sys
 from typing import Any, TYPE_CHECKING
 
 

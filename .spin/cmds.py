@@ -247,7 +247,7 @@ def _check_linter_python_versions():
             python_index = command.index("--python")
         except ValueError:
             python_index = -1
-        expected_python = "3.11" if linter["code"] == "FLAKE8" else "3.10"
+        expected_python = "3.15" if linter["code"] == "FLAKE8" else "3.10"
         if python_index == -1 or command[python_index + 1 : python_index + 2] != [
             expected_python
         ]:

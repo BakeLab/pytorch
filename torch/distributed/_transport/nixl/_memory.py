@@ -4,7 +4,7 @@ import builtins
 import operator
 from dataclasses import dataclass, replace
 from typing import Any, Literal, TYPE_CHECKING
-from typing_extensions import Self
+from typing import Self
 
 from .._serialization import _WireDescriptor
 

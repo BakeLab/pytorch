@@ -28,7 +28,7 @@ command = [
     'uv',
     'run',
     '--python',
-    '3.11',
+    '3.15',
     '--script',
     'tools/linter/adapters/flake8_linter.py',
     '--',

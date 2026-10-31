@@ -1,17 +1,14 @@
 # /// script
-# requires-python = ">=3.11"
+# requires-python = ">=3.15"
 # dependencies = [
 #   "flake8==7.3.0",
 #   "flake8-bugbear==24.12.12",
 #   "flake8-comprehensions==3.16.0",
 #   "flake8-executable==2.1.3",
-#   "flake8-logging-format==2024.24.12",
 #   "flake8-pyi==25.5.0",
-#   "flake8-simplify==0.30.0",
 #   "mccabe==0.7.0",
 #   "pycodestyle==2.14.0",
 #   "pyflakes==3.4.0",
-#   "setuptools<82",
 # ]
 # ///
 from __future__ import annotations

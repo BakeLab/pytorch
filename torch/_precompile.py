@@ -286,9 +286,9 @@ import threading
 import types
 import uuid
 from collections.abc import (
-    Callable,  # noqa: TC003
-    Iterable,  # noqa: TC003
-    Sequence,  # noqa: TC003
+    Callable,
+    Iterable,
+    Sequence,
 )
 from types import MappingProxyType
 from typing import (
