@@ -22810,12 +22810,6 @@ python_ref_db = [
         ),
         skips=(
             # Reference: https://github.com/pytorch/pytorch/pull/50140#issuecomment-756150214
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_extremal',
-                         dtypes=[torch.float32, torch.float64], active_if=IS_WINDOWS),
-            DecorateInfo(unittest.skip("Skipped!"), 'TestUnaryUfuncs',
-                         'test_reference_numerics_large',
-                         dtypes=[torch.float32, torch.float64], active_if=IS_WINDOWS),
         ),
     ),
     ElementwiseUnaryPythonRefInfo(

@@ -28,10 +28,19 @@ jobs:
           submodules: recursive
           persist-credentials: false
 
+      - name: Checkout BakeLab Triton trim
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: BakeLab/triton
+          ref: trim
+          path: triton
+          persist-credentials: false
+
       - name: Build and test this commit in the repository CUDA image
         run: |
           mkdir -p cuda-ci-results
           git -C pytorch rev-parse HEAD > cuda-ci-results/pytorch.sha
+          git -C triton rev-parse HEAD > cuda-ci-results/triton.sha
           image=pytorch/manylinux2_28-builder:cuda13.4@sha256:3e1044020327d2783e2729accadacea14791313f2ba2548671f73e7d58ef8fba
           printf '%s\n' "$image" > cuda-ci-results/build-image.txt
           arch=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader | sort -u | paste -sd ' ' -)
@@ -40,6 +49,7 @@ jobs:
             --gpus all --shm-size=8g --volume "$GITHUB_WORKSPACE:/workspace" \
             --workdir /workspace/pytorch --env "TORCH_CUDA_ARCH_LIST=$arch" \
             --env MAX_JOBS=4 --env FLASH_ATTENTION_MAX_JOBS=2 \
+            --env TRITON_CODEGEN_BACKENDS=nvidia \
             --env USE_CUDA=1 --env USE_BUNDLED_LIBUV=1 \
             "$image" bash -euc '
               /opt/conda/bin/conda create --yes --prefix /opt/gcc16 \
@@ -54,6 +64,12 @@ jobs:
               /opt/python/cp315-cp315/bin/python -m venv /opt/venv
               export PATH="/opt/venv/bin:$PATH"
               python -m pip install -r requirements.txt pytest scipy pillow unittest-xml-reporting "cuda-bindings>=13,<14"
+              python -m pip wheel --no-deps --wheel-dir /workspace/cuda-ci-results/triton /workspace/triton
+              python -m pip install --no-deps /workspace/cuda-ci-results/triton/*.whl
+              triton_commit=$(git -C /workspace/triton rev-parse --short=8 HEAD)
+              triton_version=$(python -c "from importlib.metadata import version; print(version(\"triton\"))")
+              [[ "$triton_version" == *"+git$triton_commit" ]]
+              printf "%s\n" "$triton_version" > /workspace/cuda-ci-results/triton-version.txt
               CMAKE_ARGS="-DTORCH_X86_BASELINE=x86-64-v3" \
                 python -m pip install -e . -v --no-build-isolation --no-deps
               test "$(python -c "import torch; print(torch.version.git_version)")" = "$(git rev-parse HEAD)"

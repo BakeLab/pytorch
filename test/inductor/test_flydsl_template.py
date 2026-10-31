@@ -5,7 +5,6 @@ from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 from unittest import mock
 
-import sympy
 
 import torch
 from torch._inductor.codegen.flydsl import flydsl_utils
@@ -16,7 +15,6 @@ from torch._inductor.codegen.flydsl.flydsl_scheduling import (
 )
 from torch._inductor.codegen.flydsl.flydsl_template import FlyDSLTemplate
 from torch._inductor.ir import Buffer, FixedLayout
-from torch._inductor.kernel import mm
 from torch._inductor.runtime.flydsl_cache import (
     LazyFlyDSLLauncher,
     precompile_flydsl_template,
@@ -25,14 +23,8 @@ from torch._inductor.runtime.flydsl_cache import (
 )
 from torch._inductor.select_algorithm import PartialRender
 from torch._inductor.test_case import TestCase
-from torch._inductor.utils import OrderedSet, run_and_get_code
+from torch._inductor.utils import OrderedSet
 from torch._inductor.virtualized import V
-from torch.nn.functional import ScalingType, SwizzleType  # type: ignore[attr-defined]
-from torch.testing._internal.common_device_type import (
-    instantiate_device_type_tests,
-    largeTensorTest,
-)
-from torch.testing._internal.common_quantized import _floatx_unpacked_to_f32, to_mxfp
 from torch.testing._internal.common_utils import (
     instantiate_parametrized_tests,
     parametrize,

@@ -4889,11 +4889,11 @@ def forward(self, dummy_1):
         self.assertBypasses("unrepresented symbol in output", 2)
 
 
-instantiate_parametrized_tests(TestFakeTensorDispatchCache)
+instantiate_parametrized_tests(FakeTensorDispatchCache)
 
 
 class TestFakeTensorPreferDeviceType(TestCase):
-    @unittest.skipIf(not RUN_CUDA, "requires cuda")
+    @unittest.skipIf(not torch.cuda.is_available(), "requires cuda")
     def test_fake_tensor_prefer_device_type(self):
         """
         Test that fake_tensor_prefer_device_type configuration works correctly

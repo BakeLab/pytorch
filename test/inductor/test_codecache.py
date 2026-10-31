@@ -3,7 +3,6 @@ import base64
 import copy
 import functools
 import hashlib
-import io
 import json
 import logging
 import os
@@ -47,7 +46,6 @@ from torch._inductor.codecache import (
     BypassFxGraphCache,
     CacheabilityValidator,
     CacheBase,
-    compiled_fx_graph_hash,
     CppCodeCache,
     CppWrapperCodeCache,
     CUDACodeCache,

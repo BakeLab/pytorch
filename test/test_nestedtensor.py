@@ -42,7 +42,6 @@ from torch.testing._internal.common_device_type import (
     ops,
     PYTORCH_CUDA_MEMCHECK,
     skipCPUIf,
-    skipCUDAIf,
     skipMeta,
 )
 from torch.testing._internal.common_dtype import floating_types_and_half

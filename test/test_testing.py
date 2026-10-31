@@ -2978,38 +2978,38 @@ class TestImports(TestCase):
         """ Checks that all modules inside torch can be imported
         Prevents regression reported in https://github.com/pytorch/pytorch/issues/77441 """
         ignored_modules = [
-                           "torch.distributed.elastic.rendezvous",  # depps on etcd
-                           "torch.contrib.",  # something weird
-                           "torch.testing._internal.distributed.",  # just fails
-                           "torch._inductor.runtime.triton_helpers",  # depends on triton
-                           "torch._native.flydsl.intrinsics",  # depends on flydsl
-                           "torch._native.cutedsl",  # depends on cutlass
-                           "torch._native.ops.reductions.traits",  # depends on cutlass
-                           "torch._native.ops.bmm_outer_product.triton_kernels",  # depends on triton
-                           "torch._native.ops.foreach_mm",  # depends on nvmath-python, cuda-python
-                           "torch._native.ops.polar.nvmath_impl",  # depends on nvmath-python, cuda-python
-                           "torch._native.ops.reductions.kernel_general",  # depends on cutlass
-                           "torch._native.ops.reductions.kernel_rowtile",  # depends on cutlass
-                           "torch._native.ops.reductions.tile",  # depends on cutlass
-                           "torch._native.ops.reductions.kernel_xcta",  # depends on cutlass
-                           "torch._native.ops.reductions.kernel_coltile",  # depends on cutlass
-                           "torch._native.ops.reductions.ordered",  # depends on cutlass
-                           "torch._native.ops.scatter_add",  # depends on cutlass
-                           "torch._native.ops.topk",  # depends on cutlass
-                           "torch._inductor.codegen.cuda",  # depends on cutlass
-                           "torch._inductor.codegen.cutedsl",  # depends on cutlass
-                           "torch._inductor.kernel.flex_gemm.compile_pool",  # depends on cutlass
-                           "torch._inductor.kernel.flex_gemm.output_layout_cutedsl",  # depends on cutlass
-                           "torch.distributed.examples",  # requires CUDA and torchvision
-                           "torch.distributed.tensor.examples",  # example scripts
-                           "torch.distributed._tools.sac_ilp",  # depends on pulp
-                           "torch.csrc",  # files here are devtools, not part of torch
-                           "torch.include",  # torch include files after install
-                           "torch._inductor.kernel.vendored_templates.cutedsl",  # depends on cutlass
-                           "torch._vendor.quack",  # depends on cutlass / cuda-python
-                           "torch._inductor.kernel.flex_gemm.quack_ops",  # depends on cutlass
-                           "torch.profiler._cuspy",  # depends on cupti-python
-                           ]
+            "torch.distributed.elastic.rendezvous",  # depps on etcd
+            "torch.contrib.",  # something weird
+            "torch.testing._internal.distributed.",  # just fails
+            "torch._inductor.runtime.triton_helpers",  # depends on triton
+            "torch._native.flydsl.intrinsics",  # depends on flydsl
+            "torch._native.cutedsl",  # depends on cutlass
+            "torch._native.ops.reductions.traits",  # depends on cutlass
+            "torch._native.ops.bmm_outer_product.triton_kernels",  # depends on triton
+            "torch._native.ops.foreach_mm",  # depends on nvmath-python, cuda-python
+            "torch._native.ops.polar.nvmath_impl",  # depends on nvmath-python, cuda-python
+            "torch._native.ops.reductions.kernel_general",  # depends on cutlass
+            "torch._native.ops.reductions.kernel_rowtile",  # depends on cutlass
+            "torch._native.ops.reductions.tile",  # depends on cutlass
+            "torch._native.ops.reductions.kernel_xcta",  # depends on cutlass
+            "torch._native.ops.reductions.kernel_coltile",  # depends on cutlass
+            "torch._native.ops.reductions.ordered",  # depends on cutlass
+            "torch._native.ops.scatter_add",  # depends on cutlass
+            "torch._native.ops.topk",  # depends on cutlass
+            "torch._inductor.codegen.cuda",  # depends on cutlass
+            "torch._inductor.codegen.cutedsl",  # depends on cutlass
+            "torch._inductor.kernel.flex_gemm.compile_pool",  # depends on cutlass
+            "torch._inductor.kernel.flex_gemm.output_layout_cutedsl",  # depends on cutlass
+            "torch.distributed.examples",  # requires CUDA and torchvision
+            "torch.distributed.tensor.examples",  # example scripts
+            "torch.distributed._tools.sac_ilp",  # depends on pulp
+            "torch.csrc",  # files here are devtools, not part of torch
+            "torch.include",  # torch include files after install
+            "torch._inductor.kernel.vendored_templates.cutedsl",  # depends on cutlass
+            "torch._vendor.quack",  # depends on cutlass / cuda-python
+            "torch._inductor.kernel.flex_gemm.quack_ops",  # depends on cutlass
+            "torch.profiler._cuspy",  # depends on cupti-python
+        ]
         if IS_MACOS or IS_JETSON:
             # Distributed should be importable on Windows, but not on Mac
             if IS_MACOS or IS_JETSON:
