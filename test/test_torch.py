@@ -69,7 +69,7 @@ from torch.testing._internal.common_dtype import (
     all_types_complex_float8_and, all_passthru_types_and,
 )
 from torch.testing._internal.two_tensor import TwoTensor
-from torch.testing._internal.common_utils import AlwaysWarnTypedStorageRemoval, TEST_CUDA_GRAPH, instantiate_parametrized_tests
+from torch.testing._internal.common_utils import AlwaysWarnTypedStorageRemoval, instantiate_parametrized_tests
 
 if TEST_WITH_TORCHINDUCTOR:
     from torch._inductor.test_case import TestCase

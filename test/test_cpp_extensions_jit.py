@@ -22,18 +22,15 @@ import torch.testing._internal.common_utils as common
 import torch.utils.cpp_extension
 from torch.testing._internal.common_cuda import TEST_CUDA, TEST_CUDNN
 from torch.testing._internal.common_utils import (
-    gradcheck,
     HardwareClassification,
     TEST_XPU,
 )
 from torch.utils.cpp_extension import (
     _get_cuda_arch_flags,
-    _TORCH_PATH,
     check_compiler_is_gcc,
     COMMON_MSVC_FLAGS,
     CUDA_HOME,
     get_cxx_compiler,
-    remove_extension_h_precompiler_headers,
     ROCM_HOME,
 )
 
@@ -843,11 +840,133 @@ with tempfile.TemporaryDirectory() as build_directory:
             def backward(ctx, gx):
                 return gx
 
-    def test_returns_shared_library_path_when_is_python_module_is_true(self):
+        test_backward_deadlock = torch.utils.cpp_extension.load_inline(
+            name="test_backward_deadlock",
+            cpp_sources=[source],
+            functions=["run_back", "run_back_no_gil"],
+        )
+
+        # This used to deadlock
+        inp = torch.rand(20, requires_grad=True)
+        loss = MyFn.apply(inp).sum()
+        with self.assertRaisesRegex(
+            RuntimeError, "The autograd engine was called while holding the GIL."
+        ):
+            test_backward_deadlock.run_back(loss)
+
+        inp = torch.rand(20, requires_grad=True)
+        loss = MyFn.apply(inp).sum()
+        test_backward_deadlock.run_back_no_gil(loss)
+
+
+    def test_from_blob_stable_api(self):
         source = """
-        #include <torch/script.h>
-        torch::Tensor func(torch::Tensor x) { return x; }
-        static torch::RegisterOperators r("test::func", &func);
+        #include <torch/csrc/stable/ops.h>
+        #include <torch/extension.h>
+        #include <vector>
+
+        // Test using the stable API torch::stable::from_blob
+        at::Tensor test_stable_from_blob() {
+            // Allocate data buffer with known values
+            static std::vector<float> data = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
+
+            // Create tensor using stable API
+            torch::stable::Tensor stable_tensor = torch::stable::from_blob(
+                data.data(),
+                {2, 3},
+                {3, 1},
+                torch::stable::Device(torch::headeronly::DeviceType::CPU, 0),
+                torch::headeronly::ScalarType::Float
+            );
+
+            // Convert stable::Tensor to at::Tensor for return
+            // The stable::Tensor wraps an AtenTensorHandle, we need to extract the underlying tensor
+            AtenTensorHandle handle = stable_tensor.get();
+            return *reinterpret_cast<at::Tensor*>(handle);
+        }
+
+        // Test using the standard torch::from_blob as reference
+        at::Tensor test_reference_from_blob() {
+            // Use the same data buffer
+            static std::vector<float> data = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
+
+            // Create tensor using standard API
+            auto options = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU);
+            at::Tensor ref_tensor = torch::from_blob(
+                data.data(),
+                {2, 3},
+                {3, 1},
+                options
+            );
+
+            return ref_tensor;
+        }
+
+        // Test with non-contiguous strides
+        at::Tensor test_stable_from_blob_strided() {
+            static std::vector<float> data = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
+
+            // Create a non-contiguous view: shape [2, 2] with stride [3, 1]
+            // This will select elements at indices [0,1] and [3,4]
+            torch::stable::Tensor stable_tensor = torch::stable::from_blob(
+                data.data(),
+                {2, 2},
+                {3, 1},
+                torch::stable::Device(torch::headeronly::DeviceType::CPU, 0),
+                torch::headeronly::ScalarType::Float
+            );
+
+            AtenTensorHandle handle = stable_tensor.get();
+            return *reinterpret_cast<at::Tensor*>(handle);
+        }
+
+        at::Tensor test_reference_from_blob_strided() {
+            static std::vector<float> data = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
+
+            auto options = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU);
+            at::Tensor ref_tensor = torch::from_blob(
+                data.data(),
+                {2, 2},
+                {3, 1},
+                options
+            );
+
+            return ref_tensor;
+        }
+
+        // Test with storage offset
+        at::Tensor test_stable_from_blob_offset() {
+            static std::vector<float> data = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
+
+            // Create tensor starting from offset 2 (third element)
+            torch::stable::Tensor stable_tensor = torch::stable::from_blob(
+                data.data(),
+                {2, 2},
+                {2, 1},
+                torch::stable::Device(torch::headeronly::DeviceType::CPU, 0),
+                torch::headeronly::ScalarType::Float,
+                2  // storage_offset - start from data[2]
+            );
+
+            AtenTensorHandle handle = stable_tensor.get();
+            return *reinterpret_cast<at::Tensor*>(handle);
+        }
+
+        at::Tensor test_reference_from_blob_offset() {
+            static std::vector<float> data = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
+
+            auto options = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU);
+            // Note: torch::from_blob doesn't support storage_offset directly,
+            // so we create from blob and then apply offset
+            at::Tensor ref_tensor = torch::from_blob(
+                data.data() + 2,  // pointer offset instead
+                {2, 2},
+                {2, 1},
+                options
+            );
+
+            return ref_tensor;
+        }
         """
 
         module = torch.utils.cpp_extension.load_inline(
@@ -877,6 +996,7 @@ with tempfile.TemporaryDirectory() as build_directory:
         stable_offset = module.test_stable_from_blob_offset()
         reference_offset = module.test_reference_from_blob_offset()
         self.assertEqual(stable_offset, reference_offset)
+
 
     @unittest.skipIf(
         not IS_LINUX or not check_compiler_is_gcc(get_cxx_compiler()),

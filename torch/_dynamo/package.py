@@ -16,6 +16,7 @@ import functools
 import hashlib
 import importlib
 import inspect
+import itertools
 import io
 import json
 import logging

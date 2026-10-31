@@ -39,7 +39,7 @@ from torch.testing._internal.common_utils import (
 )
 from torch.testing._internal.common_device_type import (
     expectedFailureMeta, instantiate_device_type_tests, deviceCountAtLeast,
-    largeTensorTest, precisionOverride, dtypes, skipCPUIf, skipCUDAIf, skipXPU, dtypesIfCUDA,
+    largeTensorTest, precisionOverride, dtypes, skipCPUIf, dtypesIfCUDA,
     dtypesIfCPU, dtypesIfXPU, skipMeta, onlyAccelerator, expectedFailureXLA, onlyCPU
 )
 from torch.testing._internal.common_dtype import (
@@ -49,7 +49,7 @@ from torch.testing._internal.common_dtype import (
 )
 
 from torch.utils.dlpack import to_dlpack
-from torch.testing._internal.common_device_type import onlyCPU, onlyNativeDeviceTypes
+from torch.testing._internal.common_device_type import onlyNativeDeviceTypes
 
 # TODO: replace with make_tensor
 def _generate_input(shape, dtype, device, with_extremal):

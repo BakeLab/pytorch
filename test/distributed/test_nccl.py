@@ -645,7 +645,6 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
         not (TEST_WITH_ROCM and nccl.version() >= (2, 30, 7)),
         "ROCm RCCL 2.30.7+ capture-allocation kill-switch test",
     )
-    @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
     @skip_if_lt_x_gpu(2)
     def test_nccl_symmem_capture_allocation_kill_switch(self):
         symm_mem.set_backend("NCCL")

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import functools
 import json
-import math
 import operator
 from typing import Any, TYPE_CHECKING
 

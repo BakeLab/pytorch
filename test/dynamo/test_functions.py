@@ -832,7 +832,7 @@ partial_fn = functools.partial(fn, scale=2)
         @make_test
         def test_itertools_batched(a):
             batches = []
-            for size in itertools.batched((1, 2, 3, 4, 5), 2):
+            for size in itertools.batched((1, 2, 3, 4, 5), 2, strict=False):
                 batches.append(torch.ones(size))
             return batches
 
