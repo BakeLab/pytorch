@@ -1,3 +1,4 @@
+#include <ATen/DeviceAccelerator.h>
 #include <ATen/record_function.h>
 #include <c10/core/DispatchKey.h>
 #include <c10/core/GradMode.h>
