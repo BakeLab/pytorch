@@ -269,18 +269,6 @@ def main() -> None:
             LINUX_BINARY_BUILD_WORFKLOWS,
         ),
         (
-            jinja_env.get_template("linux_binary_build_workflow.yml.j2"),
-            AARCH64_BINARY_BUILD_WORKFLOWS,
-        ),
-        (
-            jinja_env.get_template("linux_binary_build_workflow.yml.j2"),
-            S390X_BINARY_BUILD_WORKFLOWS,
-        ),
-        (
-            jinja_env.get_template("windows_binary_build_workflow.yml.j2"),
-            WINDOWS_BINARY_BUILD_WORKFLOWS,
-        ),
-        (
             jinja_env.get_template("macos_binary_build_workflow.yml.j2"),
             MACOS_BINARY_BUILD_WORKFLOWS,
         ),

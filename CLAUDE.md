@@ -62,7 +62,7 @@ directory so you don't force a rebuild against the broken state.
 
 - Build Python wheels only for CUDA, ROCm/gfx1201, XPU/BMG, and macOS
   arm64/MPS. Do not add Linux CPU-only or Windows release jobs.
-- Support CPython 3.14 and 3.15. Do not add free-threaded Python ABIs unless
+- Support CPython 3.15 and newer. Do not add free-threaded Python ABIs unless
   explicitly requested.
 - Keep the distribution name `torch`. Distinguish builds with a PEP 440 local
   version containing the backend, runtime or card variant, and the eight-digit

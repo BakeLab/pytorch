@@ -316,7 +316,7 @@ dev = [
 name = "torch"
 description = "Tensors and Dynamic neural networks in Python with strong GPU acceleration"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.15"
 # License info:
 #   - The main Pytorch project license is BSD-3-Clause.
 #   - Explicit license-files list; audit in test/test_license.py (issue #183434).
@@ -344,7 +344,6 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Programming Language :: C++",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3.15",
 ]
 dynamic = ["version", "dependencies"]
@@ -475,7 +474,7 @@ ignore = [
     "SIM117",
     "SIM300", # Yoda condition detected
     "TC006",
-    # Rules that only fire because requires-python is 3.14. PEP 649 defers
+    # Rules that only fire because requires-python is 3.15. PEP 649 defers
     # annotation evaluation, which makes quoted annotations redundant (UP037)
     # and makes it safe to push typing-only imports under TYPE_CHECKING
     # (TC001-TC003); the rest ask for syntax introduced after 3.10. Taking any

@@ -52,10 +52,7 @@ CUDA_ARCHES_CUDNN_VERSION = {
 ROCM_ARCHES = ["10.0", "10.1"]
 
 XPU_ARCHES = ["xpu"]
-RELEASE_PYTHON_VERSIONS = [
-    "3.14",
-    "3.15",
-]
+RELEASE_PYTHON_VERSIONS = ["3.15"]
 
 CPU_AARCH64_ARCH = ["cpu-aarch64"]
 
@@ -326,15 +323,7 @@ WHEEL_CONTAINER_IMAGES = {
 RELEASE = "release"
 DEBUG = "debug"
 
-FULL_PYTHON_VERSIONS = [
-    "3.11",
-    "3.12",
-    "3.13",
-    "3.14",
-    "3.14t",
-    "3.15",
-    "3.15t",
-]
+FULL_PYTHON_VERSIONS = RELEASE_PYTHON_VERSIONS.copy()
 
 
 def translate_desired_cuda(gpu_arch_type: str, gpu_arch_version: str) -> str:
@@ -477,7 +466,7 @@ def generate_wheels_matrix(
             # to install CUDA runtime libraries from PyPI.
 
             if (
-                arch_version in ["13.4"]
+                arch_version in CUDA_ARCHES
                 and os == "linux"
                 or arch_version in CUDA_AARCH64_ARCHES
             ):

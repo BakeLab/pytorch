@@ -51,7 +51,7 @@ jobs:
               export OpenBLAS_HOME=/opt/gcc16
               export LD_LIBRARY_PATH="/opt/gcc16/lib:${LD_LIBRARY_PATH:-}"
               "$CXX" --version > /workspace/cuda-ci-results/compiler.txt
-              /opt/python/cp314-cp314/bin/python -m venv /opt/venv
+              /opt/python/cp315-cp315/bin/python -m venv /opt/venv
               export PATH="/opt/venv/bin:$PATH"
               python -m pip install -r requirements.txt pytest scipy pillow unittest-xml-reporting "cuda-bindings>=13,<14"
               CMAKE_ARGS="-DTORCH_X86_BASELINE=x86-64-v3" \
