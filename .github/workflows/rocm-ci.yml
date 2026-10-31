@@ -1,0 +1,67 @@
+name: Trim ROCm CI
+
+on:
+  push:
+    branches: [trim]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trim-rocm-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rocm:
+    if: github.repository == 'BakeLab/pytorch' && github.server_url != 'https://github.com'
+    runs-on: [self-hosted, linux, x64, bb, rocm]
+    timeout-minutes: 360
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.sha }}
+          path: pytorch
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Build PyTorch and smoke test the R9700
+        run: |
+          set -euo pipefail
+          mkdir -p rocm-ci-results
+          git -C pytorch rev-parse HEAD > rocm-ci-results/pytorch.sha
+          image=pytorch/manylinux2_28-builder:rocm7.2@sha256:b55e6d76d5e60040d270ef2d5012cb2eb0ce94a88c8ca74cc53de4c341abfc15
+          printf '%s\n' "$image" > rocm-ci-results/build-image.txt
+          docker run --name "pytorch-rocm-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --device=/dev/kfd --device=/dev/dri --ipc=host --shm-size=8g \
+            --volume "$GITHUB_WORKSPACE:/workspace" --workdir /workspace/pytorch \
+            --env MAX_JOBS=12 --env USE_ROCM=1 --env PYTORCH_ROCM_ARCH=gfx1201 \
+            "$image" bash -euc '
+              rocminfo | grep -q "gfx1201"
+              /opt/python/cp315-cp315/bin/python -m venv /opt/venv
+              export PATH="/opt/venv/bin:$PATH"
+              python -m pip install -r requirements.txt pytest scipy pillow unittest-xml-reporting
+              CMAKE_ARGS="-DTORCH_X86_BASELINE=x86-64-v3" \
+                python -m pip install -e . -v --no-build-isolation --no-deps
+              test "$(python -c "import torch; print(torch.version.git_version)")" = "$(git rev-parse HEAD)"
+              python -c "import torch; assert torch.version.hip; assert torch.cuda.is_available(); print(torch.cuda.get_device_name(0))"
+              python -c "import torch; x=torch.randn((1024,1024), device=\"cuda\"); y=x @ x; torch.cuda.synchronize(); assert y.isfinite().all().item()"
+            '
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: trim-rocm-${{ github.sha }}
+          path: rocm-ci-results/
+          if-no-files-found: warn
+
+      - name: Stop the build container
+        if: always()
+        run: |
+          container="pytorch-rocm-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          if docker container inspect "$container" > /dev/null 2>&1; then
+            docker rm -f "$container"
+          fi
