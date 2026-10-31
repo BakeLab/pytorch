@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 5032f6e..a0ac9d5 100644
+index 7c339a4..23d5bd5 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -22,7 +22,7 @@ add_compile_definitions(
@@ -56,9 +56,9 @@ index 5032f6e..a0ac9d5 100644
 -endif()
 +set(DEBUG_HOST_FLAGS "-O0 -g -ggdb3" CACHE STRING "Host CXX flags applied when DEBUG=ON (overrides default)")
  set(DEBUG_DEVICE_FLAGS "-O0 -g -lineinfo" CACHE STRING "Device (NVCC) flags applied when DEBUG=ON (overrides default)")
-
- find_package(CUDAToolkit REQUIRED)
-@@ -120,16 +106,10 @@ add_compile_definitions(
+ set(TLS_BACKEND "$ENV{TLS_BACKEND}" CACHE STRING "TLS backend (empty or OPENSSL3)")
+ set_property(CACHE TLS_BACKEND PROPERTY STRINGS "" OPENSSL3)
+@@ -122,16 +108,10 @@ add_compile_definitions(
      CUDA_MINOR=${CUDA_MINOR}
  )
 
@@ -79,14 +79,14 @@ index 5032f6e..a0ac9d5 100644
 
  set(CMAKE_CXX_STANDARD_REQUIRED ON)
  set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-@@ -165,44 +145,25 @@ if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES OR CMAKE_CUDA_ARCHITECTURES STREQUAL "")
+@@ -171,47 +151,25 @@ if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES OR CMAKE_CUDA_ARCHITECTURES STREQUAL "")
  endif()
  message(STATUS "Using CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES}")
 
 -# Compiler-specific flags
 -if(NCCL_COMPILER_GCC)
 -    # GCC/Clang-specific flags
--    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -fvisibility=hidden -Wall -Wno-unused-function -Wno-sign-compare -Wvla -g")
+-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -fvisibility=hidden -Wall -Wextra -Wno-missing-field-initializers -Wno-unused-parameter -Wno-unused-function -Wno-sign-compare -Wvla -g")
 -    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda -Xptxas -maxrregcount=96 -Xfatbin -compress-all -fPIC")
 -elseif(NCCL_COMPILER_MSVC)
 -    # MSVC-specific flags
@@ -97,11 +97,14 @@ index 5032f6e..a0ac9d5 100644
 -    # /wd4805 disables "unsafe mix of type 'bool' and type 'int'" - intentional bool/int mixing for flags
 -    # /wd4018 disables "signed/unsigned mismatch" - safe comparisons where signed value is always positive
 -    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /wd4267 /wd4244 /wd4996 /wd4146 /wd4197 /wd5105 /wd4805 /wd4018 /FS /Zc:preprocessor")
+-    # CUDA's static runtime links LIBCMT in all configurations, so use /MT consistently
+-    # for C++, CUDA, and test targets to avoid mixing incompatible CRT libraries.
+-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
 -    # --compress-mode=balance is not supported by ptxas in CUDA 13.1 on Windows; omit for compatibility.
 -    # -Xcompiler /Zc:preprocessor passes the conformant preprocessor flag to cl.exe when invoked by nvcc
 -    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda --compress-mode=balance --ptxas-options=-maxrregcount=96 -Xcompiler /Zc:preprocessor")
 -endif()
-+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -fvisibility=hidden -Wall -Wno-unused-function -Wno-sign-compare -Wvla -g")
++set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -fvisibility=hidden -Wall -Wextra -Wno-missing-field-initializers -Wno-unused-parameter -Wno-unused-function -Wno-sign-compare -Wvla -g")
 +set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda -Xptxas -maxrregcount=96 -Xfatbin -compress-all -fPIC")
 
 -# Sanitizer options (GCC/Clang only)
@@ -139,7 +142,7 @@ index 5032f6e..a0ac9d5 100644
  endif()
 
  # Additional options
-@@ -215,11 +176,7 @@ if(NOT NVTX)
+@@ -224,12 +182,8 @@ if(NOT NVTX)
  endif()
 
  if(WERROR)
@@ -147,12 +150,14 @@ index 5032f6e..a0ac9d5 100644
 -        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
 -    else()
 -        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Werror=all-warnings -Xcompiler -Werror")
 -    endif()
 +    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
++    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Werror=all-warnings -Xcompiler -Werror")
  endif()
 
  if(PROFAPI)
-@@ -253,15 +210,9 @@ if(MAX_EXT_NET_PLUGINS GREATER 0)
+@@ -272,15 +226,9 @@ if(MAX_EXT_NET_PLUGINS GREATER 0)
      add_definitions(-DNCCL_NET_MAX_PLUGINS=${MAX_EXT_NET_PLUGINS})
  endif()
 
@@ -171,7 +176,7 @@ index 5032f6e..a0ac9d5 100644
 
  # Library dependencies
  find_library(RT_LIBRARY NAMES rt)
-@@ -270,23 +221,11 @@ if(RT_LIBRARY)
+@@ -289,23 +237,11 @@ if(RT_LIBRARY)
  endif()
 
  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} ${DEBUG_HOST_FLAGS}")
@@ -198,10 +203,10 @@ index 5032f6e..a0ac9d5 100644
  add_subdirectory(src)
 
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index c87ec01..6c700e6 100644
+index c611d40..55d4a3f 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
-@@ -92,26 +92,16 @@ list(APPEND LIBSRCFILES
+@@ -93,29 +93,16 @@ list(APPEND LIBSRCFILES
      ${TUNING_SOURCES}
  )
 
@@ -215,6 +220,9 @@ index c87ec01..6c700e6 100644
 
  ###################### Create a shared NCCL library ############################
  add_library(nccl SHARED)
+-if(NCCL_OS_WINDOWS)
+-    target_compile_definitions(nccl PRIVATE NCCL_BUILD_SHARED_LIB)
+-endif()
 
  target_sources(nccl PRIVATE ${LIBSRCFILES})
 -if(NCCL_OS_WINDOWS)
@@ -232,8 +240,8 @@ index c87ec01..6c700e6 100644
  set(NCCL_PRIVATE_INCLUDES
      ${CMAKE_CURRENT_SOURCE_DIR}
      ${CMAKE_CURRENT_SOURCE_DIR}/device
-@@ -121,7 +111,7 @@ set(NCCL_PRIVATE_INCLUDES
-     ${CUDAToolkit_INCLUDE_DIRS}/cccl
+@@ -126,7 +113,7 @@ set(NCCL_PRIVATE_INCLUDES
+     ${NCCL_TLS_INCLUDE_DIRS}
      ${CMAKE_BINARY_DIR}/obj/include
  )
 -if(NOT NCCL_OS_WINDOWS AND DOCA_HOME)
@@ -241,7 +249,7 @@ index c87ec01..6c700e6 100644
      list(APPEND NCCL_PRIVATE_INCLUDES ${DOCA_HOME}/include)
  endif()
  target_include_directories(nccl
-@@ -140,12 +130,6 @@ add_custom_command(
+@@ -145,12 +132,6 @@ add_custom_command(
  )
 
  file(GLOB_RECURSE SRC_DEVICE_HEADERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/include/nccl_device/*.h)
@@ -254,7 +262,7 @@ index c87ec01..6c700e6 100644
 
  # Copy all device header files to the destination
  # Note: The only public headers are nccl.h and nccl_device.h (and, by extension, nccl_device/*).
-@@ -155,43 +139,29 @@ foreach(HEADER_FILE ${SRC_DEVICE_HEADERS})
+@@ -160,43 +141,29 @@ foreach(HEADER_FILE ${SRC_DEVICE_HEADERS})
      list(APPEND DEVICE_HEADERS ${CMAKE_BINARY_DIR}/${HEADER_FILE})
  endforeach()
 
@@ -302,21 +310,15 @@ index c87ec01..6c700e6 100644
 
  #
  # Generate nccl_git_version.h
-@@ -242,13 +212,7 @@ set_target_properties(nccl PROPERTIES
-     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+@@ -250,7 +217,6 @@ set_target_properties(nccl PROPERTIES
  )
 
--# On Windows, export all symbols to generate import library (nccl.lib) for DLL linking
--if(NCCL_OS_WINDOWS)
--    set_target_properties(nccl PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
--endif()
--
  ###################### Create a ras binary executable ############################
 -if(NOT NCCL_OS_WINDOWS)
  set(RAS_BINSRCFILES ras/client.cc ras/ras_param.cc)
 
  add_executable(ncclras ${RAS_BINSRCFILES})
-@@ -276,10 +240,8 @@ target_link_libraries(ncclras
+@@ -278,10 +244,8 @@ target_link_libraries(ncclras
  set_target_properties(ncclras PROPERTIES
      RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
  )
@@ -327,7 +329,7 @@ index c87ec01..6c700e6 100644
  add_executable(ncclparam param/ncclparam.cc)
 
  target_include_directories(ncclparam
-@@ -303,18 +265,11 @@ target_link_libraries(ncclparam
+@@ -305,18 +269,11 @@ target_link_libraries(ncclparam
  set_target_properties(ncclparam PROPERTIES
      RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
  )
@@ -348,7 +350,7 @@ index c87ec01..6c700e6 100644
 
  # Include directories
  target_include_directories(nccl_static
-@@ -373,20 +328,10 @@ install(TARGETS nccl nccl_static
+@@ -376,20 +333,10 @@ install(TARGETS nccl nccl_static
    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
  )
@@ -449,7 +451,7 @@ index a582458..7671890 100644
  # Export-safe includes: only INSTALL_INTERFACE in PUBLIC; build paths in PRIVATE so export does not see source/build dirs.
  target_include_directories(nccl_device PUBLIC
 diff --git a/src/device/reduce_kernel.h b/src/device/reduce_kernel.h
-index 7f21d53..bc72551 100644
+index 8497714..6161972 100644
 --- a/src/device/reduce_kernel.h
 +++ b/src/device/reduce_kernel.h
 @@ -282,13 +282,13 @@ struct Apply_Cast<float, __nv_bfloat16, /*EltPerPack=*/2> {
