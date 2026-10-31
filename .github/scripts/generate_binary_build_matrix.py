@@ -30,10 +30,7 @@ CUDA_STABLE = "13.3"
 ROCM_ARCHES = ["10.0"]
 
 XPU_ARCHES = ["xpu"]
-RELEASE_PYTHON_VERSIONS = [
-    "3.14",
-    "3.15",
-]
+RELEASE_PYTHON_VERSIONS = ["3.15"]
 
 PYTORCH_EXTRA_INSTALL_REQUIREMENTS = {
     "13.3": (
@@ -176,15 +173,7 @@ WHEEL_CONTAINER_IMAGES = {
 RELEASE = "release"
 DEBUG = "debug"
 
-FULL_PYTHON_VERSIONS = [
-    "3.11",
-    "3.12",
-    "3.13",
-    "3.14",
-    "3.14t",
-    "3.15",
-    "3.15t",
-]
+FULL_PYTHON_VERSIONS = RELEASE_PYTHON_VERSIONS.copy()
 
 
 def translate_desired_cuda(gpu_arch_type: str, gpu_arch_version: str) -> str:

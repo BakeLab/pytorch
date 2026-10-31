@@ -13,7 +13,7 @@ It uses a digest-pinned CUDA 13.4 manylinux builder and installs GCC/G++ 16.2.0
 from conda-forge with the glibc 2.28 sysroot. `CC`, `CXX` and `CUDAHOSTCXX`
 select this compiler for both C++ and CUDA host code. OpenBLAS is installed
 in the same environment and located through `OpenBLAS_HOME`. It builds an editable
-Python 3.14 installation, verifies its source SHA and GPU availability, then
+Python 3.15 installation, verifies its source SHA and GPU availability, then
 runs `test/test_cuda.py`. The SHA, image name, compiler version and XML reports
 are uploaded.
 
@@ -33,10 +33,10 @@ utilities, so it remains part of libtorch testing.
 
 | Platform | Backend | Variant | Python |
 |---|---|---|---|
-| Linux x86-64-v3 | CUDA | sm120 and CUDA runtime version | 3.14, 3.15 |
-| Linux x86-64-v3 | ROCm | gfx1201 and ROCm runtime version | 3.14, 3.15 |
-| Linux x86-64-v3 | XPU | Intel BMG | 3.14, 3.15 |
-| macOS arm64 | MPS | Apple Silicon | 3.14, 3.15 |
+| Linux x86-64-v3 | CUDA | sm120 and CUDA runtime version | 3.15 |
+| Linux x86-64-v3 | ROCm | gfx1201 and ROCm runtime version | 3.15 |
+| Linux x86-64-v3 | XPU | Intel BMG | 3.15 |
+| macOS arm64 | MPS | Apple Silicon | 3.15 |
 
 Linux CPU-only wheels, Windows wheels, libtorch archives, and free-threaded
 Python ABIs are not release targets.
