@@ -11,7 +11,8 @@ files directly.
 to `trim` or manual dispatch, using `[self-hosted, linux, x64, bb, cuda]`.
 It uses a digest-pinned CUDA 13.4 manylinux builder and installs GCC/G++ 16.2.0
 from conda-forge with the glibc 2.28 sysroot. `CC`, `CXX` and `CUDAHOSTCXX`
-select this compiler for both C++ and CUDA host code. It builds an editable
+select this compiler for both C++ and CUDA host code. OpenBLAS is installed
+in the same environment and located through `OpenBLAS_HOME`. It builds an editable
 Python 3.14 installation, verifies its source SHA and GPU availability, then
 runs `test/test_cuda.py`. The SHA, image name, compiler version and XML reports
 are uploaded.
