@@ -598,14 +598,6 @@ target_include_directories(torch::nvtx3 INTERFACE "${nvtx3_dir}")
 
 # ---[ HIP
 if(USE_ROCM)
-  set(PYTORCH_HIP_LIBSTDCXX_COMPAT_FLAGS
-    -D__cpp_lib_constexpr_new=0
-    -D__cpp_lib_print=0
-    -D__cpp_lib_format_path=0)
-  string(JOIN " " _pytorch_hip_libstdcxx_compat_flags
-    ${PYTORCH_HIP_LIBSTDCXX_COMPAT_FLAGS})
-  string(APPEND CMAKE_HIP_FLAGS " ${_pytorch_hip_libstdcxx_compat_flags}")
-
   include(${CMAKE_CURRENT_LIST_DIR}/public/LoadHIP.cmake)
   if(PYTORCH_FOUND_HIP)
     message(INFO "Compiling with HIP for AMD.")
