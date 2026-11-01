@@ -134,6 +134,15 @@ if(CMAKE_LINKER_TYPE AND NOT DEFINED CMAKE_HIP_USING_LINKER_${CMAKE_LINKER_TYPE}
   endif()
 endif()
 
+# Apply this before HIP compiler probes, including downstream Torch consumers.
+set(PYTORCH_HIP_LIBSTDCXX_COMPAT_FLAGS
+  -D__cpp_lib_constexpr_new=0
+  -D__cpp_lib_print=0
+  -D__cpp_lib_format_path=0)
+string(JOIN " " _pytorch_hip_libstdcxx_compat_flags
+  ${PYTORCH_HIP_LIBSTDCXX_COMPAT_FLAGS})
+string(APPEND CMAKE_HIP_FLAGS " ${_pytorch_hip_libstdcxx_compat_flags}")
+
 enable_language(HIP)
 if("X${CMAKE_HIP_STANDARD}" STREQUAL "X")
   set(CMAKE_HIP_STANDARD ${CMAKE_CXX_STANDARD})
