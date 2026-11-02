@@ -41,6 +41,14 @@ jobs:
             --env MAX_JOBS=12 --env USE_ROCM=1 --env PYTORCH_ROCM_ARCH=gfx1201 \
             "$image" bash -euc '
               rocminfo | grep -q "gfx1201"
+              /opt/conda/bin/conda create --yes --prefix /opt/gcc16 \
+                --override-channels --channel conda-forge \
+                gcc_linux-64=16.2.0 gxx_linux-64=16.2.0 sysroot_linux-64=2.28 openblas
+              export CC=/opt/gcc16/bin/x86_64-conda-linux-gnu-gcc
+              export CXX=/opt/gcc16/bin/x86_64-conda-linux-gnu-g++
+              export OpenBLAS_HOME=/opt/gcc16
+              export LD_LIBRARY_PATH="/opt/gcc16/lib:${LD_LIBRARY_PATH:-}"
+              "$CXX" --version > /workspace/rocm-ci-results/compiler.txt
               /opt/python/cp315-cp315/bin/python -m venv /opt/venv
               export PATH="/opt/venv/bin:$PATH"
               python -m pip install -r requirements.txt pytest scipy pillow unittest-xml-reporting
