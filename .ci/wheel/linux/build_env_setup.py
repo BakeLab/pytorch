@@ -75,7 +75,6 @@ CUDA_BUILD_ENV_DEFAULTS: dict[str, str] = {
 TORCH_CUDA_ARCH_LIST_TABLE: dict[str, dict[str, set[int]]] = {
     "13.3": {
         "x86_64": {120},
-        "aarch64": {80, 90, 100, 110, 120},
     },
 }
 
