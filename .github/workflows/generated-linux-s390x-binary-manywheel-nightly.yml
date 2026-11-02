@@ -40,7 +40,7 @@ concurrency:
 
 jobs:
   get-label-type:
-    if: github.repository_owner == 'pytorch'
+    if: github.repository == vars.BINARY_RELEASE_REPOSITORY
     name: get-label-type
     uses: pytorch/pytorch/.github/workflows/_runner-determinator.yml@main
     with:
@@ -52,7 +52,7 @@ jobs:
 
   manywheel-build:
     name: ${{ matrix.build_name }}-build
-    if: ${{ github.repository_owner == 'pytorch' }}
+    if: ${{ github.repository == vars.BINARY_RELEASE_REPOSITORY }}
     uses: ./.github/workflows/_binary-build-linux.yml
     needs: get-label-type
     strategy:
@@ -127,7 +127,7 @@ jobs:
 
   manywheel-test:
     name: ${{ matrix.build_name }}-test
-    if: ${{ github.repository_owner == 'pytorch' }}
+    if: ${{ github.repository == vars.BINARY_RELEASE_REPOSITORY }}
     needs: [get-label-type, manywheel-build]
     uses: ./.github/workflows/_binary-test-linux.yml
     strategy:
@@ -195,7 +195,7 @@ jobs:
 
   manywheel-upload:
     name: ${{ matrix.build_name }}-upload
-    if: ${{ github.repository_owner == 'pytorch' }}
+    if: ${{ github.repository == vars.BINARY_RELEASE_REPOSITORY }}
     permissions:
       id-token: write
       contents: read
