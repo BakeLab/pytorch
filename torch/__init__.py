@@ -130,7 +130,6 @@ __all__ = [
     "save",
     "seed",
     "set_default_device",
-    "set_default_tensor_type",
     "set_deterministic_debug_mode",
     "set_float32_matmul_precision",
     "set_printoptions",
@@ -1418,37 +1417,6 @@ def set_default_device(device: "Device") -> None:
         device_context = DeviceContext(device)
         device_context.__enter__()
     _GLOBAL_DEVICE_CONTEXT.device_context = device_context
-
-
-def set_default_tensor_type(t: type["torch.Tensor"] | str, /) -> None:
-    r"""
-    .. warning::
-
-        This function is deprecated as of PyTorch 2.1, please use :func:`torch.set_default_dtype()` and
-        :func:`torch.set_default_device()` as alternatives.
-
-    Sets the default ``torch.Tensor`` type to floating point tensor type
-    ``t``. This type will also be used as default floating point type for
-    type inference in :func:`torch.tensor`.
-
-    The default floating point tensor type is initially ``torch.FloatTensor``.
-
-    Args:
-        t (type or string): the floating point tensor type or its name
-
-    Example::
-
-        >>> # xdoctest: +SKIP("Other tests may have changed the default type. Can we reset it?")
-        >>> torch.tensor([1.2, 3]).dtype    # initial default for floating point is torch.float32
-        torch.float32
-        >>> torch.set_default_tensor_type(torch.DoubleTensor)
-        >>> torch.tensor([1.2, 3]).dtype    # a new floating point tensor
-        torch.float64
-
-    """
-    if isinstance(t, str):
-        t = _import_dotted_name(t)
-    _C._set_default_tensor_type(t)
 
 
 def set_default_dtype(d: "torch.dtype", /) -> None:
@@ -3018,13 +2986,6 @@ class _TritonLibrary:
         return cls.ops_table[(op_key, dispatch_key)]
 
 
-# Deprecated attributes
-_deprecated_attrs = {
-    "has_mps": torch.backends.mps.is_built,
-    "has_cuda": torch.backends.cuda.is_built,
-    "has_cudnn": torch.backends.cudnn.is_available,
-}
-
 if TYPE_CHECKING:
     # Import the following modules during type checking to enable code intelligence features,
     # such as auto-completion in tools like pylance, even when these modules are not explicitly
@@ -3043,17 +3004,6 @@ else:
     }
 
     def __getattr__(name: str) -> _Any:
-        # Deprecated attrs
-        replacement = _deprecated_attrs.get(name)
-        if replacement is not None:
-            import warnings
-
-            warnings.warn(
-                f"'{name}' is deprecated, please use '{replacement.__module__}.{replacement.__name__}()'",
-                stacklevel=2,
-            )
-            return replacement()
-
         # Lazy modules
         if name in _lazy_modules:
             return importlib.import_module(f".{name}", __name__)
