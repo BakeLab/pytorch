@@ -6244,7 +6244,7 @@ def is_pybind11_enum_member(value: object) -> bool:
 
 def _make_inlined(
     tx: InstructionTranslatorBase,
-    f: types.FunctionType | torch.jit.ScriptFunction,  # type: ignore[type-arg]
+    f: types.FunctionType | torch._C.ScriptFunction,  # type: ignore[type-arg]
 ) -> Callable[..., VariableTracker]:
     if not callable(f):
         raise AssertionError("Expect f to be a python callable.")

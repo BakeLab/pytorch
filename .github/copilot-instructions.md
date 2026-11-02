@@ -117,7 +117,7 @@ git stash pop
 
 - `AGENTS.md` - Instructions specific to AI coding agents
 - `CONTRIBUTING.md` - Comprehensive human contributor guide
-- `GLOSSARY.md` - Terminology (ATen, kernels, operations, JIT, TorchScript)
+- `GLOSSARY.md` - Terminology (ATen, kernels, operations, JIT)
 - `aten/src/ATen/native/README.md` - Operator implementation guide
 - `tools/autograd/derivatives.yaml` - Gradient definitions for autograd
 

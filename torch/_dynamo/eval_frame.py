@@ -1900,8 +1900,8 @@ def _optimize(
             - Either, a function/callable taking a torch.fx.GraphModule and
             example_inputs and returning a python callable that runs the
             graph faster.
-            One can also provide additional context for the backend, like
-            torch.jit.fuser("fuser2"), by setting the backend_ctx_ctor attribute.
+            One can also provide additional context for the backend by setting
+            the backend_ctx_ctor attribute.
             Backends can also define a ``_dynamo_backend_init`` no-arg callable
             for eager initialization; it fires every time the backend is
             resolved, before any invocation. See the "Eager Backend

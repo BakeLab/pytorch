@@ -2373,7 +2373,6 @@ from torch import (  # usort: skip
     fft as fft,
     foreach as foreach,
     futures as futures,
-    jit as jit,
     linalg as linalg,
     multiprocessing as multiprocessing,
     nested as nested,

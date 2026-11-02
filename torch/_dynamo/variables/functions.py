@@ -3154,9 +3154,8 @@ class WrappedSkipFunctionVariable(
 class WrapperUserFunctionVariable(BaseUserFunctionVariable):
     """
     Used to represent a wrapper object that contains the actual callable as an
-    attribute. For example, torch.jit.script/trace have the original function at
-    their _torchdynamo_inline attribute. Similarly, functions with
-    __script_if_tracing_wrapper have the original attr at "__original_fn".
+    attribute. Compiler wrappers expose the original function through their
+    _torchdynamo_inline attribute.
     """
 
     _cpython_type = types.FunctionType
