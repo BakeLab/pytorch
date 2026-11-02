@@ -887,20 +887,6 @@ class Tensor(torch._C.TensorBase):
         else:
             return self.flip(0)
 
-    def norm(
-        self,
-        p: float | str | None = "fro",
-        dim=None,
-        keepdim=False,
-        dtype=None,
-    ):
-        r"""See :func:`torch.linalg.norm`"""
-        if has_torch_function_unary(self):
-            return handle_torch_function(
-                Tensor.norm, (self,), self, p=p, dim=dim, keepdim=keepdim, dtype=dtype
-            )
-        return torch.norm(self, p, dim, keepdim, dtype=dtype)
-
     def stft(
         self,
         n_fft: int,
