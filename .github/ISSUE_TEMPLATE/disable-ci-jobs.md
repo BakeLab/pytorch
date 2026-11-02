@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-> For example, DISABLED pull / win-vs2022-cpu-py3 / test (default). Once
+> For example, DISABLED pull / linux-jammy-py3.11-clang21 / test (default). Once
 > created, the job will be disabled within 15 minutes. You can check the
 > list of disabled jobs at https://ossci-metrics.s3.amazonaws.com/disabled-jobs.json
 
