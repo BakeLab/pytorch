@@ -1044,11 +1044,6 @@ class TestFX(TestCase):
         #    native callable rather than the original code
         # 3) Run both the original code and native callable wrapper with
         #    equivalent results
-        # 4) TorchScript compile the native callable wrapper and confirm
-        #    equivalent results with the reference
-        # 5) TorchScript serialize and deserialize the native callable
-        #    and confirm equivalent results with the reference
-
         # We use this simple Module as a reference computation
         class MySimpleMod(torch.nn.Module):
             def forward(self, x):
@@ -1802,9 +1797,7 @@ class TestFX(TestCase):
             for key in keys:
                 _wrapped_fns_to_patch.pop(key, None)
 
-    def test_lazy_import_body_scripts_a_function_calling_a_wrapped_helper(self):
-        # TorchScript compiling FX's wrapper for ``scaled`` resolves ``Scale`` in
-        # torch/fx/_symbolic_trace.py's globals and fails with "Unknown type name".
+    def test_lazy_import_body_calls_a_wrapped_helper(self):
         from fx import lazy_wrap_helper
 
         resolved = []
@@ -1812,7 +1805,7 @@ class TestFX(TestCase):
         def resolve(d):
             double = lazy_wrap_helper.double
             fn = types.FunctionType(double.__code__, double.__globals__)
-            resolved.append(torch.jit.script(fn)(torch.ones(1)).item())
+            resolved.append(fn(torch.ones(1)).item())
             return 1
 
         def child_forward(self, x):
@@ -1842,17 +1835,16 @@ class TestFX(TestCase):
 
     @unittest.skipIf(not hasattr(importlib, "is_lazy_import"), "needs a lazy-import runtime")
     def test_symbolic_trace_on_a_real_lazy_import_runtime(self):
-        # Same scenario as test_lazy_import_body_scripts_a_function_calling_a_wrapped_helper
+        # Same scenario as test_lazy_import_body_calls_a_wrapped_helper
         # with real lazy imports: lazy_body resolves from the root forward's globals,
         # lazy_body2 from the globals of a child forward defined in another file.
-        # Each body scripts a fresh function so torch.jit.script's per-function
-        # cache cannot reuse lazy_body's compilation for lazy_body2.
+        # Each body creates a function from its lazily imported globals.
         # No CI runner has a PEP 690 interpreter, so this is skipped in CI and
         # kept for manual runs on one.
         from fx import lazy_wrap_helper
 
         helper_src = inspect.getsource(lazy_wrap_helper)
-        body_src = "import torch, types\nimport lazy_wrap_helper\nd = lazy_wrap_helper.double\nSCALE = torch.jit.script(types.FunctionType(d.__code__, d.__globals__))(torch.ones(1)).item()\n"
+        body_src = "import torch, types\nimport lazy_wrap_helper\nd = lazy_wrap_helper.double\nSCALE = types.FunctionType(d.__code__, d.__globals__)(torch.ones(1)).item()\n"
         files = {
             "lazy_wrap_helper.py": helper_src,
             "lazy_body.py": body_src,

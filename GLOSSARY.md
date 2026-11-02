@@ -16,9 +16,6 @@
   - [Compound Kernel](#compound-kernel)
 - [JIT Compilation](#jit-compilation)
   - [JIT](#jit)
-  - [TorchScript](#torchscript)
-  - [Tracing](#tracing)
-  - [Scripting](#scripting)
 
 <!-- tocstop -->
 
@@ -72,14 +69,3 @@ Opposed to Device Kernels, Compound kernels are usually device-agnostic and belo
 
 ## JIT
 Just-In-Time Compilation.
-
-## TorchScript
-An interface to the TorchScript JIT compiler and interpreter.
-
-## Tracing
-Using `torch.jit.trace` on a function to get an executable that can be optimized
-using just-in-time compilation.
-
-## Scripting
-Using `torch.jit.script` on a function to inspect source code and compile it as
-TorchScript code.
