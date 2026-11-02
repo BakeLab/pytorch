@@ -933,7 +933,7 @@ class VariableBuilder:
 
     @staticmethod
     def create_internal_user_function(
-        value: types.FunctionType | torch.jit.ScriptFunction,  # type: ignore[type-arg]
+        value: types.FunctionType | torch._C.ScriptFunction,  # type: ignore[type-arg]
         source: Source | None = None,
         **options: Any,
     ) -> UserFunctionVariable:
@@ -2056,16 +2056,6 @@ class VariableBuilder:
             elif inspect.isfunction(value):
                 self.install_guards(GuardBuilder.CLOSURE_MATCH)
             return TorchCtxManagerClassVariable(value, source=self.source)
-        elif isinstance(value, types.FunctionType) and value.__dict__.get(
-            "__script_if_tracing_wrapper", False
-        ):
-            self.install_guards(GuardBuilder.TYPE_MATCH)
-            return WrapperUserFunctionVariable(
-                value,
-                "__original_fn",
-                source=self.source,
-                mutation_type=AttributeMutationExisting(),
-            )
         elif is_lru_cache_wrapped_function(value):
             self.install_guards(GuardBuilder.TYPE_MATCH)
             return WrapperUserFunctionVariable(
@@ -5596,7 +5586,7 @@ class SourcelessBuilder:
 
     @staticmethod
     def create_internal_user_function(
-        value: types.FunctionType | torch.jit.ScriptFunction,  # type: ignore[type-arg]
+        value: types.FunctionType | torch._C.ScriptFunction,  # type: ignore[type-arg]
     ) -> UserFunctionVariable:
         """Wrap a caller-selected function without applying trace-rule overrides."""
         return UserFunctionVariable(value)
