@@ -55,8 +55,8 @@ jobs:
     needs: get-label-type
     with:
       runner_prefix: "${{ needs.get-label-type.outputs.label-type }}"
-      build-environment: linux-jammy-cuda12.8-py3.11-gcc11-sm80
-      docker-image-name: ci-image:pytorch-linux-jammy-cuda12.8-cudnn9-py3-gcc11
+      build-environment: linux-jammy-cuda13.4-py3.11-gcc11-sm80
+      docker-image-name: ci-image:pytorch-linux-jammy-cuda13.4-cudnn9-py3-gcc11
       ci-docker-hash: ${{ needs.get-label-type.outputs.ci-docker-hash }}
       cuda-arch-list: '8.0 9.0'
       test-matrix: |
@@ -86,8 +86,8 @@ jobs:
     needs: get-label-type
     with:
       runner_prefix: "mt-"
-      build-environment: linux-jammy-cuda12.8-py3.11-gcc11-sm100
-      docker-image-name: ci-image:pytorch-linux-jammy-cuda12.8-cudnn9-py3-gcc11
+      build-environment: linux-jammy-cuda13.4-py3.11-gcc11-sm100
+      docker-image-name: ci-image:pytorch-linux-jammy-cuda13.4-cudnn9-py3-gcc11
       ci-docker-hash: ${{ needs.get-label-type.outputs.ci-docker-hash }}
       cuda-arch-list: '10.0'
       test-matrix: |
@@ -97,7 +97,7 @@ jobs:
         ]}
       python-version: "3.11"
       compiler: gcc11
-      cuda-version: "12.8"
+      cuda-version: "13.4"
     secrets: inherit
 
   test-b200:
@@ -114,7 +114,7 @@ jobs:
       test-matrix: ${{ needs.build-b200.outputs.test-matrix }}
       python-version: "3.11"
       compiler: gcc11
-      cuda-version: "12.8"
+      cuda-version: "13.4"
     secrets: inherit
 
   # ---- ROCm build for MI300X ----

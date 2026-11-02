@@ -1,4 +1,4 @@
-ARG CUDA_VERSION=12.6
+ARG CUDA_VERSION=13.0
 ARG BASE_TARGET=cuda${CUDA_VERSION}
 ARG BASE_IMAGE=amd64/almalinux:8.10-20250519
 FROM ${BASE_IMAGE} as base
@@ -40,7 +40,7 @@ RUN bash ./install_conda.sh && rm install_conda.sh
 
 # Install CUDA
 FROM base as cuda
-ARG CUDA_VERSION=12.6
+ARG CUDA_VERSION=13.0
 ARG DEVTOOLSET_VERSION=13
 RUN rm -rf /usr/local/cuda-*
 ADD ./common/install_cuda.sh install_cuda.sh
@@ -52,18 +52,6 @@ ENV CUDA_HOME=/usr/local/cuda-${CUDA_VERSION}
 ENV CUDA_VERSION=${CUDA_VERSION}
 # Make things in our path by default
 ENV PATH=/usr/local/cuda-${CUDA_VERSION}/bin:/opt/rh/gcc-toolset-${DEVTOOLSET_VERSION}/root/usr/bin:$PATH
-
-FROM cuda as cuda12.6
-RUN bash ./install_cuda.sh 12.6
-ENV DESIRED_CUDA=12.6
-
-FROM cuda as cuda12.8
-RUN bash ./install_cuda.sh 12.8
-ENV DESIRED_CUDA=12.8
-
-FROM cuda as cuda12.9
-RUN bash ./install_cuda.sh 12.9
-ENV DESIRED_CUDA=12.9
 
 FROM cuda as cuda13.0
 RUN bash ./install_cuda.sh 13.0
@@ -102,9 +90,6 @@ ADD ./common/install_mnist.sh install_mnist.sh
 RUN bash ./install_mnist.sh
 
 FROM base as all_cuda
-COPY --from=cuda12.6  /usr/local/cuda-12.6 /usr/local/cuda-12.6
-COPY --from=cuda12.8  /usr/local/cuda-12.8 /usr/local/cuda-12.8
-COPY --from=cuda12.9  /usr/local/cuda-12.9 /usr/local/cuda-12.9
 COPY --from=cuda13.0  /usr/local/cuda-13.0 /usr/local/cuda-13.0
 COPY --from=cuda13.2  /usr/local/cuda-13.2 /usr/local/cuda-13.2
 COPY --from=cuda13.4  /usr/local/cuda-13.4 /usr/local/cuda-13.4
