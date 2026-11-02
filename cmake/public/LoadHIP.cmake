@@ -230,8 +230,8 @@ if(PYTORCH_FOUND_HIP)
   message("ROCM_VERSION_DEV_PATCH: ${ROCM_VERSION_DEV_PATCH}")
   message("ROCM_VERSION_DEV_INT:   ${ROCM_VERSION_DEV_INT}")
 
-  if(ROCM_VERSION_DEV_INT LESS 100000)
-    message(FATAL_ERROR "PyTorch needs ROCm 10.0 or above, but found ${ROCM_VERSION_DEV}.")
+  if(ROCM_VERSION_DEV_INT LESS 100100)
+    message(FATAL_ERROR "PyTorch needs ROCm 10.1 or above, but found ${ROCM_VERSION_DEV}.")
   endif()
 
   math(EXPR TORCH_HIP_VERSION "(${hip_VERSION_MAJOR} * 100) + ${hip_VERSION_MINOR}")

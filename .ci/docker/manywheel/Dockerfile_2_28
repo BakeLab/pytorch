@@ -1,5 +1,5 @@
 # syntax = docker/dockerfile:experimental
-ARG BASE_CUDA_VERSION=12.6
+ARG BASE_CUDA_VERSION=13.0
 ARG GPU_IMAGE=amd64/almalinux:8
 FROM quay.io/pypa/manylinux_2_28_x86_64 as base
 
@@ -23,7 +23,7 @@ RUN /opt/python/cp312-cp312/bin/python -m pip install "certifi>=2026.10.23" && \
     ln -sf $(/opt/python/cp312-cp312/bin/python -c 'import certifi; print(certifi.where())') /opt/_internal/certs.pem
 
 FROM base as cuda
-ARG BASE_CUDA_VERSION=12.6
+ARG BASE_CUDA_VERSION=13.0
 # Install CUDA
 ADD ./common/install_cuda.sh install_cuda.sh
 COPY ./common/install_nccl.sh install_nccl.sh
@@ -37,7 +37,7 @@ ADD ./common/install_mkl.sh install_mkl.sh
 RUN bash ./install_mkl.sh && rm install_mkl.sh
 
 FROM base as magma
-ARG BASE_CUDA_VERSION=12.6
+ARG BASE_CUDA_VERSION=13.0
 # Install magma
 ADD ./common/install_magma.sh install_magma.sh
 RUN bash ./install_magma.sh ${BASE_CUDA_VERSION} && rm install_magma.sh
@@ -121,7 +121,7 @@ ENV PATH /opt/rust/bin:$PATH
 RUN bash ./install_rust.sh && rm install_rust.sh rust.txt
 
 FROM common as cpu_final
-ARG BASE_CUDA_VERSION=12.6
+ARG BASE_CUDA_VERSION=13.0
 ARG DEVTOOLSET_VERSION=13
 # Install Anaconda
 ADD ./common/install_conda_docker.sh install_conda.sh

@@ -123,61 +123,6 @@ function install_cupti_headers {
   echo "CUPTI ${cupti_version} headers installed to ${target_dir}."
 }
 
-function install_126 {
-  CUDNN_VERSION=9.10.2.21
-  CUSPARSELT_VERSION=0.7.1.0
-  echo "Installing CUDA 12.6.3 and cuDNN ${CUDNN_VERSION} and NVSHMEM and NCCL and cuSparseLt-${CUSPARSELT_VERSION}"
-  install_cuda 12.6.3 cuda_12.6.3_560.35.05_linux
-
-  install_cudnn 12 $CUDNN_VERSION
-
-  install_nvshmem 12 $NVSHMEM_VERSION
-
-  CUDA_VERSION=12.6 bash install_nccl.sh
-
-  CUDA_VERSION=12.6 bash install_cusparselt.sh $CUSPARSELT_VERSION
-
-  ldconfig
-}
-
-function install_129 {
-  CUDNN_VERSION=9.26.0.51
-  CUSPARSELT_VERSION=0.8.1.1
-  echo "Installing CUDA 12.9.1 and cuDNN ${CUDNN_VERSION} and NVSHMEM and NCCL and cuSparseLt-${CUSPARSELT_VERSION}"
-  # install CUDA 12.9.1 in the same container
-  install_cuda 12.9.1 cuda_12.9.1_575.57.08_linux
-
-  # cuDNN license: https://developer.nvidia.com/cudnn/license_agreement
-  install_cudnn 12 $CUDNN_VERSION
-
-  install_nvshmem 12 $NVSHMEM_VERSION
-
-  CUDA_VERSION=12.9 bash install_nccl.sh
-
-  CUDA_VERSION=12.9 bash install_cusparselt.sh $CUSPARSELT_VERSION
-
-  ldconfig
-}
-
-function install_128 {
-  CUDNN_VERSION=9.26.0.51
-  CUSPARSELT_VERSION=0.7.1.0
-  echo "Installing CUDA 12.8.1 and cuDNN ${CUDNN_VERSION} and NVSHMEM and NCCL and cuSparseLt-${CUSPARSELT_VERSION}"
-  # install CUDA 12.8.1 in the same container
-  install_cuda 12.8.1 cuda_12.8.1_570.124.06_linux
-
-  # cuDNN license: https://developer.nvidia.com/cudnn/license_agreement
-  install_cudnn 12 $CUDNN_VERSION
-
-  install_nvshmem 12 $NVSHMEM_VERSION
-
-  CUDA_VERSION=12.8 bash install_nccl.sh
-
-  CUDA_VERSION=12.8 bash install_cusparselt.sh $CUSPARSELT_VERSION
-
-  ldconfig
-}
-
 function install_130 {
   CUDNN_VERSION=9.26.0.51
   CUSPARSELT_VERSION=0.8.1.1
@@ -241,12 +186,6 @@ function install_133 {
 while test $# -gt 0
 do
     case "$1" in
-    12.6|12.6.*) install_126;
-        ;;
-    12.8|12.8.*) install_128;
-        ;;
-    12.9|12.9.*) install_129;
-        ;;
     13.0|13.0.*) install_130;
         ;;
     13.2|13.2.*) install_132;
