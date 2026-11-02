@@ -76,49 +76,18 @@ def all_reduce(inputs, outputs=None, op=SUM, streams=None, comms=None):
     torch._C._nccl_all_reduce(inputs, outputs, op, streams, comms)
 
 
-# `output` used to be `outputs`, taking in a list of tensors. So we have two
-# arguments for BC reasons.
 def reduce(
     inputs: Sequence[torch.Tensor],
-    output: torch.Tensor | Sequence[torch.Tensor] | None = None,
+    output: torch.Tensor | None = None,
     root: int = 0,
     op: int = SUM,
     streams: Sequence[torch.cuda.Stream] | None = None,
     comms=None,
-    *,
-    outputs: Sequence[torch.Tensor] | None = None,
 ) -> None:
     _check_sequence_type(inputs)
-    _output: torch.Tensor
-    if outputs is not None:
-        if output is not None:
-            raise ValueError(
-                "'output' and 'outputs' can not be both specified. 'outputs' is deprecated in "
-                "favor of 'output', taking in a single output tensor. The signature of reduce is: "
-                "reduce(inputs, output=None, root=0, op=SUM, streams=None, comms=None)."
-            )
-        else:
-            warnings.warn(
-                "`nccl.reduce` with an output tensor list is deprecated. "
-                "Please specify a single output tensor with argument 'output' instead.",
-                FutureWarning,
-                stacklevel=2,
-            )
-            _output = outputs[root]
-    elif not isinstance(output, torch.Tensor) and isinstance(
-        output, collections.abc.Sequence
-    ):
-        # User called old API with positional arguments of list of output tensors.
-        warnings.warn(
-            "nccl.reduce with an output tensor list is deprecated. "
-            "Please specify a single output tensor.",
-            FutureWarning,
-            stacklevel=2,
-        )
-        _output = output[root]
-    else:
-        _output = inputs[root] if output is None else output
-    torch._C._nccl_reduce(inputs, _output, root, op, streams, comms)
+    torch._C._nccl_reduce(
+        inputs, inputs[root] if output is None else output, root, op, streams, comms
+    )
 
 
 def broadcast(
