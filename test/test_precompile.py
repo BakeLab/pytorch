@@ -3000,8 +3000,7 @@ class TestPrecompile(TestCase):
         # Each member's __module__/__qualname__ walk back to the object itself,
         # so pickle and test_public_bindings resolve it at the public path. The
         # re-homing costs inspect.getsource, which reads the file of
-        # sys.modules[cls.__module__] and finds no class there; torch.onnx makes
-        # the same trade for its public types.
+        # sys.modules[cls.__module__] and finds no class there.
         member = getattr(torch.compiler.precompile, name)
         target = sys.modules[member.__module__]
         for part in member.__qualname__.split("."):
@@ -10999,7 +10998,6 @@ class TestPrecompileCustomOpRecording(TestCase):
             import functools
             import json
             import torch
-            import torch.onnx.ops
             import torch._dynamo.tensor_version_op
             import torch._inductor.inductor_prims
             from torch._precompile import _file_modules, _op_registration
