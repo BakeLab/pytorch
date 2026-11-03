@@ -12652,7 +12652,7 @@
   structured: True
   structured_inherits: TensorIteratorBase
   dispatch:
-    CPU, CUDA, MPS, MTIA, XPU: tanh_backward_out
+    CPU, CUDA, MPS, XPU: tanh_backward_out
   tags: pointwise
 
 - func: tanh_backward(Tensor grad_output, Tensor output) -> Tensor
@@ -15554,7 +15554,3 @@
     CUDA: _fused_adagrad_kernel_cuda_
     XPU: _fused_adagrad_kernel_xpu_
   autogen: _fused_adagrad.tensor_lr, _fused_adagrad.tensor_lr_out
-
-# This op is ONLY used by pytorch/XLA in functionalization, and should never show up in vanilla eager mode or in any pytorch tracing contexts.
-- func: _propagate_xla_data(Tensor input, Tensor output) -> ()
-  variants: function

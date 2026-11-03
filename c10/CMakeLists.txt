@@ -30,7 +30,6 @@ endif()
           *.cpp
           core/*.cpp
           core/impl/*.cpp
-          mobile/*.cpp
           macros/*.cpp
           util/*.cpp
         )
@@ -38,7 +37,6 @@ endif()
           *.h
           core/*.h
           core/impl/*.h
-          mobile/*.h
           macros/*.h
           util/*.h
         )

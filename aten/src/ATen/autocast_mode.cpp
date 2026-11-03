@@ -66,18 +66,18 @@ thread_local std::array<at::ScalarType, at::COMPILE_TIME_MAX_DEVICE_TYPES>
         at::ScalarType::Undefined, // IDEEP.
         at::kHalf, // AMD HIP
         at::ScalarType::Undefined, // FPGA
-        at::kBFloat16, // ONNX Runtime / Microsoft
-        at::kBFloat16, // XLA / TPU
+        at::ScalarType::Undefined, // MAIA
+        at::ScalarType::Undefined, // XLA
         at::ScalarType::Undefined, // Vulkan
         at::ScalarType::Undefined, // Metal
         at::kHalf, // XPU
         at::kHalf, // MPS
         at::ScalarType::Undefined, // Meta (tensors with no data)
-        at::kBFloat16, // HPU / HABANA
-        at::ScalarType::Undefined, // SX-Aurora / NEC
+        at::ScalarType::Undefined, // HPU
+        at::ScalarType::Undefined, // VE
         at::ScalarType::Undefined, // Lazy Tensors
-        at::ScalarType::Undefined, // Graphcore IPU
-        at::kHalf, // Meta training and inference devices
+        at::ScalarType::Undefined, // IPU
+        at::ScalarType::Undefined, // MTIA
         at::kHalf, // PrivateUse1 device
 };
 
@@ -192,7 +192,7 @@ TORCH_LIBRARY_IMPL(aten, Autocast, m) {
 
   AT_FORALL_FP32(_KERNEL_CUDA_FP32)
 
-  // Standalone (not in AT_FORALL_FP32, which also feeds MAIA/XPU).
+  // Standalone (not in AT_FORALL_FP32, which also feeds XPU).
   KERNEL_CUDA(linalg_matrix_sqrth, fp32)
 
   // fp32_set_opt_dtype
@@ -457,44 +457,6 @@ TORCH_LIBRARY_IMPL(aten, AutocastCPU, m) {
   KERNEL_CPU(cat, promote)
   KERNEL_CPU(index_copy, promote)
 
-}
-
-// MAIA
-TORCH_LIBRARY_IMPL(_, AutocastMAIA, m) {
-  m.fallback(torch::CppFunction::makeFallthrough());
-}
-
-TORCH_LIBRARY_IMPL(aten, AutocastMAIA, m) {
-  // lower_precision_fp
-#define _KERNEL_MAIA_LOW_PRECISION_FP(...) \
-  KERNEL_MAIA(__VA_ARGS__, lower_precision_fp)
-
-  AT_FORALL_LOWER_PRECISION_FP(_KERNEL_MAIA_LOW_PRECISION_FP)
-
-  // fp32
-#define _KERNEL_MAIA_FP32(...) KERNEL_MAIA(__VA_ARGS__, fp32)
-
-  AT_FORALL_FP32(_KERNEL_MAIA_FP32)
-
-  // fp32_set_opt_dtype
-#define _KERNEL_MAIA_FP32_SET_OPT_DTYPE(...) \
-  KERNEL_MAIA(__VA_ARGS__, fp32_set_opt_dtype)
-
-  AT_FORALL_FP32_SET_OPT_DTYPE(_KERNEL_MAIA_FP32_SET_OPT_DTYPE)
-
-  // fp32_append_dtype
-  // The fp32_append_dtype wrapper overrides implicit promotion behavior.
-  // norm does not implicitly promote, but be aware when adding new ops to this policy.
-  AT_FORALL_DIFFERENT_REDISPATCH_SIGNATURE(
-      KERNEL_DIFFERENT_REDISPATCH_SIGNATURE_MAIA)
-
-  // promote
-#define _KERNEL_MAIA_PROMOTE(...) KERNEL_MAIA(__VA_ARGS__, promote)
-
-  AT_FORALL_PROMOTE(_KERNEL_MAIA_PROMOTE)
-
-  m.impl(TORCH_SELECTIVE_NAME("aten::binary_cross_entropy"),
-         TORCH_FN((&at::autocast::binary_cross_entropy_banned)));
 }
 
 // XPU

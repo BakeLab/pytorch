@@ -42,9 +42,7 @@
 //   - CUDA: NVIDIA GPUs
 //   - HIP: AMD GPUs
 //   - MPS: Apple Silicon GPUs (Metal Performance Shaders)
-//   - MTIA: Meta Training and Inference Devices
 //   - XPU: Intel GPUs
-//   - HPU: Reserved for HPU (Intel Gaudi) device types
 //   - PrivateUse1: Reserved for private/custom device types
 //
 // If you want to update the list of supported devices, add a new dispatch_ptr
@@ -135,11 +133,9 @@ struct TORCH_API DispatchStubImpl {
     void* cuda_dispatch_ptr = nullptr;
     void* hip_dispatch_ptr = nullptr;
     void* mps_dispatch_ptr = nullptr;
-    void* mtia_dispatch_ptr = nullptr;
   #if defined(USE_XPU)
     void* xpu_dispatch_ptr = nullptr;
   #endif
-    void* hpu_dispatch_ptr = nullptr;
     void* privateuse1_dispatch_ptr = nullptr;
 };
 
@@ -192,20 +188,12 @@ public:
   }
   #endif
 
-  void set_hpu_dispatch_ptr(FnPtr fn_ptr) {
-    impl.hpu_dispatch_ptr = reinterpret_cast<void*>(fn_ptr);
-  }
-
   void set_hip_dispatch_ptr(FnPtr fn_ptr) {
     impl.hip_dispatch_ptr = reinterpret_cast<void*>(fn_ptr);
   }
 
   void set_mps_dispatch_ptr(FnPtr fn_ptr) {
     impl.mps_dispatch_ptr = reinterpret_cast<void*>(fn_ptr);
-  }
-
-    void set_mtia_dispatch_ptr(FnPtr fn_ptr) {
-    impl.mtia_dispatch_ptr = reinterpret_cast<void*>(fn_ptr);
   }
 
   void set_privateuse1_dispatch_ptr(FnPtr fn_ptr) {
@@ -247,13 +235,6 @@ struct RegisterXPUDispatch {
 };
 
 template <typename DispatchStub>
-struct RegisterHPUDispatch {
-  RegisterHPUDispatch(DispatchStub &stub, typename DispatchStub::FnPtr value){
-    stub.set_hpu_dispatch_ptr(value);
-  }
-};
-
-template <typename DispatchStub>
 struct RegisterMPSDispatch {
   RegisterMPSDispatch(DispatchStub &stub, typename DispatchStub::FnPtr value) {
     stub.set_mps_dispatch_ptr(value);
@@ -265,13 +246,6 @@ struct RegisterHIPDispatch {
   RegisterHIPDispatch(DispatchStub &stub, typename DispatchStub::FnPtr value) {
     // TODO: make this point at hip_dispatch_ptr
     stub.set_cuda_dispatch_ptr(value);
-  }
-};
-
-template <typename DispatchStub>
-struct RegisterMTIADispatch {
-  RegisterMTIADispatch(DispatchStub &stub, typename DispatchStub::FnPtr value) {
-    stub.set_mtia_dispatch_ptr(value);
   }
 };
 
@@ -342,17 +316,11 @@ struct RegisterPRIVATEUSE1Dispatch {
 #define REGISTER_XPU_DISPATCH(name, fn) \
   static RegisterXPUDispatch<struct name##_DECLARE_DISPATCH_type> name ## __register(name, fn);
 
-#define REGISTER_HPU_DISPATCH(name, fn) \
-  static RegisterHPUDispatch<struct name##_DECLARE_DISPATCH_type> name ## __register(name, fn);
-
 #define REGISTER_HIP_DISPATCH(name, fn) \
   static RegisterHIPDispatch<struct name##_DECLARE_DISPATCH_type> name ## __register(name, fn);
 
 #define REGISTER_MPS_DISPATCH(name, fn) \
   static RegisterMPSDispatch<struct name##_DECLARE_DISPATCH_type> name ## __register(name, fn);
-
-#define REGISTER_MTIA_DISPATCH(name, fn) \
-  static RegisterMTIADispatch<struct name##_DECLARE_DISPATCH_type> name ## __register(name, fn);
 
 #define REGISTER_PRIVATEUSE1_DISPATCH(name, fn) \
   static RegisterPRIVATEUSE1Dispatch<struct name##_DECLARE_DISPATCH_type> name ## __register(name, fn);

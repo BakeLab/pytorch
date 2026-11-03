@@ -262,12 +262,6 @@ static at::Tensor lift_fresh_functionalize_copy(const at::Tensor & self) {
   return at::functionalization::impl::to_functional_tensor(out);
 }
 
-static bool device_opted_into_functionalization(c10::Device self_device, std::optional<c10::Device> tgt_device) {
-    // If the target device is empty, then the output tensor should be on the same device as the input
-    auto real_tgt_device = tgt_device.has_value() ? tgt_device.value() : self_device;
-    return real_tgt_device.type() == c10::DeviceType::XLA || real_tgt_device.type() == c10::DeviceType::Lazy;
-}
-
 // note I only need this because the to.dtype/to.dtype_layout overload calls this, so we skip the op above.
 // We should probably get rid of this though.
 static at::Tensor _to_copy_functionalize(
@@ -291,16 +285,6 @@ static at::Tensor _to_copy_functionalize(
   at::AutoDispatchSkipFunctionalize guard;
   auto out = at::_to_copy(self_, dtype, layout, device, pin_memory, non_blocking, memory_format);
 
-  // Special case: if the Functionalize key is not in TLS, we assume that we're running
-  // on a lazy backend (LTC).
-  // In that case, if we're copying to a non-functionalize-enabled device,
-  // then the functionalization pass should "end". We need to sync any updates on the input
-  // tensor, but we shouldn't wrap the output.
-  if (!c10::impl::tls_local_dispatch_key_set().included_.has(c10::DispatchKey::Functionalize)) {
-    if (!device_opted_into_functionalization(self.device(), device)) {
-      return out;
-    }
-  }
   return at::functionalization::impl::to_functional_tensor(out);
 }
 

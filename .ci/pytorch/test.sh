@@ -2177,31 +2177,6 @@ test_docs_test() {
   .ci/pytorch/docs-test.sh
 }
 
-test_executorch() {
-  echo "Install torchvision and torchaudio"
-  install_torchvision
-  install_torchaudio
-
-  INSTALL_SCRIPT="$(pwd)/.ci/docker/common/install_executorch.sh"
-
-  pushd /executorch
-  "${INSTALL_SCRIPT}" setup_executorch
-
-  echo "Run ExecuTorch unit tests"
-  pytest -v -n auto
-  # shellcheck disable=SC1091
-  LLVM_PROFDATA=llvm-profdata-12 LLVM_COV=llvm-cov-12 bash test/run_oss_cpp_tests.sh
-
-  echo "Run ExecuTorch regression tests for some models"
-  # TODO(huydhn): Add more coverage here using ExecuTorch's gather models script
-  # shellcheck disable=SC1091
-  source .ci/scripts/test_model.sh mv3 cmake xnnpack-quantization-delegation ''
-
-  popd
-
-  assert_git_not_dirty
-}
-
 test_torchtitan() {
   install_torchao
   # muse_glimmer and kimi_k2_7 import torchvision at model-build time. Build it
@@ -2568,8 +2543,6 @@ elif [[ "${SHARD_NUMBER}" -gt 2 ]]; then
   fi
   install_torchvision
   test_python_shard "$SHARD_NUMBER"
-elif [[ "${BUILD_ENVIRONMENT}" == *-mobile-lightweight-dispatch* ]]; then
-  test_libtorch
 elif [[ "${TEST_CONFIG}" = docs_test ]]; then
   test_docs_test
 elif [[ "${TEST_CONFIG}" == smoke ]]; then

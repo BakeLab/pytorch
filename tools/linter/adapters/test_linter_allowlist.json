@@ -782,7 +782,6 @@
   "test/test_scaled_matmul_cuda.py",
   "test/test_scatter_gather_ops.py",
   "test/test_serialization.py",
-  "test/test_set_default_mobile_cpu_allocator.py",
   "test/test_show_pickle.py",
   "test/test_sort_and_select.py",
   "test/test_sparse.py",

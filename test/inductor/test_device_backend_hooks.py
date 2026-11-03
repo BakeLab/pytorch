@@ -185,7 +185,7 @@ class TestAttentionFusionDeviceHooks(TestCase):
             nodes=[],
         )
 
-    @parametrize("device_type", ["cpu", "xpu", "mtia"])
+    @parametrize("device_type", ["cpu", "xpu"])
     def test_sfdp_checks_registered_device_falls_through(self, device_type):
         from torch._inductor.fx_passes.fuse_attention import (
             _sfdp_extra_check,

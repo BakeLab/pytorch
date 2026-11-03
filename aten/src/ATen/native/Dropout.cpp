@@ -47,7 +47,7 @@ bool is_fused_kernel_acceptable(const Tensor& input, double p) {
   // mask handles them; the fused kernels are float-only (MPS is already
   // excluded above via `is_floating_point`).
   return (input.is_cuda() || mps_fused_kernel_acceptable || input.is_xpu() ||
-          input.is_lazy() || input.is_privateuseone()) &&
+          input.is_privateuseone()) &&
       p > 0 && p < 1 && input.sym_numel() > 0 && !input.is_complex();
 }
 

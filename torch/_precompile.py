@@ -2067,8 +2067,7 @@ def _torch_cpp_op(op_name: str, overload: str) -> bool:
 _TORCH_OP_NAMESPACES = frozenset(
     "aten prim inductor inductor_prims profiler quantized _quantized quantization"  # noqa: SIM905
     " sparse c10d _c10d_functional _c10d_functional_autograd _dtensor symm_mem fsdp"
-    " mkl mkldnn mkldnn_prepacked onednn static_runtime xnnpack prepacked vulkan"
-    " vulkan_prepack metal metal_prepack vulkan_quantized _nnapi _native_aot".split()
+    " mkl mkldnn mkldnn_prepacked onednn static_runtime prepacked _native_aot".split()
 )
 _TORCH_DIR = os.path.dirname(torch.__file__)
 # torch's helpers that build a Library for the caller's namespace record themselves;

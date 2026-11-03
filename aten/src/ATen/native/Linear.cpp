@@ -107,9 +107,7 @@ Tensor linear(const Tensor& input, const Tensor& weight, const std::optional<Ten
       // flattening optimization.
       ((bias->dim() == 1 || bias->squeeze().dim() == 1) && bias->is_contiguous_or_false())
   );
-  if (is_bias_likely_fusable && !input.is_xla()) {
-    // Also hit the fused path for contiguous nD input, if not using xla
-    // backend. Reshaping/flattening has some performance implications on xla.
+  if (is_bias_likely_fusable) {
     if (input.is_contiguous_or_false()) {
       return _flatten_nd_linear(input, weight, *bias);
     } else if (parseLinearFlatten3d()) {

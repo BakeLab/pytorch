@@ -265,11 +265,11 @@ class FailingAllocator final : public Allocator {
  public:
   DataPtr allocate(size_t n) override {
     TORCH_CHECK(!fail, "injected allocation failure");
-    return GetDefaultMobileCPUAllocator()->allocate(n);
+    return GetDefaultCPUAllocator()->allocate(n);
   }
 
   bool is_simple_data_ptr(const DataPtr& ptr) const override {
-    return GetDefaultMobileCPUAllocator()->is_simple_data_ptr(ptr);
+    return GetDefaultCPUAllocator()->is_simple_data_ptr(ptr);
   }
 
   void copy_data(void* dest, const void* src, size_t count) const override {
