@@ -529,8 +529,7 @@ struct TORCH_API RecordFunction {
 
   // Debug handles are used for lazy annotation of module hierarchy
   // and callstack.
-  // This is specifically is useful for mobile runtime, where generated
-  // debug handles can be lazily symbolicated using debug information
+  // Generated debug handles can be lazily symbolicated using debug information.
   int64_t debug_handle_{-1};
 
   // Whether this RecordFunction is used for an out variant run with

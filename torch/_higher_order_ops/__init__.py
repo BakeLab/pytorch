@@ -12,7 +12,6 @@ from torch._higher_order_ops.auto_functionalize import (
 from torch._higher_order_ops.base_hop import BaseHOP
 from torch._higher_order_ops.cond import cond
 from torch._higher_order_ops.effects import with_effects
-from torch._higher_order_ops.executorch_call_delegate import executorch_call_delegate
 from torch._higher_order_ops.flat_apply import flat_apply
 from torch._higher_order_ops.flex_attention import (
     flex_attention,
@@ -68,7 +67,6 @@ __all__ = [
     "auto_functionalized_v2",
     "associative_scan",
     "out_dtype",
-    "executorch_call_delegate",
     "call_torchbind",
     "run_const_graph",
     "InvokeQuant",
