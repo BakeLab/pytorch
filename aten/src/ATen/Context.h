@@ -14,9 +14,7 @@
 #include <ATen/detail/HIPHooksInterface.h>
 #include <ATen/detail/MPSHooksInterface.h>
 #include <ATen/detail/PrivateUse1HooksInterface.h>
-#include <ATen/detail/XLAHooksInterface.h>
 #include <ATen/detail/XPUHooksInterface.h>
-#include <c10/core/impl/DeviceGuardImplInterface.h>
 #include <c10/util/Exception.h>
 #include <c10/util/env.h>
 #include <c10/util/hash.h>
@@ -31,10 +29,6 @@
 namespace at {
 
 class Tensor;
-
-namespace native::xnnpack::internal {
-TORCH_API void register_backend();
-} // namespace native::xnnpack::internal
 
 enum class TORCH_API Float32MatmulPrecision { HIGHEST, HIGH, MEDIUM };
 
@@ -97,8 +91,6 @@ class TORCH_API Context {
       return at::detail::getPrivateUse1Hooks();
     } else if (opt_device_type == at::kHIP) {
       return at::detail::getHIPHooks();
-    } else if (opt_device_type == at::kXLA) {
-      return at::detail::getXLAHooks();
     } else {
       TORCH_CHECK(
           false,
@@ -201,14 +193,8 @@ class TORCH_API Context {
   static bool hasMPS() {
     return detail::getMPSHooks().hasMPS();
   }
-  static bool hasXLA() {
-    return detail::getXLAHooks().hasXLA();
-  }
   static bool hasXPU() {
     return detail::getXPUHooks().hasXPU();
-  }
-  static bool hasLazy() {
-    return c10::impl::hasDeviceGuardImpl(c10::DeviceType::Lazy);
   }
   static const at::cuda::NVRTC& getNVRTC() {
     return detail::getCUDAHooks().nvrtc();
@@ -417,9 +403,6 @@ class TORCH_API Context {
   void setOverrideStaleCaptureStream(bool enabled);
   bool overrideStaleCaptureStream() const;
 
-  bool isDefaultMobileCPUAllocatorSet();
-  void setDefaultMobileCPUAllocator();
-  void unsetDefaultMobileCPUAllocator();
   bool allowFP16ReductionCPU() const;
   void setAllowFP16ReductionCPU(bool /*b*/);
   // Gates the native-AOT DispatchStubs consulted by generated structured
@@ -518,7 +501,6 @@ class TORCH_API Context {
            : Float32Precision::TF32},
   };
 
-  Allocator* prev_allocator_ptr_{nullptr};
 };
 
 TORCH_API Context& globalContext();
@@ -535,10 +517,6 @@ inline bool hasCUDA() {
 
 inline bool hasHIP() {
   return globalContext().hasHIP();
-}
-
-inline bool hasXLA() {
-  return globalContext().hasXLA();
 }
 
 inline bool hasMPS() {

@@ -6128,8 +6128,7 @@ def meta__scaled_dot_product_fused_attention_overrideable(
     return_debug_mask: bool = False,
     scale: float | None = None,
 ):
-    # Explicitly handle 3D (H, S, D) and 4D (B, H, S, D) inputs,
-    # matching the C++ runtime in aten_mtia_ops.cpp.
+    # Explicitly handle 3D (H, S, D) and 4D (B, H, S, D) inputs.
     B, H_Q, S_Q = 0, 0, 0
     if query.dim() == 4:
         B, H_Q, S_Q, _ = query.size()

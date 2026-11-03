@@ -23,7 +23,7 @@ TORCH_API void record_custom_class(std::string name);
  * Record an instance of a custom class being loaded
  * grab portion of string after final '.' from qualified name
  * as this seemingly aligns with how users name their custom classes
- * example: __torch__.torch.classes.xnnpack.Conv2dOpContext
+ * example: __torch__.torch.classes.my_namespace.MyClass
  */
 #define RECORD_CUSTOM_CLASS(NAME) \
   auto name = std::string(NAME);  \

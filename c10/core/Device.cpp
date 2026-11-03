@@ -17,32 +17,12 @@ DeviceType parse_type(const std::string& device_string) {
       types = {{
           {"cpu", DeviceType::CPU},
           {"cuda", DeviceType::CUDA},
-          {"ipu", DeviceType::IPU},
           {"xpu", DeviceType::XPU},
-          {"mkldnn", DeviceType::MKLDNN},
-          {"opengl", DeviceType::OPENGL},
-          {"opencl", DeviceType::OPENCL},
-          {"ideep", DeviceType::IDEEP},
           {"hip", DeviceType::HIP},
-          {"ve", DeviceType::VE},
-          {"fpga", DeviceType::FPGA},
-          {"maia", DeviceType::MAIA},
-          // TODO: stop parsing "xla" once PyTorch/XLA is archived
-          // (November 15, 2026) in favor of TorchTPU.
-          {"xla", DeviceType::XLA},
-          {"lazy", DeviceType::Lazy},
-          {"vulkan", DeviceType::Vulkan},
           {"mps", DeviceType::MPS},
           {"meta", DeviceType::Meta},
-          {"hpu", DeviceType::HPU},
-          {"mtia", DeviceType::MTIA},
           {"privateuseone", DeviceType::PrivateUse1},
       }};
-  if (device_string == "mkldnn") {
-    TORCH_WARN_ONCE(
-        "'mkldnn' is no longer used as device type. So torch.device('mkldnn') will be "
-        "deprecated and removed in the future. Please use other valid device types instead.");
-  }
   if (device_string == get_privateuse1_backend()) {
     return DeviceType::PrivateUse1;
   }
@@ -56,10 +36,7 @@ DeviceType parse_type(const std::string& device_string) {
   }
   std::vector<const char*> device_names;
   for (const auto& it : types) {
-    // "xla" still parses, but PyTorch/XLA is deprecated, so don't suggest it.
-    // TODO: stop parsing "xla" once PyTorch/XLA is archived
-    // (November 15, 2026) in favor of TorchTPU.
-    if (it.first && it.second != DeviceType::XLA) {
+    if (it.first) {
       device_names.push_back(it.first);
     }
   }

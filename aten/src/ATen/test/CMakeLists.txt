@@ -10,7 +10,6 @@ list(APPEND ATen_CPU_TEST_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/broadcast_test.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/cpu_allocator_test.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/cpu_generator_test.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/cpu_profiling_allocator_test.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/cpu_rng_test.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/dlconvertor_test.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/extension_backend_test.cpp
@@ -18,7 +17,6 @@ list(APPEND ATen_CPU_TEST_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/half_test.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/index_kernel_utils_test.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ivalue_test.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/lazy_tensor_test.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/math_kernel_test.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/memory_format_test.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/memory_overlapping_test.cpp
@@ -44,7 +42,6 @@ list(APPEND ATen_CPU_TEST_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/legacy_vmap_test.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/weakref_test.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/wrapdim_test.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/xla_tensor_test.cpp
   # Fix this.
   )
 

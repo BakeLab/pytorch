@@ -609,7 +609,6 @@
 # /test/test_scatter_gather_ops.py
 # /test/test_schema_check.py
 # /test/test_segment_reductions.py
-# /test/test_set_default_mobile_cpu_allocator.py
 # /test/test_shape_ops.py
 # /test/test_show_pickle.py
 # /test/test_sort_and_select.py

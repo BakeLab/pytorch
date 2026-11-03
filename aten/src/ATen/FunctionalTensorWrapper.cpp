@@ -9,7 +9,6 @@
 
 #include <atomic>
 
-#include <ATen/ops/_propagate_xla_data.h>
 #include <ATen/ops/_to_copy.h>
 
 namespace at {
@@ -640,38 +639,6 @@ void replace_(const ITensorListRef functional_tensor, ITensorListRef other) {
   auto other_it = other.begin();
   for ([[maybe_unused]] const auto i : c10::irange(functional_tensor.size())) {
     replace_(*functional_tensor_it++, *other_it++);
-  }
-}
-
-void propagate_xla_data(const Tensor& functional_tensor, const Tensor& other) {
-  TORCH_INTERNAL_ASSERT_DEBUG_ONLY(isFunctionalTensor(functional_tensor));
-  if (functional_tensor.key_set().has(c10::DispatchKey::XLA)) {
-    at::_propagate_xla_data(at::functionalization::impl::unsafeGetFunctionalWrapper(functional_tensor)
-        ->value(), other);
-  }
-}
-
-void propagate_xla_data(const ITensorListRef functional_tensor, ITensorListRef other) {
-  TORCH_INTERNAL_ASSERT_DEBUG_ONLY(functional_tensor.size() == other.size());
-  auto functional_tensor_it = functional_tensor.begin();
-  auto other_it = other.begin();
-  for ([[maybe_unused]] const auto i : c10::irange(functional_tensor.size())) {
-    propagate_xla_data(*functional_tensor_it++, *other_it++);
-  }
-}
-
-void propagate_xla_data_direct(const Tensor& tensor, const Tensor& other) {
-  if (tensor.key_set().has(c10::DispatchKey::XLA)) {
-    at::_propagate_xla_data(tensor, other);
-  }
- }
-
-void propagate_xla_data_direct(const ITensorListRef tensor,
-                               ITensorListRef other) {
-  auto tensor_it = tensor.begin();
-  auto other_it = other.begin();
-  for ([[maybe_unused]] const auto i : c10::irange(tensor.size())) {
-    propagate_xla_data_direct(*tensor_it++, *other_it++);
   }
 }
 

@@ -10,8 +10,6 @@
 #include <c10/util/irange.h>
 
 #include <ATen/ops/_copy_from.h>
-#include <ATen/ops/_propagate_xla_data.h>
-#include <ATen/ops/_propagate_xla_data_native.h>
 #include <ATen/ops/copy.h>
 #include <ATen/ops/copy_native.h>
 #include <ATen/ops/_foreach_copy.h>
@@ -384,10 +382,6 @@ void copy_ignoring_overlaps(const TensorBase &dst, const TensorBase &src) {
       .check_all_same_device(true)
       .build();
   copy_stub(iter.device_type(), iter, /*non_blocking=*/false);
-}
-
-void _propagate_xla_data(const Tensor& input, const Tensor& output) {
-  TORCH_INTERNAL_ASSERT(input.device().type() == kXLA, "This op should only be called by XLA")
 }
 
 DEFINE_DISPATCH(copy_stub);

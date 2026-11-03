@@ -78,24 +78,10 @@ bool isValidDeviceType(DeviceType d) {
   switch (d) {
     case DeviceType::CPU:
     case DeviceType::CUDA:
-    case DeviceType::OPENGL:
-    case DeviceType::OPENCL:
-    case DeviceType::MKLDNN:
-    case DeviceType::IDEEP:
     case DeviceType::HIP:
-    case DeviceType::VE:
-    case DeviceType::FPGA:
-    case DeviceType::MAIA:
-    case DeviceType::XLA:
-    case DeviceType::Lazy:
     case DeviceType::MPS:
-    case DeviceType::Vulkan:
-    case DeviceType::Metal:
     case DeviceType::XPU:
     case DeviceType::Meta:
-    case DeviceType::HPU:
-    case DeviceType::IPU:
-    case DeviceType::MTIA:
     case DeviceType::PrivateUse1:
       return true;
     case DeviceType::COMPILE_TIME_MAX_DEVICE_TYPES:
@@ -147,8 +133,8 @@ void register_privateuse1_backend(const std::string& backend_name) {
       "torch.register_privateuse1_backend() has already been set! Current backend: ",
       privateuse1_backend_name);
 
-  static constexpr auto types = std::to_array<std::string_view>(
-      {"cpu", "cuda", "hip", "mps", "xpu", "mtia"});
+  static constexpr auto types =
+      std::to_array<std::string_view>({"cpu", "cuda", "hip", "mps", "xpu"});
   TORCH_CHECK(
       std::ranges::find(types, backend_name) == types.end(),
       "Cannot register privateuse1 backend with in-tree device name: ",

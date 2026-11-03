@@ -810,15 +810,15 @@ class TestRuntimeEstimation(_TestDeviceInfoTestCase):
         with (
             mock.patch(
                 "torch._inductor.utils._current_accelerator_device",
-                side_effect=[torch.device("mtia:0"), torch.device("mtia:1")],
+                side_effect=[torch.device("xpu:0"), torch.device("xpu:1")],
             ),
             mock.patch(
                 "torch._inductor.utils._get_device_info_key",
-                side_effect=["mtia:0", "mtia:1"],
+                side_effect=["xpu:0", "xpu:1"],
             ),
         ):
             register_device_info(
-                "mtia:0",
+                "xpu:0",
                 DeviceInfo(
                     tops={torch.bfloat16: 100.0},
                     dram_bw_gbs=1.0,
@@ -826,7 +826,7 @@ class TestRuntimeEstimation(_TestDeviceInfoTestCase):
                 ),
             )
             register_device_info(
-                "mtia:1",
+                "xpu:1",
                 DeviceInfo(
                     tops={torch.bfloat16: 101.0},
                     dram_bw_gbs=1.0,
@@ -874,7 +874,7 @@ class TestRuntimeEstimation(_TestDeviceInfoTestCase):
                 150_000.0,
                 torch.float32,
                 gpu_type="NVIDIA H100",
-                device=torch.device("mtia"),
+                device=torch.device("xpu"),
             )
 
         datasheet_tops.assert_called_once_with(
@@ -888,7 +888,7 @@ class TestRuntimeEstimation(_TestDeviceInfoTestCase):
     def test_get_transfer_time_uses_requested_device(self):
         from torch.utils._runtime_estimation import get_transfer_time
 
-        device = torch.device("mtia")
+        device = torch.device("xpu")
         tensor = torch.ones(2)
         with mock.patch(
             "torch.utils._runtime_estimation.get_device_dram_gbps",
@@ -936,7 +936,7 @@ class TestRuntimeEstimation(_TestDeviceInfoTestCase):
     def test_get_compute_time_uses_requested_device(self):
         from torch.utils._runtime_estimation import get_compute_time
 
-        device = torch.device("mtia:1")
+        device = torch.device("xpu:1")
         a = torch.randn(2, 2)
         b = torch.randn(2, 2)
         out = torch.mm(a, b)
@@ -2064,8 +2064,8 @@ class TestDeviceClassification(TestCase):
         # The registry scan replaces a hardcoded GPU_TYPES literal, so pin the
         # in-tree result: dropping an is_gpu() override would otherwise shift
         # the classification silently, with no test in the repo failing.
-        known = {"cuda", "xpu", "mtia", "mps", "cpu", "tpu"}
-        self.assertEqual(set(_gpu_types()) & known, {"cuda", "xpu", "mtia", "mps"})
+        known = {"cuda", "xpu", "mps", "cpu", "tpu"}
+        self.assertEqual(set(_gpu_types()) & known, {"cuda", "xpu", "mps"})
         # MPS is GPU-class but exposes no Stream, so it takes no stream guard.
         self.assertFalse(device_need_guard("mps"))
         self.assertFalse(is_gpu("cpu"))

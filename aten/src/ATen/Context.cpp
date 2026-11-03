@@ -2,11 +2,8 @@
 
 #include <ATen/Context.h>
 
-#include <c10/core/CPUAllocator.h>
-
 #include <algorithm>
 #include <array>
-#include <atomic>
 #include <cctype>
 #include <string>
 #include <string_view>
@@ -40,21 +37,6 @@
 #include <cpuinfo.h>
 #endif
 namespace at {
-
-namespace {
-
-std::atomic<bool> xnnpack_backend_available{false};
-
-} // namespace
-
-namespace native::xnnpack::internal {
-
-// NOLINTNEXTLINE(misc-use-internal-linkage)
-TORCH_API void register_backend() {
-  xnnpack_backend_available.store(true, std::memory_order_relaxed);
-}
-
-} // namespace native::xnnpack::internal
 
 /*
   These const variables defined the fp32 precisions for different backend
@@ -901,28 +883,6 @@ bool Context::overrideStaleCaptureStream() const {
 
 void Context::setOverrideStaleCaptureStream(bool enabled) {
   override_stale_capture_stream_ = enabled;
-}
-
-bool Context::isDefaultMobileCPUAllocatorSet() {
-  return prev_allocator_ptr_ != nullptr;
-}
-
-void Context::setDefaultMobileCPUAllocator() {
-  TORCH_CHECK(prev_allocator_ptr_ == nullptr,
-      "Already within the scope of another non-default cpu allocator."
-      "Cannot set another allocator.");
-  // Setting the priority high to make sure no other allocator gets used instead of this.
-  prev_allocator_ptr_ = c10::GetCPUAllocator();
-  c10::SetCPUAllocator(c10::GetDefaultMobileCPUAllocator(), /*priority*/ 100);
-}
-
-void Context::unsetDefaultMobileCPUAllocator() {
-  TORCH_CHECK(prev_allocator_ptr_ != nullptr,
-      "setDefaultMobileCPUAllocator must have been called "
-      "before unsetDefaultMobileCPUAllocator.");
-  // Setting the priority high to make sure no other allocator gets used instead of this.
-  c10::SetCPUAllocator(prev_allocator_ptr_ , /*priority*/ 100);
-  prev_allocator_ptr_ = nullptr;
 }
 
 bool Context::allowFP16ReductionCPU() const {

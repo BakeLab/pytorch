@@ -71,16 +71,12 @@ static c10::SymInt get_nbytes(const Tensor& value) {
     return 0;
   }
   if (value.unsafeGetTensorImpl()->has_symbolic_sizes_strides()) {
-    // Today, the two implementations of SymInt are in Python (proxy tensor),
-    // and lazy tensor (LTC/XLA).
-    // LTC hasn't implemented SymInt support yet though
-    // Once it does, we should remove this check.
+    // Python (proxy tensor) represents SymInt sizes without concrete values.
     if (value.key_set().has(c10::DispatchKey::Python)) {
       return value.storage().sym_nbytes();
     }
     return at::detail::computeStorageNbytes(value.sym_sizes(), value.sym_strides(),static_cast<int64_t>(value.dtype().itemsize()), value.sym_storage_offset());
   }
-  // XLA storage objects also do not properly track nbytes.
   return static_cast<int64_t>(at::detail::computeStorageNbytes(value.sizes(), value.strides(), value.dtype().itemsize(), value.storage_offset()));
 }
 
@@ -96,8 +92,7 @@ FunctionalStorageImpl::FunctionalStorageImpl(const Tensor& base)
 {
   // SparseTensorImpl has no storage, so we cannot query its nbytes.
   // (original_storage_size is only used for storage resizing in fsdp anyway, which does not apply to sparse)
-  // Same for XLA
-  if (base.unsafeGetTensorImpl()->has_storage() && data_ptr().device().type() != c10::DeviceType::XLA) {
+  if (base.unsafeGetTensorImpl()->has_storage()) {
     original_storage_size_ = base.unsafeGetTensorImpl()->unsafe_storage().unsafeGetStorageImpl()->sym_nbytes();
   } else {
     original_storage_size_ = -1;
@@ -111,8 +106,7 @@ void FunctionalStorageImpl::add_update(const Tensor& updated_val, const std::vec
 
   if (metas.size() > 1) {
     for (const auto i : c10::irange(1, metas.size())) {
-      // Skipping this check for XLA. Would be good to add it back, but it is failing XLA CI
-      TORCH_CHECK(updated_val.device().type() == c10::DeviceType::XLA || !metas[i]->is_as_strided,
+      TORCH_CHECK(!metas[i]->is_as_strided,
 "During torch.compile, encountered a mutation on a view chain of length ", metas.size(), ", where view ", i,
 " was an as_strided() call. as_strided() is non-compositional, and therefore is not possible to functionalize properly today,"
 "so this behavior is banned in compile. As a workaround, you can either remove the mutation from the model code, or you "

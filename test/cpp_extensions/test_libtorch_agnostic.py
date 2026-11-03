@@ -551,7 +551,7 @@ class TestLibtorchAgnostic(TestCase):
         import libtorch_agn_2_15 as libtorch_agnostic
 
         with self.assertRaisesRegex(RuntimeError, "Not yet supported DeviceType"):
-            libtorch_agnostic._interop.device_roundtrip(torch.device("xla"))
+            libtorch_agnostic._interop.device_roundtrip(torch.device("privateuseone"))
 
     @skipIfTorchVersionLessThan(2, 16)
     @skipIfTorchDynamo("Dynamo failed to run FX node with fake tensors")

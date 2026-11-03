@@ -132,18 +132,12 @@ DLDevice torchDeviceToDLDevice(at::Device device) {
       ctx.device_type = DLDeviceType::kDLCUDA;
 #endif
       break;
-    case DeviceType::OPENCL:
-      ctx.device_type = DLDeviceType::kDLOpenCL;
-      break;
     case DeviceType::HIP:
       ctx.device_type = DLDeviceType::kDLROCM;
       break;
     case DeviceType::XPU:
       ctx.device_type = DLDeviceType::kDLOneAPI;
       ctx.device_id = at::detail::getXPUHooks().getGlobalIdxFromDevice(device);
-      break;
-    case DeviceType::MAIA:
-      ctx.device_type = DLDeviceType::kDLMAIA;
       break;
     case DeviceType::PrivateUse1:
       ctx.device_type = DLDeviceType::kDLExtDev;
@@ -170,8 +164,6 @@ Device dlDeviceToTorchDevice(
     case DLDeviceType::kDLCUDA:
       return at::Device(DeviceType::CUDA, index);
 #endif
-    case DLDeviceType::kDLOpenCL:
-      return at::Device(DeviceType::OPENCL, index);
     case DLDeviceType::kDLROCM:
 #ifdef USE_ROCM
       // this looks funny, we need to return CUDA here to masquerade
@@ -182,8 +174,6 @@ Device dlDeviceToTorchDevice(
     case DLDeviceType::kDLOneAPI:
       TORCH_CHECK(data != nullptr, "Can't get ATen device for XPU without XPU data.");
       return at::detail::getXPUHooks().getDeviceFromPtr(data);
-    case DLDeviceType::kDLMAIA:
-      return at::Device(DeviceType::MAIA, index);
     case DLDeviceType::kDLExtDev:
       return at::Device(DeviceType::PrivateUse1, index);
     case DLDeviceType::kDLMetal:

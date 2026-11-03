@@ -35,9 +35,6 @@ from torch._higher_order_ops.user_kernel_hop import (
 )
 from torch._higher_order_ops.utils import register_fake
 
-# Re-exported: MTIA's cpu_dispatch / dtype_conversion dispatch modes and the APS memory
-# estimator import it from this module.
-from torch._prims_common import clone_preserve_strides  # noqa: F401
 from torch.fx.experimental.proxy_tensor import ProxyTorchDispatchMode
 from torch.fx.experimental.symbolic_shapes import guard_scalar
 from torch.types import IntLikeType

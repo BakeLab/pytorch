@@ -1505,14 +1505,7 @@ void TensorIteratorBase::build(TensorIteratorConfig& config) {
     privateuse1_without_storage = !has_storage;
   }
 
-  // XLA and lazy tensors don't have storage, so they don't have an underlying data pointer.
-  // Nothing beyond this point is important for meta functions, so it's fine to exit early here.
-  // Extend the condition to MAIA tensors as MAIA tensors also don't have storage.
-  if (privateuse1_without_storage  ||
-      common_device_.type() == DeviceType::XLA  ||
-      common_device_.type() == DeviceType::Lazy ||
-      common_device_.type() == DeviceType::MAIA  ||
-      common_device_.type() == DeviceType::HPU) return;
+  if (privateuse1_without_storage) return;
 
   for (auto& op : operands_) {
     TORCH_INTERNAL_ASSERT(op.tensor_base().defined());

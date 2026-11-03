@@ -33,7 +33,6 @@ __all__ = [
     "register_package",
     "check_module_version_greater_or_equal",
     "validate_cuda_device",
-    "validate_hpu_device",
     "location_tag",
     "default_restore_location",
     "normalize_storage_type",
@@ -461,17 +460,6 @@ def register_package(
     Returns:
         `None`
 
-    Example:
-        >>> def ipu_tag(obj):
-        >>>     if obj.device.type == 'ipu':
-        >>>         return 'ipu'
-        >>> def ipu_deserialize(obj, location):
-        >>>     if location.startswith('ipu'):
-        >>>         ipu = getattr(torch, "ipu", None)
-        >>>         assert ipu is not None, "IPU device module is not loaded"
-        >>>         assert torch.ipu.is_available(), "ipu is not available"
-        >>>         return obj.ipu(location)
-        >>> torch.serialization.register_package(11, ipu_tag, ipu_deserialize)
     """
     queue_elem = (priority, tagger, deserializer)
     _package_registry.append(queue_elem)
@@ -646,10 +634,6 @@ def validate_cuda_device(location):
     return _validate_device(location, "cuda").index
 
 
-def validate_hpu_device(location):
-    return _validate_device(location, "hpu").index
-
-
 def _deserialize(backend_name, obj, location):
     if backend_name == "privateuse1":
         backend_name = torch._C._get_privateuse1_backend_name()
@@ -675,18 +659,8 @@ register_package(
 )
 register_package(
     24,
-    functools.partial(_backend_tag, "hpu"),
-    functools.partial(_deserialize, "hpu"),
-)
-register_package(
-    25,
     functools.partial(_backend_tag, "xpu"),
     functools.partial(_deserialize, "xpu"),
-)
-register_package(
-    26,
-    functools.partial(_backend_tag, "mtia"),
-    functools.partial(_deserialize, "mtia"),
 )
 
 

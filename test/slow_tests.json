@@ -116,8 +116,6 @@
   "test_comprehensive_svd_lowrank_cuda_complex64 (__main__.TestDecompCUDA)": 71.52549870808919,
   "test_constructor_autograd_SparseBSC_cuda (__main__.TestSparseAnyCUDA)": 103.31566747029622,
   "test_constructor_autograd_SparseBSR_cuda (__main__.TestSparseAnyCUDA)": 90.61466598510742,
-  "test_conv1d_basic (__main__.TestXNNPACKConv1dTransformPass)": 85.5044453938802,
-  "test_conv1d_with_relu_fc (__main__.TestXNNPACKConv1dTransformPass)": 186.80122545030383,
   "test_conv2d_binary_broadcast_shapes_cpu (__main__.TestPatternMatcherGenericCPU)": 73.75333404541016,
   "test_conv3d_binary_broadcast_shapes_cpu (__main__.TestPatternMatcherGenericCPU)": 165.67066955566406,
   "test_conv3d_binary_dynamic_shapes_cpu (__main__.TestDynamicPatternMatcherGenericCPU)": 69.34033330281575,

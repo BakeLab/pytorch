@@ -1922,17 +1922,17 @@ class TestTorchFunctionMode(TestCase):
                 kwargs = kwargs or {}
                 if func == torch.device:
                     if args and isinstance(args[0], int):
-                        args = ("xla", args[0])
+                        args = ("privateuseone", args[0])
                     elif isinstance(kwargs.get('device'), int):
-                        kwargs['device'] = f"xla:{kwargs.get('device')}"
+                        kwargs['device'] = f"privateuseone:{kwargs.get('device')}"
                 return func(*args, **kwargs)
 
         with CustomDeviceContext():
             d_args = torch.device(0)
-            self.assertEqual(d_args.type, "xla")
+            self.assertEqual(d_args.type, "privateuseone")
             self.assertEqual(d_args.index, 0)
             d_kwargs = torch.device(device=0)
-            self.assertEqual(d_kwargs.type, "xla")
+            self.assertEqual(d_kwargs.type, "privateuseone")
             self.assertEqual(d_kwargs.index, 0)
 
     def test_device_context_semantics(self):

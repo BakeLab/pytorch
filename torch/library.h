@@ -275,12 +275,6 @@ inline CppFunction dispatch(c10::DeviceType type, Func&& raw_f) {
         return c10::DispatchKey::CPU;
       case c10::DeviceType::CUDA:
         return c10::DispatchKey::CUDA;
-      case c10::DeviceType::IPU:
-        return c10::DispatchKey::IPU;
-      case c10::DeviceType::XLA:
-        return c10::DispatchKey::XLA;
-      case c10::DeviceType::Lazy:
-        return c10::DispatchKey::Lazy;
       case c10::DeviceType::XPU:
         return c10::DispatchKey::XPU;
       case c10::DeviceType::MPS:
@@ -289,12 +283,6 @@ inline CppFunction dispatch(c10::DeviceType type, Func&& raw_f) {
         return c10::DispatchKey::Meta;
       case c10::DeviceType::HIP:
         return c10::DispatchKey::HIP;
-      case c10::DeviceType::MAIA:
-        return c10::DispatchKey::MAIA;
-      case c10::DeviceType::HPU:
-        return c10::DispatchKey::HPU;
-      case c10::DeviceType::MTIA:
-        return c10::DispatchKey::MTIA;
       case c10::DeviceType::PrivateUse1:
         return c10::DispatchKey::PrivateUse1;
       default:

@@ -48,8 +48,19 @@ TEST(DeviceTest, BasicConstruction) {
   }
 }
 
-TEST(DeviceTest, UnknownTypeErrorOmitsXla) {
-  ASSERT_EQ(c10::Device("xla:0").type(), c10::DeviceType::XLA);
+TEST(DeviceTest, UnsupportedAcceleratorTypesAreRejected) {
+  EXPECT_THROW(c10::Device("xla:0"), c10::Error);
+  EXPECT_THROW(c10::Device("lazy:0"), c10::Error);
+  EXPECT_THROW(c10::Device("hpu:0"), c10::Error);
+  EXPECT_THROW(c10::Device("ipu:0"), c10::Error);
+  EXPECT_THROW(c10::Device("mtia:0"), c10::Error);
+  EXPECT_THROW(c10::Device("maia:0"), c10::Error);
+  EXPECT_THROW(c10::Device("vulkan:0"), c10::Error);
+  EXPECT_THROW(c10::Device("fpga:0"), c10::Error);
+  EXPECT_THROW(c10::Device("ve:0"), c10::Error);
+  EXPECT_THROW(c10::Device("opencl:0"), c10::Error);
+  EXPECT_THROW(c10::Device("opengl:0"), c10::Error);
+  EXPECT_THROW(c10::Device("mkldnn:0"), c10::Error);
   try {
     c10::Device("tpu");
     FAIL() << "Expected c10::Error";

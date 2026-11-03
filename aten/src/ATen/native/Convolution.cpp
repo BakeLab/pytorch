@@ -475,11 +475,6 @@ struct ConvParams {
     return !(input.dim() == 4 && native_fits_32_bit_indexing()
              && miopen_conv_suggest_memory_format(input, weight) == at::MemoryFormat::Contiguous);
   }
-  bool use_xnnpack(const at::Tensor& /*input*/, const at::Tensor& /*weight*/,
-                   const at::OptionalArrayRef<T> /*bias_sizes_opt*/) const {
-    return false;
-  }
-
   bool use_mps(const at::Tensor& input, const at::Tensor& weight) const {
     // These checks need to be expanded. Currently we have very limited set of
     // checks for MPS.

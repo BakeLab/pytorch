@@ -716,14 +716,6 @@ MetaDesc _prim_elementwise_meta(ArrayRef<MetaDesc> args, ScalarType dtype) {
   return out;
 }
 
-// handle_noncontiguous_outputs checks the device of the first non-number
-// input. Python fake keeps its device on the subclass, so read the backend key
-// both fakes carry (Note [Fake Tensor Dispatch Keys]).
-bool is_noncontiguous_supported(const Tensor& self, const Tensor& other) {
-  const auto& first = self.unsafeGetTensorImpl()->is_wrapped_number() ? other : self;
-  return !first.key_set().has_backend(BackendComponent::HPUBit);
-}
-
 // The SymInt, SymFloat or SymBool a symbolic wrapped number stands for, which
 // the refs see as the Python number. Its placeholder value has the matching
 // dtype: kLong, kDouble or kBool.
@@ -779,11 +771,6 @@ Tensor binary_ref_meta_impl(
     }
   }
   auto out = _prim_elementwise_meta(args, kind == ELEMENTWISE_TYPE_PROMOTION_KIND::ALWAYS_BOOL ? kBool : compute_dtype);
-  if (!is_noncontiguous_supported(self, other) && !is_contiguous_or_false(out)) {
-    DimVector identity(out.dim());
-    std::iota(identity.begin(), identity.end(), 0);
-    out.strides = empty_permuted(out.sizes, identity, out.dtype).strides;
-  }
   if (out.dtype == result_dtype) {
     // torch.empty_permuted: contiguous physical allocation, then restrided
     auto result = at::detail::empty_symint_meta(out.sizes, out.dtype, std::nullopt, kMeta, std::nullopt, std::nullopt);
@@ -992,12 +979,9 @@ Tensor fast_binary_impl(const Tensor& self, const Tensor& other, ELEMENTWISE_TYP
 
   bool contiguous = true;
   bool channels_last = true;
-  // fake_impls.is_noncontiguous_supported; HPU outputs stay contiguous.
-  if (common_device.type() != kHPU) {
-    for (const auto& desc : descs) {
-      contiguous = contiguous && is_contiguous_or_false(desc);
-      channels_last = channels_last && c10::_is_channels_last_contiguous_2d_or_false(desc.sizes, desc.strides);
-    }
+  for (const auto& desc : descs) {
+    contiguous = contiguous && is_contiguous_or_false(desc);
+    channels_last = channels_last && c10::_is_channels_last_contiguous_2d_or_false(desc.sizes, desc.strides);
   }
   if (!contiguous && !channels_last) {
     return {};

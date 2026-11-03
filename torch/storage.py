@@ -103,21 +103,6 @@ class _StorageBase:
         device2 = torch.device("cuda", device) if device else torch.device("cuda")
         return self.to(device=device2, non_blocking=non_blocking)
 
-    def hpu(self, device=None, non_blocking=False) -> _StorageBase | TypedStorage:
-        """Returns a copy of this object in HPU memory.
-
-        If this object is already in HPU memory and on the correct device, then
-        no copy is performed and the original object is returned.
-
-        Args:
-            device (int): The destination HPU id. Defaults to the current device.
-            non_blocking (bool): If ``True`` and the source is in pinned memory,
-                the copy will be asynchronous with respect to the host. Otherwise,
-                the argument has no effect.
-        """
-        device2 = torch.device("hpu", device) if device else torch.device("hpu")
-        return self.to(device=device2, non_blocking=non_blocking)
-
     def element_size(self) -> _int:
         raise NotImplementedError
 
@@ -593,7 +578,7 @@ def _reset_warn_typed_storage_removal():
 
 def _get_device_from_module(module: str):
     last_part = module.rsplit(".", 1)[-1]
-    if last_part in ["cuda", torch._C._get_privateuse1_backend_name(), "hpu"]:
+    if last_part in ["cuda", torch._C._get_privateuse1_backend_name()]:
         return last_part
     else:
         return "cpu"
@@ -930,11 +915,6 @@ class TypedStorage:
         _warn_typed_storage_removal()
         cuda_storage = self._untyped_storage.cuda(device, non_blocking)
         return self._new_wrapped_storage(cuda_storage)
-
-    def hpu(self, device=None, non_blocking=False) -> Self:
-        _warn_typed_storage_removal()
-        hpu_storage = self._untyped_storage.hpu(device, non_blocking)
-        return self._new_wrapped_storage(hpu_storage)
 
     def to(self, *, device: DeviceLikeType, non_blocking: bool = False) -> Self:
         _warn_typed_storage_removal()
@@ -1312,7 +1292,6 @@ class TypedStorage:
         if self.device.type not in [
             "cpu",
             "cuda",
-            "hpu",
             torch._C._get_privateuse1_backend_name(),
         ]:
             return None
@@ -1329,7 +1308,6 @@ class TypedStorage:
 
 TypedStorage.type.__doc__ = _type.__doc__
 TypedStorage.cuda.__doc__ = _StorageBase.cuda.__doc__
-TypedStorage.hpu.__doc__ = _StorageBase.hpu.__doc__
 TypedStorage.to.__doc__ = _to.__doc__
 
 

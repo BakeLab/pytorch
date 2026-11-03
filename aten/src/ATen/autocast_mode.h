@@ -24,15 +24,10 @@ TORCH_API int decrement_nesting();
 TORCH_API bool is_autocast_cache_enabled();
 TORCH_API void set_autocast_cache_enabled(bool enabled);
 
-// Deduce the extent: spelling it out went wrong once already, when IPU was
-// dropped from the list and the 10 stayed, leaving a value-initialised
-// DeviceType(0) at the end.
 constexpr std::array _AUTOCAST_SUPPORTED_DEVICES{
     at::kCPU,
     at::kCUDA,
-    at::kMAIA,
     at::kXPU,
-    at::kXLA,
     at::kPrivateUse1,
     at::kMPS};
 
@@ -42,17 +37,12 @@ inline bool is_autocast_eligible(
     c10::DeviceType device_type) {
   switch (device_type) {
     case c10::DeviceType::CUDA:
-      return (tensor.is_cuda() || tensor.is_xla()) &&
-          tensor.is_floating_point();
+      return tensor.is_cuda() && tensor.is_floating_point();
     case c10::DeviceType::CPU:
       return (tensor.is_cpu() || tensor.is_mkldnn()) &&
           tensor.is_floating_point();
-    case c10::DeviceType::MAIA:
-      return tensor.is_maia() && tensor.is_floating_point();
     case c10::DeviceType::XPU:
       return tensor.is_xpu() && tensor.is_floating_point();
-    case c10::DeviceType::XLA:
-      return tensor.is_xla() && tensor.is_floating_point();
     case c10::DeviceType::PrivateUse1:
       return tensor.is_privateuseone() && tensor.is_floating_point();
     case c10::DeviceType::MPS:
@@ -70,14 +60,8 @@ inline DispatchKey get_autocast_dispatch_key_from_device_type(
       return DispatchKey::Autocast;
     case c10::DeviceType::CPU:
       return DispatchKey::AutocastCPU;
-    case c10::DeviceType::MAIA:
-      return DispatchKey::AutocastMAIA;
     case c10::DeviceType::XPU:
       return DispatchKey::AutocastXPU;
-    case c10::DeviceType::HPU:
-      return DispatchKey::AutocastHPU;
-    case c10::DeviceType::XLA:
-      return DispatchKey::AutocastXLA;
     case c10::DeviceType::PrivateUse1:
       return DispatchKey::AutocastPrivateUse1;
     case c10::DeviceType::MPS:
@@ -617,24 +601,6 @@ copy pasted in from VariableTypeEverything.cpp with appropriate substitutions.
     POLICY)                                         \
   KERNEL_DIFFERENT_REDISPATCH_SIGNATURE(            \
       c10::DeviceType::CUDA,                        \
-      REDISPATCH_FUNC,                              \
-      REGISTER_NAME,                                \
-      REGISTER_SIGNATURE,                           \
-      REDISPATCH_SIGNATURE,                         \
-      POLICY)
-
-// KERNEL_MAIA/KERNEL_DIFFERENT_REDISPATCH_SIGNATURE_MAIA
-// registration (OP, POLICY) or (OP, OVERLOAD, POLICY) for AutocastMAIA
-#define KERNEL_MAIA(...) KERNEL(c10::DeviceType::MAIA, __VA_ARGS__)
-
-#define KERNEL_DIFFERENT_REDISPATCH_SIGNATURE_MAIA( \
-    REDISPATCH_FUNC,                                \
-    REGISTER_NAME,                                  \
-    REGISTER_SIGNATURE,                             \
-    REDISPATCH_SIGNATURE,                           \
-    POLICY)                                         \
-  KERNEL_DIFFERENT_REDISPATCH_SIGNATURE(            \
-      c10::DeviceType::MAIA,                        \
       REDISPATCH_FUNC,                              \
       REGISTER_NAME,                                \
       REGISTER_SIGNATURE,                           \

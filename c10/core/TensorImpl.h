@@ -464,11 +464,10 @@ struct C10_API TensorImpl;
 /**
  * NOTE: Some TensorImpl methods are small and not overridden in the
  * PyTorch codebase itself, but may theoretically need to be
- * overridden by third-party TensorImpl subclasses. This macro allows
+ * overridden by out-of-tree TensorImpl subclasses. This macro allows
  * users that need maximum performance and don't need these extension
- * points to disable them with a build-time flag. (In particular,
- * XLA's XLATensorImpl currently overrides these methods, so we can't
- * enable this flag by default.)
+ * points to disable them with a build-time flag. This is only appropriate
+ * when out-of-tree implementations do not depend on overriding these methods.
  */
 #ifdef C10_DISABLE_TENSORIMPL_EXTENSIBILITY
 #define TENSORIMPL_MAYBE_VIRTUAL
@@ -1196,20 +1195,6 @@ struct C10_API TensorImpl : public c10::intrusive_ptr_target {
     return device_opt_.has_value() && device_opt_->type() == kXPU;
   }
 
-  bool is_xla() const {
-    if (C10_UNLIKELY(device_policy_)) {
-      return device_custom().is_xla();
-    }
-    return device_opt_.has_value() && device_opt_->type() == kXLA;
-  }
-
-  bool is_lazy() const {
-    if (C10_UNLIKELY(device_policy_)) {
-      return device_custom().is_lazy();
-    }
-    return device_opt_.has_value() && device_opt_->type() == kLazy;
-  }
-
   bool is_hip() const {
     // NB: This method is not virtual and avoid dispatches for performance
     // reasons.
@@ -1217,15 +1202,6 @@ struct C10_API TensorImpl : public c10::intrusive_ptr_target {
       return device_custom().is_hip();
     }
     return device_opt_.has_value() && device_opt_->type() == kHIP;
-  }
-
-  bool is_ve() const {
-    // NB: This method is not virtual and avoid dispatches for performance
-    // reasons.
-    if (C10_UNLIKELY(device_policy_)) {
-      return device_custom().is_ve();
-    }
-    return device_opt_.has_value() && device_opt_->type() == kVE;
   }
 
   bool is_privateuseone() const {
@@ -1246,13 +1222,6 @@ struct C10_API TensorImpl : public c10::intrusive_ptr_target {
       return device_custom().is_mps();
     }
     return device_opt_.has_value() && device_opt_->type() == kMPS;
-  }
-
-  bool is_maia() const {
-    if (C10_UNLIKELY(device_policy_)) {
-      return device_custom().is_maia();
-    }
-    return device_opt_.has_value() && device_opt_->type() == kMAIA;
   }
 
   bool is_nested() const {
@@ -1394,10 +1363,7 @@ struct C10_API TensorImpl : public c10::intrusive_ptr_target {
    * This is used in autograd to perform inplace update on view Tensors.
    * See Note [View + Inplace update for base tensor] and
    * [View + Inplace update for view tensor] for details.
-   * Note this method only returns true for XLA backend, where it
-   * simulates strided Tensor to support most view ops, but it cannot
-   * fully support general `as_strided` case.
-   * It can be expanded as needed in the future, e.g sparse Tensor.
+   * Nested tensors and functional tensors do not support arbitrary strides.
    */
   inline bool support_as_strided() const {
     if (is_nested()) {
@@ -2098,7 +2064,7 @@ struct C10_API TensorImpl : public c10::intrusive_ptr_target {
    * One TensorImpl can be copied to another TensorImpl if
    * - They have the same DispatchKeySet.
    * - Or both have DispatchKey::Dense and a supported dense backend
-   *   (CPU, CUDA, MPS, HIP, XPU, HPU, MTIA)
+   *   (CPU, CUDA, MPS, HIP, XPU)
    * - Or both have DispatchKey::Sparse and a supported sparse backend
    *   (CPU, CUDA, MPS, HIP, XPU)
    * - Or both have DispatchKey::SparseCsr
@@ -2113,9 +2079,7 @@ struct C10_API TensorImpl : public c10::intrusive_ptr_target {
            BackendComponent::CUDABit,
            BackendComponent::MPSBit,
            BackendComponent::HIPBit,
-           BackendComponent::XPUBit,
-           BackendComponent::HPUBit,
-           BackendComponent::MTIABit});
+           BackendComponent::XPUBit});
       constexpr auto dense_k = DispatchKeySet(DispatchKey::Dense);
       return ts.has_any(dense_k) && ts.has_any(dense_backends);
     };

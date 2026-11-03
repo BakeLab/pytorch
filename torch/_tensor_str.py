@@ -120,7 +120,6 @@ def tensor_totype(t):
         if (
             t.is_mps
             or (t.is_xpu and not torch.xpu.get_device_properties(t.device).has_fp64)
-            or t.is_maia
         )
         else torch.double
     )
@@ -439,12 +438,6 @@ def _str_intern(inp, *, tensor_contents=None):
         or (self.device.type == "mps")
     ):
         suffixes.append("device='" + str(self.device) + "'")
-
-    # Tensor printing performs tensor operations like slice, indexing, etc to make it in a
-    # representable format. These operations on xla/lazy tensor results in compilations. Hence,
-    # to avoid compilations, copying the tensor to cpu before printing.
-    if self.device.type in ["xla", "lazy"]:
-        self = self.to("cpu")
 
     # TODO: add an API to map real -> complex dtypes
     _default_complex_dtype = (

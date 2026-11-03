@@ -369,22 +369,6 @@ TORCH_API bool are_all_mutations_hidden_from_autograd(
 TORCH_API bool are_all_mutations_under_no_grad_or_inference_mode(
     const Tensor& functional_tensor);
 
-// These two methods are XLA-specific logic and are no-ops
-// for the normal functionalization flow.
-TORCH_API void propagate_xla_data(
-    const Tensor& functional_tensor,
-    const Tensor& other);
-TORCH_API void propagate_xla_data(
-    const ITensorListRef functional_tensor,
-    ITensorListRef other);
-
-TORCH_API void propagate_xla_data_direct(
-    const Tensor& tensor,
-    const Tensor& other);
-TORCH_API void propagate_xla_data_direct(
-    const ITensorListRef tensor,
-    ITensorListRef other);
-
 Tensor create_functional_tensor_with_view_meta(
     const Tensor& view_to_wrap,
     const Tensor& base,
