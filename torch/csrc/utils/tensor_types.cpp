@@ -28,8 +28,6 @@ const char* backend_to_string(const at::Backend& backend) {
       return "torch.cuda";
     case at::Backend::XPU:
       return "torch.xpu";
-    case at::Backend::IPU:
-      return "torch.ipu";
     case at::Backend::SparseCPU:
       return "torch.sparse";
     case at::Backend::SparseCUDA:
@@ -40,20 +38,12 @@ const char* backend_to_string(const at::Backend& backend) {
       return "torch.mps.sparse";
     case at::Backend::QuantizedCPU:
       return "torch.quantized";
-    case at::Backend::HPU:
-      return "torch.hpu";
     case at::Backend::MPS:
       return "torch.mps";
-    case at::Backend::MTIA:
-      return "torch.mtia";
     case at::Backend::PrivateUse1:
       return parse_privateuseone_backend();
     case at::Backend::SparsePrivateUse1:
       return parse_privateuseone_backend(true);
-    case at::Backend::Lazy:
-      return "torch.lazy";
-    case at::Backend::XLA:
-      return "torch.xla";
     case at::Backend::Meta:
       return "torch.meta";
     default:

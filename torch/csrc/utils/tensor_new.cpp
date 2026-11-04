@@ -539,10 +539,7 @@ void check_base_legacy_new(
         c10::DispatchKey::CPU,
         c10::DispatchKey::CUDA,
         c10::DispatchKey::HIP,
-        c10::DispatchKey::XLA,
-        c10::DispatchKey::Lazy,
         c10::DispatchKey::XPU,
-        c10::DispatchKey::HPU,
         c10::DispatchKey::MPS,
         c10::DispatchKey::Meta,
         c10::DispatchKey::PrivateUse1,
@@ -554,7 +551,6 @@ void check_base_legacy_new(
         " but got: ",
         dispatch_key);
   } else if (expected_layout == c10::kSparse) {
-    // NOTE: no sparse XLA or Lazy
     constexpr c10::DispatchKeySet expected_key_set({
         c10::DispatchKey::SparseCPU,
         c10::DispatchKey::SparseCUDA,

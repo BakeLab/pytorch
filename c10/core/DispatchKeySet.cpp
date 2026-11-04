@@ -30,18 +30,13 @@ constexpr DispatchKeySet backend_dispatch_keyset =
 //     (In theory we could also have a separate key for
 //     "CompositeImplicitAutogradNonFunctional", but there isn't much of a use
 //     case for it currently).
-// This key is important for "functional" backends like LazyTensor / XLA.
+// This key is important for functional backends.
 // If you're a backend that only expects to deal with "functional ops",
 // then you don't want to decompose a functional op into an op that causes
 // aliasing. You should just directly write a kernel for that functional op
 // instead!
 constexpr DispatchKeySet non_functional_backend_dispatch_keyset =
-    backend_dispatch_keyset
-        // XLA and LazyTensor are currently the only 2 backends in core
-        // that use functionalization pass in eager mode.
-        .remove(DispatchKey::Sparse)
-        .remove_backend(BackendComponent::XLABit)
-        .remove_backend(BackendComponent::LazyBit);
+    backend_dispatch_keyset.remove(DispatchKey::Sparse);
 
 bool isBackendDispatchKey(DispatchKey t) {
   return t != DispatchKey::Undefined
@@ -132,22 +127,12 @@ DispatchKeySet getBackendKeySetFromAutograd(DispatchKey t) {
       return DispatchKeySet(DispatchKey::CPU);
     case DispatchKey::AutogradCUDA:
       return DispatchKeySet(DispatchKey::CUDA);
-    case DispatchKey::AutogradXLA:
-      return DispatchKeySet(DispatchKey::XLA);
-    case DispatchKey::AutogradLazy:
-      return DispatchKeySet(DispatchKey::Lazy);
     case DispatchKey::AutogradMeta:
       return DispatchKeySet(DispatchKey::Meta);
     case DispatchKey::AutogradMPS:
       return DispatchKeySet(DispatchKey::MPS);
-    case DispatchKey::AutogradHPU:
-      return DispatchKeySet(DispatchKey::HPU);
-    case DispatchKey::AutogradIPU:
-      return DispatchKeySet(DispatchKey::IPU);
     case DispatchKey::AutogradXPU:
       return DispatchKeySet(DispatchKey::XPU);
-    case DispatchKey::AutogradMAIA:
-      return DispatchKeySet(DispatchKey::MAIA);
     case DispatchKey::AutogradPrivateUse1:
       return DispatchKeySet(DispatchKey::PrivateUse1);
     case DispatchKey::AutogradPrivateUse2:

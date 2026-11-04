@@ -207,8 +207,7 @@ OperatorEntry::AnnotatedKernelContainerIterator OperatorEntry::registerKernel(
   if (!k.empty()) {
     // Suppress the warning for Meta key as we are overriding C++ meta functions with python meta functions
     // for some ops
-    // Also suppress the warning for MTIA, as MTIA achieves CPU fallback by overriding registration.
-    if (dispatch_key != DispatchKey::Meta && dispatch_key != DispatchKey::MTIA) {
+    if (dispatch_key != DispatchKey::Meta) {
       TORCH_WARN_ONCE("Warning only once for all operators,  other operators may also be overridden.\n",
             "  Overriding a previously registered kernel for the same operator and the same dispatch key\n",
             "  operator: ", (schema_.has_value() ? toString(schema_->schema) : toString(name_)), "\n",
@@ -502,7 +501,7 @@ void OperatorEntry::updateDispatchTable_(const c10::Dispatcher& dispatcher, Disp
   // In theory, we should only have to check if the given runtime key has "dense" functionality,
   // e.g. DispatchKey::CPU (which is composed of DispatchKey::Dense and BackendComponent::CPUBit).
   // However, there are some backends that should be included in this set that don't have the dense key set.
-  // E.g. DispatchKey::Meta, DispatchKey::MAIA.
+  // E.g. DispatchKey::Meta.
   if (c10::isBackendDispatchKey(dispatch_key)) {
     DispatchKey autograd_key = getAutogradKeyFromBackend(toBackendComponent(dispatch_key));
     updateDispatchTableEntry_(dispatcher, autograd_key);

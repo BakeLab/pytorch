@@ -156,9 +156,7 @@ TORCH_API Tensor addBatchDim(Tensor tensor, int64_t dim, int64_t level);
 constexpr DispatchKeySet kKeysToPropagateToWrapper({
   DispatchKey::Negative,
   DispatchKey::Conjugate,
-  DispatchKey::XLA,
   DispatchKey::XPU,
-  DispatchKey::HPU,
   DispatchKey::CUDA,
   DispatchKey::CPU,
   DispatchKey::MPS,

@@ -41,10 +41,6 @@
 #include <ATen/xpu/EmptyTensor.h>
 #endif
 
-#ifdef USE_MTIA
-#include <ATen/native/mtia/EmptyTensor.h>
-#endif
-
 #include <c10/util/irange.h>
 #include <chrono>
 #include <memory>
@@ -1342,12 +1338,6 @@ static PyObject* _empty_strided_device(
         sizes, strides, dtype, c10::DeviceType::XPU));
   }
 #endif
-#ifdef USE_MTIA
-  else if constexpr (device_type == c10::DeviceType::MTIA) {
-    return THPVariable_Wrap(at::detail::empty_strided_mtia(
-        sizes, strides, dtype, c10::DeviceType::MTIA));
-  }
-#endif
   else {
     TORCH_CHECK(
         false, "PyTorch compiled without support for the specified device.");
@@ -1389,13 +1379,6 @@ static PyObject* _empty_strided_xpu(
     Py_ssize_t nargs) {
   // at::empty_strided is surprising slow.  This is lower-overhead.
   return _empty_strided_device<c10::DeviceType::XPU>(args, nargs);
-}
-
-static PyObject* _empty_strided_mtia(
-    PyObject* /*self*/,
-    PyObject* const* args,
-    Py_ssize_t nargs) {
-  return _empty_strided_device<c10::DeviceType::MTIA>(args, nargs);
 }
 
 static PyObject* _reinterpret_tensor(
@@ -7733,10 +7716,6 @@ PyObject* torch_c_dynamo_guards_init() {
         nullptr},
        {"_empty_strided_xpu",
         castPyCFunctionFast(_empty_strided_xpu),
-        METH_FASTCALL,
-        nullptr},
-       {"_empty_strided_mtia",
-        castPyCFunctionFast(_empty_strided_mtia),
         METH_FASTCALL,
         nullptr},
        {"_reinterpret_tensor",

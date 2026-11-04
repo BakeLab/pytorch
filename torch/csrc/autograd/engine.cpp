@@ -55,7 +55,7 @@ static void track_bad_autograd_forks() {
 }
 
 inline bool should_run_in_cpu_ready_queue(c10::DeviceType device) {
-  if (device == c10::kCPU || device == c10::kMeta || device == c10::kLazy) {
+  if (device == c10::kCPU || device == c10::kMeta) {
     return true;
   } else {
     return false;
@@ -87,7 +87,7 @@ struct CompiledAutogradThreadingDebugCheck {
 
 // Threads spawned by the engine are assigned a 'worker_device' specifying
 // what device they process work for. This variable is initialized at:
-// 1. thread creation time for CUDA, XLA device threads, as they are
+// 1. thread creation time for accelerator device threads, as they are
 //    spinning threads waiting for works on their device.
 // 2. before the graph task execution for CPU threads, as for each
 //    backward call we use the caller thread to drive engine execution.
@@ -106,7 +106,7 @@ static thread_local int current_depth = 0;
 // Whether the current node call has exposed an input gradient buffer.
 static thread_local bool input_grad_buffer_exposed = false;
 
-// For all device threads (i.e. CUDA, XLA), total_depth represents the total
+// For all device threads, total_depth represents the total
 // nested
 //   reentrant backwards depths over all device threads.
 // For CPU devices, it is the total depth associated with the original backward
@@ -124,7 +124,7 @@ C10_DEFINE_TLS_static(std::shared_ptr<GraphTask>, tls_current_graph_task);
 // initialized via the Engine::init_local_ready_queue() call in each
 // corresponding thread before execution.
 //
-// The CUDA, XLA threads are shared among all invocations of backwards via
+// The accelerator threads are shared among all invocations of backwards via
 // device_ready_queues_, while the caller thread is dedicated to processing work
 // for devices returning true in should_run_in_cpu_ready_queue (most notably the
 // CPU device). So any given graph task maintains its own cpu_ready_queue_ where
@@ -354,10 +354,9 @@ void Engine::thread_init(
   // But what if we have OTHER devices?  There are two plausible
   // strategies:
   //
-  //  - We can allocate threads equal to max(num_cuda_devices, num_xla_devices,
-  //    ...) and colocate cuda device 0 with xla device 0
-  //  - We can allocate threads equal to sum(num_cuda_devices, num_xla_devices,
-  //    ...) keeping everyone separate.
+  //  - Allocate threads equal to the largest device count, colocating devices
+  //    with the same index.
+  //  - Allocate a separate thread for each device.
   //
   // We don't have any good reason to prefer one or the other, so we've
   // arbitrarily picked to colocate devices.  Maybe the other approach is
@@ -545,7 +544,7 @@ std::vector<Node*> get_current_graph_task_execution_order() {
 // in case this code is to be changed.
 //
 // thread_main is used by:
-// 1). autograd threads for devices (i.e. CUDA, XLA)
+// 1). autograd threads for accelerator devices
 // 2). the caller/owning thread of the backward call on CPU (sync mode)
 // 3). Reentrant backward that invoked by either 1) or 2)
 // The exit conditions are different for the above three cases.

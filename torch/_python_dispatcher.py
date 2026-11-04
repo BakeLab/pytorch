@@ -17,16 +17,11 @@ keys for a single example of each use case. These use cases are listed below:
 - CPU/AutogradCPU: represents in-tree backends which we usually have dedicated inference &
     autograd kernel in pytorch core library.
     E.g. CPU, CUDA
-- FPGA/AutogradOther: represents in-tree backends which we usually have backend specific
-    inference kernels, but they share the same autograd kernel specified in AutogradOther.
-    E.g. FPGA, SparseCsrCPU
-- XLA/AutogradXLA: represents out-of-tree backends which we don't have either inference or autograd
-    kernel defined in pytorch core library. Backend owner is responsible for registering both
-    inference & autograd kernels in their extensions(e.g. torch-xla) for the operators they support.
-    E.g. XLA, XPU, MPS
-- CompositeExplicitAutograd: alias key mapped to inference kernels of all backends like CPU, CUDA, XLA etc.
+- PrivateUse1/AutogradPrivateUse1: represents an out-of-tree backend that registers its own
+    inference and autograd kernels.
+- CompositeExplicitAutograd: alias key mapped to inference kernels of all supported backends.
     Kernels registered to this key MUST work for inference for all backends.
-- Autograd: alias key mapped to autograd of all backends like AutogradCPU, AutogradXLA, AutogradOther.
+- Autograd: alias key mapped to autograd kernels for all backends.
     Kernels registered to this key MUST work for autograd for all backends.
 - CompositeImplicitAutograd: alias key CompositeImplicitAutograd = CompositeExplicitAutograd + Autograd
     Kernels registered to this key MUST work for both inference + autograd for all backends.
@@ -39,7 +34,7 @@ tested even without the extension.
 
 Usage:
   dispatcher = PythonDispatcher()
-  dispatcher.register(["CPU", "XLA", "CompositeImplicitAutograd"])
+  dispatcher.register(["CPU", "PrivateUse1", "CompositeImplicitAutograd"])
   print(dispatcher.dispatchTable()) # This tells you exactly which kernel is used for certain backend.
   # For more debugging information
   # print(dispatcher.keys())
@@ -58,9 +53,7 @@ class PythonDispatcher:
     # fmt: off
     runtime_keys = [
         "CPU", "AutogradCPU",
-        "FPGA", "AutogradOther",
-        "XLA", "AutogradXLA",
-        "Lazy", "AutogradLazy",
+        "PrivateUse1", "AutogradPrivateUse1",
     ]
     # fmt: on
     alias_keys = [

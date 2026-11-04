@@ -168,12 +168,6 @@ def register_run_and_save_rng_state_op():
     def impl_cpu(op, *args, **kwargs):
         return torch.get_rng_state(), op(*args, **kwargs)
 
-    @run_and_save_rng_state.py_impl(DispatchKey.HPU)
-    def impl_hpu(op, *args, **kwargs):
-        if hasattr(torch, "hpu"):
-            return torch.hpu.get_rng_state(), op(*args, **kwargs)
-        raise RuntimeError("functionalize a hpu RNG operator is not supported.")
-
     @run_and_save_rng_state.py_impl(DispatchKey.XPU)
     def impl_xpu(op, *args, **kwargs):
         return torch.xpu.get_rng_state(), op(*args, **kwargs)
@@ -183,7 +177,6 @@ def register_run_and_save_rng_state_op():
         impl_map = {
             "cuda": impl_cuda,
             "cpu": impl_cpu,
-            "hpu": impl_hpu,
             "xpu": impl_xpu,
         }
         device = get_device(args, kwargs)
@@ -241,16 +234,6 @@ def register_run_with_rng_state_op():
         torch.set_rng_state(current_state)
         return out
 
-    @run_with_rng_state.py_impl(DispatchKey.HPU)
-    def impl_hpu(rng_state, op, *args, **kwargs):
-        if hasattr(torch, "hpu"):
-            current_state = torch.hpu.get_rng_state()
-            torch.hpu.set_rng_state(rng_state)
-            out = op(*args, **kwargs)
-            torch.hpu.set_rng_state(current_state)
-            return out
-        raise RuntimeError("functionalize a hpu RNG operator is not supported.")
-
     @run_with_rng_state.py_impl(DispatchKey.XPU)
     def impl_xpu(rng_state, op, *args, **kwargs):
         current_state = torch.xpu.get_rng_state()
@@ -277,7 +260,6 @@ def register_run_with_rng_state_op():
         impl_map = {
             "cuda": impl_cuda,
             "cpu": impl_cpu,
-            "hpu": impl_hpu,
             "xpu": impl_xpu,
         }
         device = get_device(args, kwargs)
