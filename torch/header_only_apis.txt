@@ -135,19 +135,9 @@ DeviceType
 kCPU
 kCUDA
 kHIP
-kFPGA
-kMAIA
-kXLA
 kMPS
 kMeta
-kVulkan
-kMetal
 kXPU
-kHPU
-kVE
-kLazy
-kIPU
-kMTIA
 kPrivateUse1
 COMPILE_TIME_MAX_DEVICE_TYPES
 

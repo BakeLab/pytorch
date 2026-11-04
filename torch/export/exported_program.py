@@ -158,11 +158,8 @@ _AUTOGRAD_ALIAS_BACKEND_KEYS_TO_OVERRIDE = [
     torch._C.DispatchKey.AutogradCPU,
     torch._C.DispatchKey.AutogradCUDA,
     torch._C.DispatchKey.AutogradMeta,
-    torch._C.DispatchKey.AutogradXLA,
-    torch._C.DispatchKey.AutogradLazy,
     torch._C.DispatchKey.AutogradXPU,
     torch._C.DispatchKey.AutogradMPS,
-    torch._C.DispatchKey.AutogradHPU,
     torch._C.DispatchKey.AutogradPrivateUse1,
     torch._C.DispatchKey.AutogradPrivateUse2,
     torch._C.DispatchKey.AutogradPrivateUse3,
@@ -178,11 +175,8 @@ _BACKEND_KEYS_TO_OVERRIDE = [
     torch._C.DispatchKey.CPU,
     torch._C.DispatchKey.CUDA,
     torch._C.DispatchKey.Meta,
-    torch._C.DispatchKey.XLA,
-    torch._C.DispatchKey.Lazy,
     torch._C.DispatchKey.XPU,
     torch._C.DispatchKey.MPS,
-    torch._C.DispatchKey.HPU,
 ]
 
 

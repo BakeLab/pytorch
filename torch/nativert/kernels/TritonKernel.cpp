@@ -227,12 +227,6 @@ TritonKernel::TritonKernel(
         tmp_dir + kernel_name + ".launcher.so");
     TORCH_CHECK(
         loader_ != nullptr, "couldn't find CPU loader -- is this a cpu build?");
-  } else if (reader->hasRecord(kernel_prefix + "/" + kernel_name + ".bin")) {
-    loader_ = TritonKernelManagerRegistry()->Create(
-        at::kMTIA, symbol_name, tmp_dir + kernel_name + ".bin", "");
-    TORCH_CHECK(
-        loader_ != nullptr,
-        "couldn't find MTIA loader -- is this a mtia build?");
   }
 
   TORCH_CHECK(

@@ -453,14 +453,6 @@ class UserDefinedClassVariable(UserDefinedVariable):
             torch.Stream,
             torch.Event,
         }
-        if hasattr(torch, "hpu"):
-            _in_graph_class_list.update(
-                {
-                    torch.hpu.Stream,
-                    torch.hpu.Event,
-                }
-            )
-
         for _, device_interface in get_registered_device_interfaces():
             stream_class = getattr(device_interface, "Stream", None)
             if isinstance(stream_class, type) and issubclass(

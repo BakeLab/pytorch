@@ -299,16 +299,17 @@ enum class DispatchKey : uint16_t {
   // backend-specific autograd keys.
   // Backend-specific allow backends to override the default kernel registered
   // to Autograd key as needed.
-  // For example, XLA wants to define autograd for einsum directly.
-  // Registering a custom autograd implementation at the XLA key won't work
-  // because we process Autograd before XLA.  This key has higher priority and
+  // An out-of-tree backend can define autograd for an operation directly.
+  // Registering a custom autograd implementation at that backend key won't
+  // work because we process Autograd before backend-specific keys.
   // gets processed first.  You generally should NOT redispatch after handling
   // autograd here (since that would result in execution of the Autograd
-  // operator, which you're trying to skip).  In AutogradXLA implementations,
+  // operator, which you're trying to skip).  In backend-specific autograd
+  // implementations,
   // you are responsible for handling autograd yourself, or deferring to other
   // operators which support autograd.
 
-  // Currently we only have backend-specific autograd keys for CPU/CUDA/XLA and
+  // Currently we only have backend-specific autograd keys for CPU/CUDA and
   // reserved user-defined backends. All other in-tree backends share the
   // AutogradOther key. We can add specific autograd key for those backends
   // upon request.

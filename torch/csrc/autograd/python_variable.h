@@ -28,10 +28,6 @@ struct THPVariable {
   PyObject* post_accumulate_grad_hooks = nullptr;
 };
 
-TORCH_PYTHON_API void registerPythonTensorClass(
-    const std::string& device,
-    PyObject* python_tensor_class);
-
 TORCH_PYTHON_API void activateGPUTrace();
 
 TORCH_PYTHON_API extern PyObject* THPVariableClass;

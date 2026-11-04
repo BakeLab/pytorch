@@ -2012,7 +2012,6 @@ class FakeTensorMode(TorchDispatchMode):
 
         return not (
             torch.cuda.is_available()
-            or (hasattr(torch, "hpu") and torch.hpu.is_available())
             or _is_privateuse1_backend_available()
         )
 

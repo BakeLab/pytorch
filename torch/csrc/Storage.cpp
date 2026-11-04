@@ -130,11 +130,8 @@ static PyObject* THPStorage_pynew(
         break;
 #endif
       case at::DeviceType::XPU:
-      case at::DeviceType::HPU:
       case at::DeviceType::Meta:
       case at::DeviceType::PrivateUse1:
-      case at::DeviceType::MAIA:
-      case at::DeviceType::MTIA:
         allocator = c10::GetAllocator(device.type());
         break;
       default:

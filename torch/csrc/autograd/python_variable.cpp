@@ -373,28 +373,6 @@ static bool check_has_torch_dispatch(PyObject* obj) {
 }
 
 // NOLINTNEXTLINE(*-c-arrays,cppcoreguidelines-avoid-non-const-global-variables)
-static PyObject* device_to_py_class_[static_cast<size_t>(
-    c10::DeviceType::COMPILE_TIME_MAX_DEVICE_TYPES)];
-
-void registerPythonTensorClass(
-    const std::string& device,
-    PyObject* python_tensor_class) {
-  c10::Device dev(device);
-
-  TORCH_CHECK(
-      dev.type() == kXLA, "Only the python class for XLA can be overridden");
-  if (device_to_py_class_[static_cast<size_t>(dev.type())] != nullptr) {
-    TORCH_WARN(
-        "Overriding a previously registered python class for ", dev.str());
-  }
-
-  device_to_py_class_[static_cast<size_t>(dev.type())] = python_tensor_class;
-}
-
-static PyObject* getPythonTensorClass(c10::Device d) {
-  return device_to_py_class_[static_cast<size_t>(d.type())];
-}
-
 void activateGPUTrace() {
   c10::impl::GPUTrace::set_trace(getPyInterpreter());
 }
@@ -424,10 +402,6 @@ static PyObject* THPVariable_WrapWithType(
     PyTypeObject* type = reinterpret_cast<PyTypeObject*>(THPVariableClass);
     if (desired_type) {
       type = *desired_type;
-    } else if (C10_UNLIKELY(var.device().type() == c10::kXLA)) {
-      if (auto clazz = getPythonTensorClass(var.device())) {
-        type = reinterpret_cast<PyTypeObject*>(clazz);
-      }
     }
 
     PyObject* wrapper = type->tp_alloc(type, 0);
@@ -3094,16 +3068,6 @@ static PyObject* THPVariable_is_cuda(THPVariable* self, void* unused) {
   END_HANDLE_TH_ERRORS
 }
 
-static PyObject* THPVariable_is_xla(THPVariable* self, void* unused) {
-  HANDLE_TH_ERRORS
-  if (has_torch_function((PyObject*)self)) {
-    return handle_torch_function_getter(self, "is_xla");
-  }
-  auto& self_ = THPVariable_Unpack(self);
-  return torch::autograd::utils::wrap(self_.is_xla());
-  END_HANDLE_TH_ERRORS
-}
-
 static PyObject* THPVariable_is_xpu(THPVariable* self, void* unused) {
   HANDLE_TH_ERRORS
   if (has_torch_function((PyObject*)self)) {
@@ -3151,16 +3115,6 @@ static PyObject* THPVariable_is_mps(THPVariable* self, void* unused) {
   }
   auto& self_ = THPVariable_Unpack(self);
   return torch::autograd::utils::wrap(self_.is_mps());
-  END_HANDLE_TH_ERRORS
-}
-
-static PyObject* THPVariable_is_maia(THPVariable* self, void* unused) {
-  HANDLE_TH_ERRORS
-  if (has_torch_function((PyObject*)self)) {
-    return handle_torch_function_getter(self, "is_maia");
-  }
-  auto& self_ = THPVariable_Unpack(self);
-  return torch::autograd::utils::wrap(self_.is_maia());
   END_HANDLE_TH_ERRORS
 }
 
@@ -3435,7 +3389,6 @@ static struct PyGetSetDef THPVariable_properties[] = {
     {"shape", (getter)THPVariable_get_shape, nullptr, nullptr, nullptr},
     {"is_cuda", (getter)THPVariable_is_cuda, nullptr, nullptr, nullptr},
     {"is_cpu", (getter)THPVariable_is_cpu, nullptr, nullptr, nullptr},
-    {"is_xla", (getter)THPVariable_is_xla, nullptr, nullptr, nullptr},
     {"is_xpu", (getter)THPVariable_is_xpu, nullptr, nullptr, nullptr},
     {"is_sparse", (getter)THPVariable_is_sparse, nullptr, nullptr, nullptr},
     {"is_sparse_csr",
@@ -3445,7 +3398,6 @@ static struct PyGetSetDef THPVariable_properties[] = {
      nullptr},
     {"is_mkldnn", (getter)THPVariable_is_mkldnn, nullptr, nullptr, nullptr},
     {"is_mps", (getter)THPVariable_is_mps, nullptr, nullptr, nullptr},
-    {"is_maia", (getter)THPVariable_is_maia, nullptr, nullptr, nullptr},
     {"is_complex", (getter)THPVariable_is_complex, nullptr, nullptr, nullptr},
     {"is_quantized",
      (getter)THPVariable_is_quantized,

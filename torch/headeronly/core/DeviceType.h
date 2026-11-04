@@ -59,19 +59,9 @@ enum class DeviceType : int8_t {
 constexpr DeviceType kCPU = DeviceType::CPU;
 constexpr DeviceType kCUDA = DeviceType::CUDA;
 constexpr DeviceType kHIP = DeviceType::HIP;
-constexpr DeviceType kFPGA = DeviceType::FPGA;
-constexpr DeviceType kMAIA = DeviceType::MAIA;
-constexpr DeviceType kXLA = DeviceType::XLA;
 constexpr DeviceType kMPS = DeviceType::MPS;
 constexpr DeviceType kMeta = DeviceType::Meta;
-constexpr DeviceType kVulkan = DeviceType::Vulkan;
-constexpr DeviceType kMetal = DeviceType::Metal;
 constexpr DeviceType kXPU = DeviceType::XPU;
-constexpr DeviceType kHPU = DeviceType::HPU;
-constexpr DeviceType kVE = DeviceType::VE;
-constexpr DeviceType kLazy = DeviceType::Lazy;
-constexpr DeviceType kIPU = DeviceType::IPU;
-constexpr DeviceType kMTIA = DeviceType::MTIA;
 constexpr DeviceType kPrivateUse1 = DeviceType::PrivateUse1;
 
 // define explicit int constant
@@ -96,19 +86,9 @@ using c10::COMPILE_TIME_MAX_DEVICE_TYPES;
 using c10::DeviceType;
 using c10::kCPU;
 using c10::kCUDA;
-using c10::kFPGA;
 using c10::kHIP;
-using c10::kHPU;
-using c10::kIPU;
-using c10::kLazy;
-using c10::kMAIA;
 using c10::kMeta;
 using c10::kMPS;
-using c10::kMTIA;
 using c10::kPrivateUse1;
-using c10::kVE;
-using c10::kVulkan;
-using c10::kXLA;
-using c10::kMetal;
 using c10::kXPU;
 HIDDEN_NAMESPACE_END(torch, headeronly)

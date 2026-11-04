@@ -154,24 +154,10 @@ PyObject* THPAutograd_initExtension(PyObject* _unused, PyObject* unused) {
   py::enum_<c10::DeviceType>(m, "DeviceType")
       .value("CPU", c10::DeviceType::CPU)
       .value("CUDA", c10::DeviceType::CUDA)
-      .value("MKLDNN", c10::DeviceType::MKLDNN)
-      .value("OPENGL", c10::DeviceType::OPENGL)
-      .value("OPENCL", c10::DeviceType::OPENCL)
-      .value("IDEEP", c10::DeviceType::IDEEP)
       .value("HIP", c10::DeviceType::HIP)
-      .value("FPGA", c10::DeviceType::FPGA)
-      .value("MAIA", c10::DeviceType::MAIA)
-      .value("XLA", c10::DeviceType::XLA)
-      .value("Metal", c10::DeviceType::Metal)
-      .value("Vulkan", c10::DeviceType::Vulkan)
       .value("XPU", c10::DeviceType::XPU)
       .value("MPS", c10::DeviceType::MPS)
-      .value("MTIA", c10::DeviceType::MTIA)
       .value("Meta", c10::DeviceType::Meta)
-      .value("HPU", c10::DeviceType::HPU)
-      .value("VE", c10::DeviceType::VE)
-      .value("Lazy", c10::DeviceType::Lazy)
-      .value("IPU", c10::DeviceType::IPU)
       .value("PrivateUse1", c10::DeviceType::PrivateUse1);
 
   using torch::autograd::CreationMeta;
@@ -611,12 +597,6 @@ PyObject* THPAutograd_initExtension(PyObject* _unused, PyObject* unused) {
   m.def(
       "_get_data_attr", [](const at::Tensor& t) { return t.variable_data(); });
 
-  _C_m.def(
-      "_register_py_class_for_device",
-      [](const std::string& device, py::object python_type_class) {
-        auto cls = python_type_class.ptr();
-        registerPythonTensorClass(device, cls);
-      });
   _C_m.def("_set_autograd_fallback_mode", [](const std::string& mode) {
     if (mode == "nothing") {
       torch::autograd::setAutogradFallbackMode(
@@ -815,7 +795,7 @@ static PyObject* is_any_autocast_enabled(PyObject* _unused, PyObject* arg) {
   if (at::autocast::is_autocast_enabled(at::kCPU) ||
       at::autocast::is_autocast_enabled(at::kCUDA) ||
       at::autocast::is_autocast_enabled(at::kXPU) ||
-      at::autocast::is_autocast_enabled(at::kXLA) ||
+      at::autocast::is_autocast_enabled(at::kMPS) ||
       at::autocast::is_autocast_enabled(at::kPrivateUse1)) {
     Py_RETURN_TRUE;
   } else {

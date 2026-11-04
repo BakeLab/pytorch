@@ -446,28 +446,10 @@ class TORCH_API TensorBase {
     return impl_->is_xpu();
   }
 
-  /// Returns if a `Tensor` has XLA backend.
-  bool is_xla() const {
-    return impl_->is_xla();
-  }
-
-  /// Returns if a `Tensor` has MTIA backend.
-  /// Returns if a `Tensor` has HPU backend.
-  /// Returns if a `Tensor` has Lazy backend.
-  bool is_lazy() const {
-    return impl_->is_lazy();
-  }
-
   /// Returns if a `Tensor` has HIP backend.
   bool is_hip() const {
     // NB: this is not a native function to avoid dispatching overhead.
     return impl_->is_hip();
-  }
-
-  /// Returns if a `Tensor` has VE backend.
-  bool is_ve() const {
-    // NB: this is not a native function to avoid dispatching overhead.
-    return impl_->is_ve();
   }
 
   /// Returns if a `Tensor` has PrivateUse1 backend.
@@ -498,12 +480,6 @@ class TORCH_API TensorBase {
   bool is_mps() const {
     // NB: this is not a native function to avoid dispatching overhead.
     return impl_->is_mps();
-  }
-
-  /// Returns if a `Tensor` is maia tensor.
-  bool is_maia() const {
-    // NB: this is not a native function to avoid dispatching overhead.
-    return impl_->is_maia();
   }
 
   /// Returns if a `Tensor` has quantized backend.

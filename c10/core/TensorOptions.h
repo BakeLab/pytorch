@@ -625,33 +625,20 @@ inline DispatchKey computeDispatchKey(
     case Layout::Jagged:
     case Layout::Strided: {
       switch (device_.type()) {
-#define DO_CASE(device, _)      \
-  case c10::DeviceType::device: \
-    return DispatchKey::device;
-        C10_FORALL_BACKEND_DEVICE_TYPES(DO_CASE, unused)
-#undef DO_CASE
-        case c10::DeviceType::FPGA:
-          return DispatchKey::FPGA;
-        case c10::DeviceType::MAIA:
-          return DispatchKey::MAIA;
-        case c10::DeviceType::Vulkan:
-          return DispatchKey::Vulkan;
-        case c10::DeviceType::Metal:
-          return DispatchKey::Metal;
-        case c10::DeviceType::MKLDNN:
-          TORCH_CHECK_NOT_IMPLEMENTED(
-              false,
-              "The 'mkldnn' device type is deprecated and cannot be used "
-              "to allocate dense tensors. Please use a supported device type "
-              "instead.");
-        case c10::DeviceType::OPENGL:
-        case c10::DeviceType::OPENCL:
-        case c10::DeviceType::IDEEP:
-          TORCH_INTERNAL_ASSERT(
-              0,
-              "This is a grandfathered Caffe2 device type ",
-              device_.type(),
-              ", it shouldn't ever convert to a DispatchKey.  File a bug describing what you were doing if you think this is in error.");
+        case c10::DeviceType::CPU:
+          return DispatchKey::CPU;
+        case c10::DeviceType::CUDA:
+          return DispatchKey::CUDA;
+        case c10::DeviceType::HIP:
+          return DispatchKey::HIP;
+        case c10::DeviceType::MPS:
+          return DispatchKey::MPS;
+        case c10::DeviceType::XPU:
+          return DispatchKey::XPU;
+        case c10::DeviceType::Meta:
+          return DispatchKey::Meta;
+        case c10::DeviceType::PrivateUse1:
+          return DispatchKey::PrivateUse1;
         case c10::DeviceType::COMPILE_TIME_MAX_DEVICE_TYPES:
         default:
           TORCH_CHECK_NOT_IMPLEMENTED(
@@ -662,12 +649,18 @@ inline DispatchKey computeDispatchKey(
     }
     case Layout::Sparse:
       switch (device_.type()) {
-#define DO_CASE(device, _)              \
-  case c10::DeviceType::device: {       \
-    return DispatchKey::Sparse##device; \
-  }
-        C10_FORALL_BACKEND_DEVICE_TYPES(DO_CASE, unused)
-#undef DO_CASE
+        case c10::DeviceType::CPU:
+          return DispatchKey::SparseCPU;
+        case c10::DeviceType::CUDA:
+          return DispatchKey::SparseCUDA;
+        case c10::DeviceType::HIP:
+          return DispatchKey::SparseHIP;
+        case c10::DeviceType::MPS:
+          return DispatchKey::SparseMPS;
+        case c10::DeviceType::XPU:
+          return DispatchKey::SparseXPU;
+        case c10::DeviceType::PrivateUse1:
+          return DispatchKey::SparsePrivateUse1;
         default:
           TORCH_CHECK_NOT_IMPLEMENTED(
               false,
@@ -689,12 +682,18 @@ inline DispatchKey computeDispatchKey(
     case Layout::SparseBsr:
     case Layout::SparseBsc:
       switch (device_.type()) {
-#define DO_CASE(device, _)                 \
-  case c10::DeviceType::device: {          \
-    return DispatchKey::SparseCsr##device; \
-  }
-        C10_FORALL_BACKEND_DEVICE_TYPES(DO_CASE, unused)
-#undef DO_CASE
+        case c10::DeviceType::CPU:
+          return DispatchKey::SparseCsrCPU;
+        case c10::DeviceType::CUDA:
+          return DispatchKey::SparseCsrCUDA;
+        case c10::DeviceType::HIP:
+          return DispatchKey::SparseCsrHIP;
+        case c10::DeviceType::MPS:
+          return DispatchKey::SparseCsrMPS;
+        case c10::DeviceType::XPU:
+          return DispatchKey::SparseCsrXPU;
+        case c10::DeviceType::PrivateUse1:
+          return DispatchKey::SparseCsrPrivateUse1;
         default:
           TORCH_CHECK_NOT_IMPLEMENTED(
               false,
@@ -711,13 +710,19 @@ inline DispatchKey computeDispatchKey(
 
 inline Layout dispatchKeyToLayout(DispatchKey dispatch_key) {
   switch (dispatch_key) {
-#define DO_CASE(bc, _) case DispatchKey::Sparse##bc:
-    C10_FORALL_BACKEND_COMPONENTS(DO_CASE, unused)
-#undef DO_CASE
+    case DispatchKey::SparseCPU:
+    case DispatchKey::SparseCUDA:
+    case DispatchKey::SparseHIP:
+    case DispatchKey::SparseMPS:
+    case DispatchKey::SparseXPU:
+    case DispatchKey::SparsePrivateUse1:
     return Layout::Sparse;
-#define DO_CASE(bc, _) case DispatchKey::SparseCsr##bc:
-    C10_FORALL_BACKEND_COMPONENTS(DO_CASE, unused)
-#undef DO_CASE
+    case DispatchKey::SparseCsrCPU:
+    case DispatchKey::SparseCsrCUDA:
+    case DispatchKey::SparseCsrHIP:
+    case DispatchKey::SparseCsrMPS:
+    case DispatchKey::SparseCsrXPU:
+    case DispatchKey::SparseCsrPrivateUse1:
     TORCH_CHECK(
         false, "Cannot map DispatchKey ", dispatch_key, " to a unique layout.");
     case DispatchKey::MkldnnCPU:
@@ -729,24 +734,29 @@ inline Layout dispatchKeyToLayout(DispatchKey dispatch_key) {
 
 inline c10::DeviceType dispatchKeyToDeviceType(DispatchKey dispatch_key) {
   switch (dispatch_key) {
-    // stuff that's real
-#define DO_CASE(suffix, prefix)     \
-  case DispatchKey::prefix##suffix: \
-    return c10::DeviceType::suffix;
-#define DO_CASES(_, prefix) C10_FORALL_BACKEND_DEVICE_TYPES(DO_CASE, prefix)
-    C10_FORALL_FUNCTIONALITY_KEYS(DO_CASES)
-#undef DO_CASES
-#undef DO_CASE
+    case DispatchKey::CPU:
+    case DispatchKey::AutogradCPU:
+      return c10::DeviceType::CPU;
+    case DispatchKey::CUDA:
+    case DispatchKey::AutogradCUDA:
+      return c10::DeviceType::CUDA;
+    case DispatchKey::HIP:
+    case DispatchKey::AutogradHIP:
+      return c10::DeviceType::HIP;
+    case DispatchKey::MPS:
+    case DispatchKey::AutogradMPS:
+      return c10::DeviceType::MPS;
+    case DispatchKey::XPU:
+    case DispatchKey::AutogradXPU:
+      return c10::DeviceType::XPU;
+    case DispatchKey::PrivateUse1:
+    case DispatchKey::AutogradPrivateUse1:
+      return c10::DeviceType::PrivateUse1;
+    case DispatchKey::Meta:
+      return c10::DeviceType::Meta;
 
     case DispatchKey::MkldnnCPU:
       return c10::DeviceType::CPU;
-    case DispatchKey::Vulkan:
-      return c10::DeviceType::Vulkan;
-    case DispatchKey::Metal:
-      return c10::DeviceType::Metal;
-
-    case DispatchKey::MAIA:
-      return c10::DeviceType::MAIA;
     default:
       TORCH_CHECK(
           false,

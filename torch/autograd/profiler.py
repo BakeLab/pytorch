@@ -298,12 +298,6 @@ class profile:
                 warn("XPU is not available, disabling XPU profiling", stacklevel=2)
                 self.use_device = None
 
-            if self.use_device == "hpu" and not (
-                hasattr(torch, "hpu") and torch.hpu.is_available()
-            ):
-                warn("HPU is not available, disabling HPU profiling", stacklevel=2)
-                self.use_device = None
-
         self.kineto_activities = set()
         if self.use_cpu:
             self.kineto_activities.add(ProfilerActivity.CPU)
@@ -322,12 +316,6 @@ class profile:
                     "Legacy XPU profiling is not supported. Requires use_kineto=True on XPU devices."
                 )
             self.kineto_activities.add(ProfilerActivity.XPU)
-        elif self.use_device == "hpu":
-            if not (use_kineto and ProfilerActivity.HPU in _supported_activities()):
-                raise AssertionError(
-                    "Legacy HPU profiling is not supported. Requires use_kineto=True on HPU devices."
-                )
-            self.kineto_activities.add(ProfilerActivity.HPU)
         elif self.use_device is not None and self.use_device != "privateuseone":
             if use_kineto:
                 # Native tracing mode: use KINETO_PRIVATEUSE1 with registered IActivityProfiler

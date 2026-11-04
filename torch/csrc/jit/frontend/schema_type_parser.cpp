@@ -233,7 +233,7 @@ std::optional<c10::Device> SchemaTypeParser::tryToParseDeviceType() {
     return c10::Device(at::kCPU);
   }
 
-  if (dev == "cuda" || dev == "hpu") {
+  if (dev == "cuda") {
     c10::DeviceIndex device_idx = -1;
     if (L.cur().kind == ':') {
       L.expect(':');
@@ -248,11 +248,7 @@ std::optional<c10::Device> SchemaTypeParser::tryToParseDeviceType() {
         throw(ErrorReport(L.cur()) << "Device index is too long");
       }
     }
-    if (dev == "cuda") {
-      return c10::Device(at::kCUDA, device_idx);
-    } else {
-      return c10::Device(at::kHPU, device_idx);
-    }
+    return c10::Device(at::kCUDA, device_idx);
   }
 
   throw(ErrorReport(L.cur()) << "cannot parse device type '" << dev << "'\n");

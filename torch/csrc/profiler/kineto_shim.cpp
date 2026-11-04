@@ -539,15 +539,8 @@ c10::DeviceType deviceTypeFromActivity(libkineto::ActivityType activity_type) {
     case libkineto::ActivityType::CUDA_PROFILER_RANGE:
     case libkineto::ActivityType::HARDWARE_COUNTERS:
       return device_type_privateuse1_or(c10::DeviceType::CUDA);
-    // TODO: T151322015
-    case libkineto::ActivityType::MTIA_CCP_EVENTS:
-    case libkineto::ActivityType::MTIA_INSIGHT:
-    case libkineto::ActivityType::MTIA_COUNTERS:
-      return device_type_privateuse1_or(c10::DeviceType::MTIA);
     case libkineto::ActivityType::XPU_SCOPE_PROFILER:
       return c10::DeviceType::XPU;
-    case libkineto::ActivityType::HPU_OP:
-      return c10::DeviceType::HPU;
     case libkineto::ActivityType::CPU_OP:
     case libkineto::ActivityType::USER_ANNOTATION:
     case libkineto::ActivityType::EXTERNAL_CORRELATION:
@@ -556,7 +549,6 @@ c10::DeviceType deviceTypeFromActivity(libkineto::ActivityType activity_type) {
     case libkineto::ActivityType::XPU_DRIVER:
     case libkineto::ActivityType::CPU_INSTANT_EVENT:
     case libkineto::ActivityType::GLOW_RUNTIME:
-    case libkineto::ActivityType::MTIA_RUNTIME:
     case libkineto::ActivityType::PYTHON_FUNCTION:
     case libkineto::ActivityType::CUDA_DRIVER:
     case libkineto::ActivityType::PRIVATEUSE1_RUNTIME:
