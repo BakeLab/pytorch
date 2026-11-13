@@ -31,7 +31,7 @@ on:
       python-version:
         required: false
         type: string
-        default: "3.12"
+        default: "3.14"
         description: |
           The python version to be used. Will be 3.9 by default
       test-matrix:
