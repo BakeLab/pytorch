@@ -22,6 +22,11 @@ elif [[ -n "$DESIRED_PYTHON" && "$DESIRED_PYTHON" != cp* ]]; then
     else
         py_majmin="${DESIRED_PYTHON:2:1}.${DESIRED_PYTHON:3:1}"
     fi
+elif [[ "$DESIRED_PYTHON" =~ ^cp([0-9])([0-9]+)-cp ]]; then
+    # A second source of this script can receive the normalized wheel tag
+    # (for example, cp314-cp314) from binary_populate_env.sh. Recover the
+    # interpreter version so the system-Python fallback can validate it.
+    py_majmin="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
 fi
 
 pydir="/opt/python/$DESIRED_PYTHON"
