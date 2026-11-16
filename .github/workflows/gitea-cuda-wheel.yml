@@ -104,6 +104,31 @@ jobs:
               source .ci/wheel/linux/set_desired_python.sh
               python3 --version > /artifacts/python.txt
               python3 .ci/pytorch/install_build_requirements.py
+              PYTORCH_EXTRA_INSTALL_REQUIREMENTS=$(python3 - <<"PY"
+          import ast, os
+          from pathlib import Path
+
+          tree = ast.parse(Path(".github/scripts/generate_binary_build_matrix.py").read_text())
+          for node in tree.body:
+              if isinstance(node, ast.Assign) and any(
+                  isinstance(target, ast.Name) and target.id == "PYTORCH_EXTRA_INSTALL_REQUIREMENTS"
+                  for target in node.targets
+              ):
+                  print(ast.literal_eval(node.value)[os.environ["GPU_ARCH_VERSION"]]["linux"])
+                  break
+          else:
+              raise RuntimeError("CUDA runtime dependency table is missing")
+          PY
+              )
+              export PYTORCH_EXTRA_INSTALL_REQUIREMENTS
+              nvshmem_requirement=$(python3 -c "import os; print(next(dep.strip() for dep in os.environ[\"PYTORCH_EXTRA_INSTALL_REQUIREMENTS\"].split(\"|\") if dep.strip().startswith(\"nvidia-nvshmem-\")))")
+              python3 -m pip install "$nvshmem_requirement"
+              NVSHMEM_HOME=$(python3 -c "import importlib.util; print(next(iter(importlib.util.find_spec(\"nvidia.nvshmem\").submodule_search_locations)))")
+              export NVSHMEM_HOME
+              test -f "$NVSHMEM_HOME/include/nvshmem.h"
+              test -f "$NVSHMEM_HOME/lib/libnvshmem_host.so.3"
+              test -f "$NVSHMEM_HOME/lib/libnvshmem_device.a"
+              python3 -m pip freeze > /artifacts/python-packages.txt
               bash .ci/wheel/linux/build.sh
             '
           find "$BUILD_ROOT/dist" -maxdepth 1 -type f -name '*.whl' -print -quit | grep -q .
