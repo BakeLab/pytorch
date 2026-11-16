@@ -59,7 +59,8 @@ jobs:
               /opt/python/cp314-cp314/bin/python -m venv /opt/venv
               export PATH="/opt/venv/bin:$PATH"
               python -m pip install -r requirements.txt pytest scipy pillow unittest-xml-reporting "cuda-bindings>=13,<14"
-              python -m pip wheel --no-deps --wheel-dir /workspace/cuda-ci-results/triton /workspace/triton
+              CXXFLAGS="${CXXFLAGS:+$CXXFLAGS }-Wno-error=deprecated-declarations" \
+                python -m pip wheel --no-deps --wheel-dir /workspace/cuda-ci-results/triton /workspace/triton
               python -m pip install --no-deps /workspace/cuda-ci-results/triton/*.whl
               triton_commit=$(git -C /workspace/triton rev-parse --short=8 HEAD)
               triton_version=$(python -c "from importlib.metadata import version; print(version(\"triton\"))")
