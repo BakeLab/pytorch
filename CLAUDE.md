@@ -65,29 +65,14 @@ directory so you don't force a rebuild against the broken state.
   statically and its symbols must remain hidden from the PyTorch DSO ABI.
 - Treat `.github/workflows/generated-*.yml` as generated files. Change the
   workflow generator, binary matrix, or Jinja templates and then regenerate.
-- Do not connect release workflows to PyTorch's official upload services.
-  Private-index upload changes require explicit user review and approval.
-- Internal accelerator variants use separate `cuda`, `rocm`, `xpu`, and `mps`
-  index channels while retaining the `torch` distribution name. Never expose
-  multiple accelerator variants on the same `torch` simple-index page because
-  pip cannot resolve packages from installed accelerator hardware.
-- Install from the appropriate channel with the shared Breadkernel tool,
-  `python /path/to/breadkernel/accelerator-wheel-pipeline.py install torch`. It
-  detects the local accelerator and fails rather than falling back when
-  detection is impossible or ambiguous; set `ACCELERATOR=cuda|rocm|xpu|mps` only
-  when provisioning requires an explicit override. The base URL is deliberately
-  not recorded here -- supply it through `ACCELERATOR_INDEX_URL` or `--base-url`.
-- Publish a completed wheel with the same tool's `publish` command. It derives
-  the channel from the wheel's PEP 440 local version, rejects mixed-accelerator
-  uploads, and does not overwrite an existing release. Supply credentials
-  through twine's environment or keyring support; never place credentials in the
-  repository or command history.
-- Publishing is a separate human-approved promotion step. Do not overwrite an
-  existing package version, and do not upload before the backend-specific wheel
-  tests have passed.
+- The current internal release workflow is `.github/workflows/gitea-cuda-wheel.yml`.
+  It builds the PyTorch CUDA 13.4 manywheel on Gitea and publishes it to the
+  `BakeLab/pypi` package index with a short-lived Actions OIDC identity. Do not
+  add long-lived package credentials.
+- Keep source CI and release builds separate. `cuda-ci.yml` tests the source on
+  the CUDA runner; the wheel release builds and publishes the PyTorch package.
 
-See `.ci/RELEASE.md` for the release matrix, package naming, dependency policy,
-and local build configuration.
+See `.ci/RELEASE.md` for the supported wheel build and publication details.
 
 # Build
 

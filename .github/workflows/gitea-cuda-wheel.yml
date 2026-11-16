@@ -1,0 +1,144 @@
+name: BakeLab CUDA wheel
+
+on:
+  push:
+    branches: [trim]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: bakelab-cuda-wheel-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-publish:
+    if: github.repository == 'BakeLab/pytorch' && github.server_url != 'https://github.com'
+    runs-on: [self-hosted, linux, x64, bb, cuda]
+    timeout-minutes: 1440
+    defaults:
+      run:
+        shell: bash
+    env:
+      BUILD_IMAGE: pytorch/manylinux2_28-builder:cuda13.4@sha256:3e1044020327d2783e2729accadacea14791313f2ba2548671f73e7d58ef8fba
+      BUILD_ROOT: ${{ runner.temp }}/pytorch-wheel
+      PYTORCH_ROOT: /workspace/pytorch
+      PYTORCH_FINAL_PACKAGE_DIR: /artifacts/dist
+      PACKAGE_TYPE: manywheel
+      DESIRED_CUDA: cu134
+      GPU_ARCH_TYPE: cuda
+      GPU_ARCH_VERSION: "13.4"
+      DESIRED_PYTHON: "3.14"
+      BUILD_ENVIRONMENT: linux-binary-manywheel
+      SKIP_ALL_TESTS: "1"
+      TORCH_NATIVE_AOT: "0"
+      MAX_JOBS: "8"
+      BINARY_ENV_FILE: /tmp/pytorch-binary-env
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.sha }}
+          path: pytorch
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Record source and build image
+        run: |
+          set -euo pipefail
+          mkdir -p "$BUILD_ROOT/dist"
+          git -C pytorch rev-parse HEAD > "$BUILD_ROOT/source-commit.txt"
+          git -C pytorch submodule status --recursive > "$BUILD_ROOT/submodules.txt"
+          printf '%s\n' "$BUILD_IMAGE" > "$BUILD_ROOT/build-image.txt"
+
+      - name: Build the PyTorch manywheel
+        run: |
+          set -euo pipefail
+          name="pytorch-wheel-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          trap 'docker rm -f "$name" >/dev/null 2>&1 || true' EXIT
+          docker run --name "$name" \
+            --volume "$GITHUB_WORKSPACE:/workspace" \
+            --volume "$BUILD_ROOT:/artifacts" \
+            --workdir /workspace/pytorch \
+            --env PYTORCH_ROOT --env PYTORCH_FINAL_PACKAGE_DIR \
+            --env PACKAGE_TYPE --env DESIRED_CUDA --env GPU_ARCH_TYPE \
+            --env GPU_ARCH_VERSION --env DESIRED_PYTHON --env BUILD_ENVIRONMENT \
+            --env SKIP_ALL_TESTS --env TORCH_NATIVE_AOT --env MAX_JOBS \
+            --env BINARY_ENV_FILE \
+            "$BUILD_IMAGE" bash -euc '
+              git config --global --add safe.directory "$PYTORCH_ROOT"
+              bash .ci/pytorch/binary_populate_env.sh
+              source "$BINARY_ENV_FILE"
+              "${CXX:-c++}" --version > /artifacts/compiler.txt
+              nvcc --version > /artifacts/nvcc.txt
+              source .ci/wheel/linux/set_desired_python.sh
+              python3 --version > /artifacts/python.txt
+              bash .ci/wheel/linux/build.sh
+            '
+          find "$BUILD_ROOT/dist" -maxdepth 1 -type f -name '*.whl' -print -quit | grep -q .
+          shasum -a 256 "$BUILD_ROOT"/dist/*.whl > "$BUILD_ROOT/wheels.sha256"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          root = Path(os.environ["BUILD_ROOT"])
+          data = {
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "source_commit": (root / "source-commit.txt").read_text().strip(),
+              "submodules": (root / "submodules.txt").read_text().splitlines(),
+              "build_image": os.environ["BUILD_IMAGE"],
+              "cuda": os.environ["DESIRED_CUDA"],
+              "python": os.environ["DESIRED_PYTHON"],
+              "compiler": (root / "compiler.txt").read_text().splitlines()[0],
+              "nvcc": (root / "nvcc.txt").read_text().splitlines()[-1],
+              "run_id": os.environ["GITHUB_RUN_ID"],
+              "wheel_sha256": (root / "wheels.sha256").read_text().splitlines(),
+          }
+          (root / "provenance.json").write_text(json.dumps(data, indent=2) + "\n")
+          PY
+
+      - uses: astral-sh/setup-uv@v10.3.0
+
+      - name: Publish to Gitea PyPI
+        run: |
+          python3 - "$BUILD_ROOT"/dist/*.whl <<'PY'
+          import json
+          import os
+          import subprocess
+          import sys
+          from urllib.parse import urlencode
+          from urllib.request import Request, urlopen
+
+          endpoint = os.environ["ACTIONS_ID_TOKEN_REQUEST_URL"]
+          separator = "&" if "?" in endpoint else "?"
+          request = Request(
+              endpoint + separator + urlencode({"audience": "https://gitea.int.bb.pub/api/packages"}),
+              headers={
+                  "Authorization": "Bearer " + os.environ["ACTIONS_ID_TOKEN_REQUEST_TOKEN"],
+                  "Accept": "application/json",
+              },
+          )
+          with urlopen(request, timeout=30) as response:
+              token = json.load(response)["value"]
+          env = os.environ.copy()
+          env["UV_PUBLISH_TOKEN"] = token
+          subprocess.run(
+              [
+                  "uv", "publish", "--publish-url",
+                  "https://gitea.int.bb.pub/api/packages/BakeLab/pypi/",
+                  "--trusted-publishing", "never", "--no-attestations",
+                  *sys.argv[1:],
+              ],
+              check=True,
+              env=env,
+          )
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: pytorch-cuda-wheel-${{ github.sha }}
+          path: ${{ runner.temp }}/pytorch-wheel/
+          if-no-files-found: warn
