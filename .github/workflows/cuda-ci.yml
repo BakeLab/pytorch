@@ -49,13 +49,17 @@ jobs:
             "$image" bash -euc '
               /opt/conda/bin/conda create --yes --prefix /opt/gcc16 \
                 --override-channels --channel conda-forge \
-                gcc_linux-64=16.2.0 gxx_linux-64=16.2.0 sysroot_linux-64=2.28 openblas
+                gcc_linux-64=16.2.0 gxx_linux-64=16.2.0 sysroot_linux-64=2.28 openblas zlib
               export CC=/opt/gcc16/bin/x86_64-conda-linux-gnu-gcc
               export CXX=/opt/gcc16/bin/x86_64-conda-linux-gnu-g++
               export CUDAHOSTCXX="$CXX"
               export OpenBLAS_HOME=/opt/gcc16
+              export LIBRARY_PATH="/opt/gcc16/lib${LIBRARY_PATH:+:$LIBRARY_PATH}"
               export LD_LIBRARY_PATH="/opt/gcc16/lib:${LD_LIBRARY_PATH:-}"
               "$CXX" --version > /workspace/cuda-ci-results/compiler.txt
+              printf "extern \"C\" const char *zlibVersion(); int main() { return zlibVersion() == nullptr; }\n" \
+                | "$CXX" -x c++ - -lz -o /tmp/gcc16-zlib-check
+              /tmp/gcc16-zlib-check
               /opt/python/cp314-cp314/bin/python -m venv /opt/venv
               export PATH="/opt/venv/bin:$PATH"
               python -m pip install -r requirements.txt pytest scipy pillow unittest-xml-reporting "cuda-bindings>=13,<14"
