@@ -30,7 +30,7 @@ from auditwheel.wheeltools import add_platforms, InWheelCtx
 from build_env_setup import PLATFORM_TAGS
 
 
-PATCHELF = "/usr/local/bin/patchelf"
+PATCHELF = shutil.which("patchelf") or "/usr/local/bin/patchelf"
 ROCM_ARCH = "gfx1201"
 
 
@@ -63,10 +63,12 @@ class AuxFile:
 
 
 def detect_libgomp() -> Path:
-    """libgomp lives in different places on Ubuntu vs RHEL-family images."""
+    """libgomp lives in different places on Ubuntu, Arch, and RHEL images."""
     arch = platform.machine()
     os_release = Path("/etc/os-release").read_text()
-    if "Ubuntu" in os_release:
+    if "Ubuntu" in os_release or "Arch Linux" in os_release:
+        if "Arch Linux" in os_release:
+            return Path("/usr/lib/libgomp.so.1")
         return Path(f"/usr/lib/{arch}-linux-gnu/libgomp.so.1")
     return Path("/usr/lib64/libgomp.so.1")
 
@@ -133,7 +135,13 @@ def arch_extra_deps(arch: str, use_cuda: bool) -> list[Path]:
     CPU builds link against OpenBLAS + libgfortran
     CUDA builds link against NVPL.
     """
-    candidates: list[Path] = [Path("/usr/lib64/libgfortran.so.5")]
+    os_release = Path("/etc/os-release").read_text()
+    libgfortran = (
+        Path("/usr/lib/libgfortran.so.5")
+        if "Arch Linux" in os_release
+        else Path("/usr/lib64/libgfortran.so.5")
+    )
+    candidates: list[Path] = [libgfortran]
     if arch == "aarch64":
         # Both CPU and CUDA builds pick up ARM Compute Library (ACL) for
         # oneDNN acceleration on AArch64.
@@ -442,9 +450,10 @@ def repair_wheel(
                 if sofile.is_file():
                     set_rpath(sofile, lib_so_rpath, force_rpath)
 
-        # Retag linux_* -> manylinux_2_28_* in both the filename and the WHEEL
-        # metadata. add_platforms updates ctx.out_wheel to the new name; RECORD
-        # regeneration and repacking happen when the context exits.
+        # Retag linux_* in both the filename and WHEEL metadata. Internal builds
+        # may set PYTORCH_WHEEL_PLATFORM to avoid promising a manylinux baseline;
+        # upstream builds keep the manylinux default. add_platforms updates
+        # ctx.out_wheel and regenerates RECORD when the context exits.
         add_platforms(
             ctx, [platform_tag], remove_platforms=wheel_platform_tags(wheel.name)
         )
@@ -526,7 +535,9 @@ def main() -> None:
 
     if arch not in PLATFORM_TAGS:
         sys.exit(f"Unknown arch {arch}")
-    platform_tag = PLATFORM_TAGS[arch]
+    platform_tag = os.environ.get("PYTORCH_WHEEL_PLATFORM", PLATFORM_TAGS[arch])
+    if platform_tag not in (PLATFORM_TAGS[arch], f"linux_{arch}"):
+        sys.exit(f"Unsupported wheel platform tag {platform_tag!r} for {arch}")
     for whl in wheels:
         repair_wheel(
             whl,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a PyTorch wheel inside a manylinux container.
+"""Build a PyTorch wheel inside a CI container.
 
 Usage: build_wheel.py <output_dir>
 

@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """GPU/toolchain environment setup (runs once before any wheel is built).
 
-The manywheel builder image (.ci/docker/manywheel/Dockerfile_2_28) is
-expected to ship the heavy build dependencies (CUDA, cuDNN, NCCL, MAGMA,
-cuSPARSELt, MKL, plus the standard OS package set). This script:
+The selected CI builder image is expected to ship the heavy build dependencies
+(CUDA, cuDNN, NCCL, MAGMA, cuSPARSELt, MKL, plus the standard OS package set).
+The internal Arch wheel job prepares those dependencies with pacman before
+calling this script. This script:
 
   * Installs the two packages historically added at wheel-build time
     (zip, openssl) to match the legacy build_common.sh contract.
   * Falls back to running install_cuda.sh / install_magma.sh /
-    install_mkl.sh if CUDA, MAGMA, or MKL is missing, so the script
-    remains usable on a lean manylinux base.
+    install_mkl.sh if CUDA, MAGMA, or MKL is missing.
   * Wires the symlinks/env to target the requested CUDA version.
 
 Build-flag exports (USE_CUDA, TH_BINARY_BUILD, ...) are written to the file

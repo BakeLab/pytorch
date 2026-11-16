@@ -22,16 +22,17 @@ jobs:
       run:
         shell: bash
     env:
-      BUILD_IMAGE: pytorch/manylinux2_28-builder:cuda13.4@sha256:3e1044020327d2783e2729accadacea14791313f2ba2548671f73e7d58ef8fba
+      BUILD_IMAGE: archlinux:base-devel@sha256:97119fd9e21219b02b3c14ba256c9d3c0d031d07fc26c836c41ed793beeb5b74
       BUILD_ROOT: ${{ runner.temp }}/pytorch-wheel
       PYTORCH_ROOT: /workspace/pytorch
       PYTORCH_FINAL_PACKAGE_DIR: /artifacts/dist
-      PACKAGE_TYPE: manywheel
+      PACKAGE_TYPE: wheel
       DESIRED_CUDA: cu134
       GPU_ARCH_TYPE: cuda
       GPU_ARCH_VERSION: "13.4"
       DESIRED_PYTHON: "3.14"
-      BUILD_ENVIRONMENT: linux-binary-manywheel
+      BUILD_ENVIRONMENT: linux-binary-arch
+      PYTORCH_WHEEL_PLATFORM: linux_x86_64
       SKIP_ALL_TESTS: "1"
       TORCH_NATIVE_AOT: "0"
       MAX_JOBS: "8"
@@ -53,7 +54,7 @@ jobs:
           git -C pytorch submodule status --recursive > "$BUILD_ROOT/submodules.txt"
           printf '%s\n' "$BUILD_IMAGE" > "$BUILD_ROOT/build-image.txt"
 
-      - name: Build the PyTorch manywheel
+      - name: Build the PyTorch Linux wheel
         run: |
           set -euo pipefail
           name="pytorch-wheel-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
@@ -65,12 +66,39 @@ jobs:
             --env PYTORCH_ROOT --env PYTORCH_FINAL_PACKAGE_DIR \
             --env PACKAGE_TYPE --env DESIRED_CUDA --env GPU_ARCH_TYPE \
             --env GPU_ARCH_VERSION --env DESIRED_PYTHON --env BUILD_ENVIRONMENT \
+            --env PYTORCH_WHEEL_PLATFORM \
             --env SKIP_ALL_TESTS --env TORCH_NATIVE_AOT --env MAX_JOBS \
             --env BINARY_ENV_FILE \
             "$BUILD_IMAGE" bash -euc '
+              pacman -Syu --noconfirm --needed \
+                base-devel cmake cuda cudnn git magma-cuda nccl ninja \
+                patchelf pkgconf python python-pip zip openssl
+              pacman -Q > /artifacts/arch-packages.txt
+              python3 -m venv /opt/pytorch-venv
+              export PATH="/opt/pytorch-venv/bin:/opt/cuda/bin:$PATH"
+              mkdir -p /usr/local
+              ln -sfn /opt/cuda /usr/local/cuda-13.4
+              ln -sfn /usr/local/cuda-13.4 /usr/local/cuda
+              mkdir -p /opt/cuda/magma
+              ln -sfn /opt/cuda/targets/x86_64-linux/include /opt/cuda/magma/include
+              ln -sfn /opt/cuda/targets/x86_64-linux/lib /opt/cuda/magma/lib
+              for library in /usr/lib/libcudnn*.so* /usr/lib/libnccl.so*; do
+                if [[ -e "$library" ]]; then
+                  ln -sfn "$library" /opt/cuda/lib64/
+                fi
+              done
+              for header in /usr/include/cudnn*.h /usr/include/nccl.h; do
+                if [[ -e "$header" ]]; then
+                  ln -sfn "$header" /opt/cuda/include/
+                fi
+              done
+              ldconfig
               git config --global --add safe.directory "$PYTORCH_ROOT"
               bash .ci/pytorch/binary_populate_env.sh
               source "$BINARY_ENV_FILE"
+              export CC=/usr/bin/gcc
+              export CXX=/usr/bin/g++
+              export CUDAHOSTCXX="$CXX"
               "${CXX:-c++}" --version > /artifacts/compiler.txt
               nvcc --version > /artifacts/nvcc.txt
               source .ci/wheel/linux/set_desired_python.sh
@@ -90,6 +118,7 @@ jobs:
               "source_commit": (root / "source-commit.txt").read_text().strip(),
               "submodules": (root / "submodules.txt").read_text().splitlines(),
               "build_image": os.environ["BUILD_IMAGE"],
+              "arch_packages": (root / "arch-packages.txt").read_text().splitlines(),
               "cuda": os.environ["DESIRED_CUDA"],
               "python": os.environ["DESIRED_PYTHON"],
               "compiler": (root / "compiler.txt").read_text().splitlines()[0],

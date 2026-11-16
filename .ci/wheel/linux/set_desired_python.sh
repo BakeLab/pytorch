@@ -25,6 +25,15 @@ elif [[ -n "$DESIRED_PYTHON" && "$DESIRED_PYTHON" != cp* ]]; then
 fi
 
 pydir="/opt/python/$DESIRED_PYTHON"
-export DESIRED_PYTHON_BIN_DIR="${pydir}/bin"
+if [[ -x "${pydir}/bin/python3" ]]; then
+    export DESIRED_PYTHON_BIN_DIR="${pydir}/bin"
+else
+    actual_python="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+    if [[ "${actual_python}" != "${py_majmin}" ]]; then
+        echo "Requested Python ${py_majmin}, but system Python is ${actual_python}" >&2
+        exit 1
+    fi
+    export DESIRED_PYTHON_BIN_DIR="$(dirname "$(command -v python3)")"
+fi
 export PATH="$DESIRED_PYTHON_BIN_DIR:$PATH"
 echo "Will build for Python version: ${DESIRED_PYTHON}"
