@@ -75,6 +75,15 @@ jobs:
               nvcc --version > /artifacts/nvcc.txt
               source .ci/wheel/linux/set_desired_python.sh
               python3 --version > /artifacts/python.txt
+              python3 - <<'PY'
+              import subprocess
+              import sys
+              import tomllib
+
+              with open("pyproject.toml", "rb") as f:
+                  requirements = tomllib.load(f)["build-system"]["requires"]
+              subprocess.run([sys.executable, "-m", "pip", "install", *requirements], check=True)
+              PY
               bash .ci/wheel/linux/build.sh
             '
           find "$BUILD_ROOT/dist" -maxdepth 1 -type f -name '*.whl' -print -quit | grep -q .

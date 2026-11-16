@@ -29,12 +29,7 @@ jobs:
           persist-credentials: false
 
       - name: Checkout BakeLab Triton trim
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          repository: BakeLab/triton
-          ref: trim
-          path: triton
-          persist-credentials: false
+        run: git clone --depth 1 --branch trim https://github.com/BakeLab/triton.git triton
 
       - name: Build and test this commit in the repository CUDA image
         run: |
