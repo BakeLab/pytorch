@@ -71,7 +71,7 @@ jobs:
             --env BINARY_ENV_FILE \
             "$BUILD_IMAGE" bash -euc '
               pacman -Syu --noconfirm --needed \
-                base-devel cmake cuda cudnn git magma-cuda nccl ninja \
+                base-devel cmake cuda cudnn git magma-cuda nccl ninja openblas \
                 patchelf pkgconf python python-pip zip openssl
               pacman -Q > /artifacts/arch-packages.txt
               python3 -m venv /opt/pytorch-venv
