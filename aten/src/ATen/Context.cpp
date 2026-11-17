@@ -2,6 +2,8 @@
 
 #include <ATen/Context.h>
 
+#include <c10/core/CPUAllocator.h>
+
 #include <algorithm>
 #include <array>
 #include <cctype>
