@@ -33,6 +33,8 @@ jobs:
       DESIRED_PYTHON: "3.14"
       BUILD_ENVIRONMENT: linux-binary-arch
       PYTORCH_WHEEL_PLATFORM: linux_x86_64
+      BUILD_TEST: "0"
+      INSTALL_TEST: "0"
       SKIP_ALL_TESTS: "1"
       TORCH_NATIVE_AOT: "0"
       MAX_JOBS: "8"
@@ -67,7 +69,8 @@ jobs:
             --env PACKAGE_TYPE --env DESIRED_CUDA --env GPU_ARCH_TYPE \
             --env GPU_ARCH_VERSION --env DESIRED_PYTHON --env BUILD_ENVIRONMENT \
             --env PYTORCH_WHEEL_PLATFORM \
-            --env SKIP_ALL_TESTS --env TORCH_NATIVE_AOT --env MAX_JOBS \
+            --env BUILD_TEST --env INSTALL_TEST --env SKIP_ALL_TESTS \
+            --env TORCH_NATIVE_AOT --env MAX_JOBS \
             --env BINARY_ENV_FILE \
             "$BUILD_IMAGE" bash -euc '
               pacman -Syu --noconfirm --needed \
