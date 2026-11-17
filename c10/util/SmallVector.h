@@ -71,6 +71,11 @@ class C10_API SmallVectorBase {
   /// This is an implementation of the grow() method which only works
   /// on POD-like data types and is out of line to reduce code duplication.
   /// This function will report a fatal error if it cannot increase capacity.
+  // FirstEl is only compared with BeginX, never dereferenced. Tell GCC that
+  // passing the address of uninitialized inline storage does not read it.
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 10
+  __attribute__((access(none, 2)))
+#endif
   void grow_pod(const void* FirstEl, size_t MinSize, size_t TSize);
 
  public:
