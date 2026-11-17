@@ -895,6 +895,11 @@ if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   string(APPEND CMAKE_CXX_FLAGS " -Wno-pass-failed")
 endif()
 if(CMAKE_COMPILER_IS_GNUCXX)
+  # GCC 16 reports false-positive maybe-uninitialized diagnostics in libstdc++
+  # optional/vector destruction paths; keep other warnings enabled.
+  if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16)
+    append_cxx_flag_if_supported("-Wno-maybe-uninitialized" CMAKE_CXX_FLAGS)
+  endif()
   # Suppress "The ABI for passing parameters with 64-byte alignment has
   # changed in GCC 4.6"
   string(APPEND CMAKE_CXX_FLAGS " -Wno-psabi")
