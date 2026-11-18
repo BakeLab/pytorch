@@ -31,7 +31,7 @@ jobs:
       - name: Checkout BakeLab Triton trim
         run: git clone --depth 1 --branch trim https://github.com/BakeLab/triton.git triton
 
-      - name: Build and test this commit in the repository CUDA image
+      - name: Build and test this commit with Clang 22
         run: |
           mkdir -p cuda-ci-results
           git -C pytorch rev-parse HEAD > cuda-ci-results/pytorch.sha
@@ -49,9 +49,9 @@ jobs:
             "$image" bash -euc '
               /opt/conda/bin/conda create --yes --prefix /opt/gcc16 \
                 --override-channels --channel conda-forge \
-                gcc_linux-64=16.2.0 gxx_linux-64=16.2.0 sysroot_linux-64=2.28 openblas zlib
-              export CC=/opt/gcc16/bin/x86_64-conda-linux-gnu-gcc
-              export CXX=/opt/gcc16/bin/x86_64-conda-linux-gnu-g++
+                gcc_linux-64=16.2.0 gxx_linux-64=16.2.0 clang_linux-64=22.1.* clangxx_linux-64=22.1.* sysroot_linux-64=2.28 openblas zlib
+              export CC=/opt/gcc16/bin/x86_64-conda-linux-gnu-clang
+              export CXX=/opt/gcc16/bin/x86_64-conda-linux-gnu-clang++
               export CUDAHOSTCXX="$CXX"
               export OpenBLAS_HOME=/opt/gcc16
               export LIBRARY_PATH="/opt/gcc16/lib${LIBRARY_PATH:+:$LIBRARY_PATH}"
