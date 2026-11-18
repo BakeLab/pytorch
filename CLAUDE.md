@@ -66,7 +66,7 @@ directory so you don't force a rebuild against the broken state.
 - Treat `.github/workflows/generated-*.yml` as generated files. Change the
   workflow generator, binary matrix, or Jinja templates and then regenerate.
 - The current internal release workflow is `.github/workflows/gitea-cuda-wheel.yml`.
-  It builds the PyTorch CUDA 13.4 manywheel on Gitea and publishes it to the
+  It builds the PyTorch CUDA 13.5 manywheel on Gitea and publishes it to the
   `BakeLab/pypi` package index with a short-lived Actions OIDC identity. Do not
   add long-lived package credentials.
 - Keep source CI and release builds separate. `cuda-ci.yml` tests the source on

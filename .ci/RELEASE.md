@@ -5,10 +5,10 @@ CUDA wheel when `trim` advances in BakeLab Gitea. It runs on the
 `[self-hosted, linux, x64, bb, cuda]` runner and uses PyTorch's own
 `.ci/pytorch/binary_populate_env.sh` and `.ci/wheel/linux/build.sh` wheel
 pipeline inside a digest-pinned Arch Linux `base-devel` container. Pacman
-installs GCC, Python 3.14, CUDA 13.4, cuDNN, NCCL, and MAGMA; the resulting
+installs Clang, GCC, Python 3.14, CUDA 13.5, cuDNN, NCCL, and MAGMA; the resulting
 wheel uses the plain `linux_x86_64` platform tag for our internal registry.
 
-The workflow currently publishes one Python 3.14 CUDA 13.4 wheel to the Gitea
+The workflow currently publishes one Python 3.14 CUDA 13.5 wheel to the Gitea
 PyPI registry at `https://gitea.int.bb.pub/api/packages/BakeLab/pypi/`. It
 requests a short-lived Actions OIDC identity for the Gitea Packages audience
 and supplies it to `uv publish`; no long-lived upload secret is used. The
