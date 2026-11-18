@@ -369,6 +369,14 @@ DEVICE_REQUIREMENT: dict[int, _CompatSet | _CompatInterval] = {
 PYTORCH_RELEASES_CODE_CC: dict[str, dict[str, set[int]]] = {
     "13.3": {
         "x86_64": {120},
+        "aarch64": {80, 90, 100, 110, 120},
+    },
+    "13.4": {
+        "x86_64": {120},
+        "aarch64": {80, 90, 100, 110, 120},
+    },
+    "13.5": {
+        "x86_64": {120},
     },
 }
 

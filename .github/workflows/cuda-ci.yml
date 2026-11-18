@@ -36,7 +36,7 @@ jobs:
           mkdir -p cuda-ci-results
           git -C pytorch rev-parse HEAD > cuda-ci-results/pytorch.sha
           git -C triton rev-parse HEAD > cuda-ci-results/triton.sha
-          image=pytorch/manylinux2_28-builder:cuda13.4@sha256:3e1044020327d2783e2729accadacea14791313f2ba2548671f73e7d58ef8fba
+          image=pytorch/manylinux2_28-builder:cuda13.5@sha256:fe69b9f753f0b42827e5a7996aff38842b57d76d674aeefbcead5c1302011c79
           printf '%s\n' "$image" > cuda-ci-results/build-image.txt
           arch=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader | sort -u | paste -sd ' ' -)
           [[ "$arch" =~ ^[0-9]+\.[0-9]+(\ [0-9]+\.[0-9]+)*$ ]]

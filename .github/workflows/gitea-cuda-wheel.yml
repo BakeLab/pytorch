@@ -23,13 +23,12 @@ jobs:
         shell: bash
     env:
       BUILD_IMAGE: archlinux:base-devel@sha256:97119fd9e21219b02b3c14ba256c9d3c0d031d07fc26c836c41ed793beeb5b74
-      BUILD_ROOT: ${{ runner.temp }}/pytorch-wheel
       PYTORCH_ROOT: /workspace/pytorch
       PYTORCH_FINAL_PACKAGE_DIR: /artifacts/dist
       PACKAGE_TYPE: wheel
-      DESIRED_CUDA: cu134
+      DESIRED_CUDA: cu135
       GPU_ARCH_TYPE: cuda
-      GPU_ARCH_VERSION: "13.4"
+      GPU_ARCH_VERSION: "13.5"
       DESIRED_PYTHON: "3.14"
       BUILD_ENVIRONMENT: linux-binary-arch
       PYTORCH_WHEEL_PLATFORM: linux_x86_64
@@ -51,6 +50,8 @@ jobs:
       - name: Record source and build image
         run: |
           set -euo pipefail
+          BUILD_ROOT="$RUNNER_TEMP/pytorch-wheel"
+          echo "BUILD_ROOT=$BUILD_ROOT" >> "$GITHUB_ENV"
           mkdir -p "$BUILD_ROOT/dist"
           git -C pytorch rev-parse HEAD > "$BUILD_ROOT/source-commit.txt"
           git -C pytorch submodule status --recursive > "$BUILD_ROOT/submodules.txt"
@@ -80,8 +81,8 @@ jobs:
               python3 -m venv /opt/pytorch-venv
               export PATH="/opt/pytorch-venv/bin:/opt/cuda/bin:$PATH"
               mkdir -p /usr/local
-              ln -sfn /opt/cuda /usr/local/cuda-13.4
-              ln -sfn /usr/local/cuda-13.4 /usr/local/cuda
+              ln -sfn /opt/cuda "/usr/local/cuda-${GPU_ARCH_VERSION}"
+              ln -sfn "/usr/local/cuda-${GPU_ARCH_VERSION}" /usr/local/cuda
               mkdir -p /opt/cuda/magma
               ln -sfn /opt/cuda/targets/x86_64-linux/include /opt/cuda/magma/include
               ln -sfn /opt/cuda/targets/x86_64-linux/lib /opt/cuda/magma/lib
@@ -101,11 +102,11 @@ jobs:
               source "$BINARY_ENV_FILE"
               export CC=/usr/bin/clang
               export CXX=/usr/bin/clang++
-              export CUDAHOSTCXX="$CXX"
-              compiler_version=$("$CXX" -dumpversion)
-              [[ "$compiler_version" == 22.* ]]
+              export CUDAHOSTCXX=/usr/bin/g++
               "$CXX" --version > /artifacts/compiler.txt
-              nvcc --version > /artifacts/nvcc.txt
+              "$CUDAHOSTCXX" --version > /artifacts/cuda-host-compiler.txt
+              nvcc --version | tee /artifacts/nvcc.txt
+              grep -Fq "release ${GPU_ARCH_VERSION}," /artifacts/nvcc.txt
               source .ci/wheel/linux/set_desired_python.sh
               python3 --version > /artifacts/python.txt
               python3 .ci/pytorch/install_build_requirements.py
@@ -152,6 +153,7 @@ jobs:
               "cuda": os.environ["DESIRED_CUDA"],
               "python": os.environ["DESIRED_PYTHON"],
               "compiler": (root / "compiler.txt").read_text().splitlines()[0],
+              "cuda_host_compiler": (root / "cuda-host-compiler.txt").read_text().splitlines()[0],
               "nvcc": (root / "nvcc.txt").read_text().splitlines()[-1],
               "run_id": os.environ["GITHUB_RUN_ID"],
               "wheel_sha256": (root / "wheels.sha256").read_text().splitlines(),
