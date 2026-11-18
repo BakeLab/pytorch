@@ -37,7 +37,7 @@ jobs:
       INSTALL_TEST: "0"
       SKIP_ALL_TESTS: "1"
       TORCH_NATIVE_AOT: "0"
-      MAX_JOBS: "8"
+      MAX_JOBS: "4"
       BINARY_ENV_FILE: /tmp/pytorch-binary-env
 
     steps:
@@ -74,7 +74,7 @@ jobs:
             --env BINARY_ENV_FILE \
             "$BUILD_IMAGE" bash -euc '
               pacman -Syu --noconfirm --needed \
-                base-devel cmake cuda cudnn git magma-cuda nccl ninja openblas \
+                base-devel clang cmake cuda cudnn git magma-cuda nccl ninja openblas \
                 patchelf pkgconf python python-pip zip openssl
               pacman -Q > /artifacts/arch-packages.txt
               python3 -m venv /opt/pytorch-venv
@@ -99,10 +99,12 @@ jobs:
               git config --global --add safe.directory "$PYTORCH_ROOT"
               bash .ci/pytorch/binary_populate_env.sh
               source "$BINARY_ENV_FILE"
-              export CC=/usr/bin/gcc
-              export CXX=/usr/bin/g++
+              export CC=/usr/bin/clang
+              export CXX=/usr/bin/clang++
               export CUDAHOSTCXX="$CXX"
-              "${CXX:-c++}" --version > /artifacts/compiler.txt
+              compiler_version=$("$CXX" -dumpversion)
+              [[ "$compiler_version" == 22.* ]]
+              "$CXX" --version > /artifacts/compiler.txt
               nvcc --version > /artifacts/nvcc.txt
               source .ci/wheel/linux/set_desired_python.sh
               python3 --version > /artifacts/python.txt
