@@ -36,7 +36,7 @@ jobs:
       INSTALL_TEST: "0"
       SKIP_ALL_TESTS: "1"
       TORCH_NATIVE_AOT: "0"
-      MAX_JOBS: "4"
+      MAX_JOBS: "1"
       BINARY_ENV_FILE: /tmp/pytorch-binary-env
 
     steps:
@@ -135,6 +135,16 @@ jobs:
               test -f "$NVSHMEM_HOME/lib/libnvshmem_host.so.3"
               test -f "$NVSHMEM_HOME/lib/libnvshmem_device.a"
               python3 -m pip freeze > /artifacts/python-packages.txt
+              record_memory() {
+                for field in memory.max memory.peak memory.events; do
+                  if [[ -r /sys/fs/cgroup/$field ]]; then
+                    echo "$field"
+                    cat "/sys/fs/cgroup/$field"
+                  fi
+                done
+              }
+              record_memory
+              trap record_memory EXIT
               bash .ci/wheel/linux/build.sh
             '
           find "$BUILD_ROOT/dist" -maxdepth 1 -type f -name '*.whl' -print -quit | grep -q .
