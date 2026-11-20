@@ -569,7 +569,9 @@ string(APPEND CMAKE_HIP_FLAGS " -fdata-sections")
 
 # Let nvcc split device codegen across threads. Two keeps the product with
 # MAX_JOBS within the core count on the machines this fork is built on.
-string(APPEND CMAKE_CUDA_FLAGS " --split-compile=2")
+if(NOT "$ENV{MAX_JOBS}" STREQUAL "1")
+  string(APPEND CMAKE_CUDA_FLAGS " --split-compile=2")
+endif()
 
 # INTERN_BUILD_ATEN_OPS is used to control whether to build ATen/TH operators.
 set(INTERN_BUILD_ATEN_OPS ON)

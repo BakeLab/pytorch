@@ -133,7 +133,8 @@ def torch_cuda_arch_list(cuda_version: str, arch: str) -> str:
 
 
 def cuda_build_env(cuda_version: str, arch: str) -> dict[str, str]:
-    nvcc_flags = "-Xfatbin -compress-all --threads 2"
+    threads = 1 if os.environ.get("MAX_JOBS") == "1" else 2
+    nvcc_flags = f"-Xfatbin -compress-all --threads {threads}"
     if cuda_version.startswith("13."):
         nvcc_flags += " -compress-mode=size"
     env = {
