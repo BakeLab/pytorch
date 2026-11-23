@@ -40,14 +40,6 @@ jobs:
           role-to-assume: arn:aws:iam::749337293305:role/gha_workflow_test_build_wheels
           aws-region: us-east-1
 
-      - name: Download Build Artifacts
-        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
-        with:
-          name: flash-attn-3-wheel-cu${{ matrix.build_cuda_short }}-${{ matrix.arch }}
-          path: ${{ runner.temp }}/artifacts
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ inputs.linux_run_id }}
-
       - name: Upload binaries to test index
         env:
           PACKAGE_TYPE: wheel

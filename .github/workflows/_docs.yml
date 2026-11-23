@@ -175,15 +175,6 @@ jobs:
           SHA=${{ github.sha }}
           EOF
 
-      - name: Upload docs preview artifact (PR)
-        if: ${{ github.event_name == 'pull_request' && steps.build-docs.outcome == 'success' }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: docs-preview-osdc-${{ matrix.docs_type }}
-          path: docs-preview-staging
-          retention-days: 14
-          if-no-files-found: error
-
       - name: Post C++ Docs Coverage Comment
         # Skip on fork PRs since the GITHUB_TOKEN is read-only there.
         if: ${{ github.event_name == 'pull_request' && matrix.docs_type == 'cpp' && steps.build-docs.outcome == 'success' && github.event.pull_request.head.repo.full_name == github.repository }}

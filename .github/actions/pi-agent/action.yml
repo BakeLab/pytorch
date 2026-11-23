@@ -90,16 +90,6 @@ runs:
         PI_SKILLS: ${{ inputs.skills }}
       run: bash "$PI_ACTION_PATH/run.sh"
 
-    - name: Upload pi run
-      id: upload
-      if: always()
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-      with:
-        name: ${{ inputs.artifact-name }}
-        path: ${{ runner.temp }}/pi-run
-        retention-days: 14
-        if-no-files-found: warn
-
     - name: Link transcript
       if: always() && steps.upload.outputs.artifact-url != ''
       shell: bash

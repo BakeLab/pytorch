@@ -77,13 +77,6 @@ jobs:
               python test/test_cuda.py -v --save-xml /workspace/cuda-ci-results/pytorch
             '
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        if: always()
-        with:
-          name: trim-cuda-${{ github.sha }}
-          path: cuda-ci-results/
-          if-no-files-found: warn
-
       - name: Stop the build container
         if: always()
         run: |

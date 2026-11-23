@@ -27,11 +27,3 @@ runs:
         path: artifacts.zip
         s3-bucket: ${{ inputs.s3-bucket }}
 
-    - name: Upload PyTorch Build Artifacts to GHA
-      if: inputs.use-gha != '' && inputs.use-gha != 'false'
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-      with:
-        name: ${{ inputs.name }}
-        retention-days: 14
-        if-no-files-found: error
-        path: artifacts.zip

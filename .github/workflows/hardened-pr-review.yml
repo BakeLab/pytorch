@@ -225,10 +225,3 @@ jobs:
 
           echo "Captured PR #${PR_NUM} @ ${HEAD_SHA} (base ${BASE_REF} @ ${BASE_SHA}, fork=${IS_FORK})"
 
-      - name: Upload capture artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: hardened-pr-review-request
-          path: pr-review-request.json
-          retention-days: 1
-          if-no-files-found: error

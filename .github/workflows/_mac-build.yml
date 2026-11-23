@@ -171,25 +171,6 @@ jobs:
         run: |
           zip -1 -r artifacts.zip dist/ build/.ninja_log build/compile_commands.json .additional_ci_files
 
-      - name: Store PyTorch Build Artifacts on GHA
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        if: inputs.build-generates-artifacts && steps.build.outcome != 'skipped'
-        with:
-          name: ${{ env.BUILD_ENVIRONMENT }}
-          retention-days: 14
-          if-no-files-found: error
-          path: artifacts.zip
-
-      - name: Upload sccache stats to GHA
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        # Only if sccache is installed, see above
-        if: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && steps.build.outcome != 'skipped' }}
-        with:
-          name: sccache-stats-${{ inputs.build-environment }}-runattempt${{ github.run_attempt }}-${{ steps.get-job-id.outputs.job-id }}
-          retention-days: 14
-          if-no-files-found: warn
-          path: sccache-stats-*.json
-
       - name: Clean up disk space
         if: always()
         continue-on-error: true

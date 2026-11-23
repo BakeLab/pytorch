@@ -42,7 +42,6 @@ jobs:
           python-version: '3.11'
           architecture: x64
           check-latest: false
-          cache: pip
 
       - name: Install and initialize lintrunner
         run: |
