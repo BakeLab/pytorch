@@ -249,13 +249,6 @@ jobs:
         run: |
           kill "$MONITOR_SCRIPT_PID"
 
-      - name: Upload test artifacts
-        uses: ./.github/actions/upload-test-artifacts
-        if: always() && steps.test.conclusion && steps.test.conclusion != 'skipped'
-        with:
-          use-gha: true
-          file-suffix: ${{ github.job }}-${{ matrix.config }}-${{ matrix.shard }}-${{ matrix.num_shards }}-${{ matrix.runner }}_${{ steps.get-job-id.outputs.job-id }}
-
       - name: Upload the benchmark results
         uses: pytorch/test-infra/.github/actions/upload-benchmark-results@main
         with:
@@ -263,18 +256,6 @@ jobs:
           dry-run: false
           schema-version: v3
           github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload utilization stats
-        if: ${{ always() && steps.test.conclusion && steps.test.conclusion != 'skipped' && !inputs.disable-monitor }}
-        continue-on-error: true
-        uses: ./.github/actions/upload-utilization-stats
-        with:
-          job_id: ${{ steps.get-job-id.outputs.job-id }}
-          job_name: ${{ steps.get-job-id.outputs.job-name }}
-          workflow_name: ${{ github.workflow }}
-          workflow_run_id: ${{github.run_id}}
-          workflow_attempt: ${{github.run_attempt}}
-          local_path: usage_log.txt
 
       - name: Reinstall brew miniconda, if was installed
         if: always()

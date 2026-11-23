@@ -17,13 +17,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Upload PyTorch Build Artifacts to S3
-      if: inputs.use-gha == '' || inputs.use-gha == 'false'
-      uses: seemethere/upload-artifact-s3@baba72d0712b404f646cebe0730933554ebce96a # v5.1.0
-      with:
-        name: ${{ inputs.name }}
-        retention-days: 14
-        if-no-files-found: error
-        path: artifacts.zip
-        s3-bucket: ${{ inputs.s3-bucket }}
+    - name: AWS/S3 disabled
+      shell: bash
+      run: echo "AWS/S3 upload and artifact steps are disabled."
 

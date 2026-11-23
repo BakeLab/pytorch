@@ -92,16 +92,6 @@ jobs:
           cd "${TD_WORKSPACE}/codellama"
           uv pip install -e .
 
-      - name: Fetch CodeLlama Checkpoint
-        shell: bash
-        run: |
-          set -euxo pipefail
-          cd "${TD_WORKSPACE}/codellama"
-          mkdir "CodeLlama-7b-Python"
-          # target-determinator-assets is a public bucket; download anonymously so
-          # we don't need S3 credentials for the read.
-          aws s3 cp "s3://target-determinator-assets/CodeLlama-7b-Python" "CodeLlama-7b-Python" --recursive --no-progress --no-sign-request
-
       - name: Fetch indexes
         uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3.0.0
         with:

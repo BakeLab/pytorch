@@ -415,92 +415,6 @@ jobs:
           fi
           { printf 'comments='; cat pr-comments.json; echo; } >> "$GITHUB_OUTPUT"
 
-      - name: Configure AWS credentials via OIDC
-        if: steps.freshness.outputs.eligible == 'true'
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
-        with:
-          role-to-assume: ${{ env.PUBLISHER_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-duration-seconds: 900
-
-      - name: Record `started` row
-        if: steps.freshness.outputs.eligible == 'true'
-        env:
-          HARNESS: gha-interim
-          HARNESS_VERSION: ${{ github.sha }}
-          REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ steps.coords.outputs.pr_number }}
-          HEAD_SHA: ${{ steps.coords.outputs.head_sha }}
-          BASE_SHA: ${{ steps.freshness.outputs.base_sha }}
-          IS_FORK: ${{ steps.freshness.outputs.is_fork }}
-          TRIGGER_EVENT: ${{ steps.coords.outputs.trigger_event }}
-          TRIGGER_LABEL: ${{ env.REVIEW_LABEL }}
-          TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
-          PROMPT_HASH: ${{ steps.prompt.outputs.hash }}
-          TRUSTED_SHA: ${{ github.sha }}
-          CONVERSATION_FETCHED_AT: ${{ steps.conversation.outputs.fetched_at }}
-        run: |
-          set -euo pipefail
-          ROW_TIMESTAMP="${CONVERSATION_FETCHED_AT:-$(date -u +%Y-%m-%dT%H:%M:%S.000)}" \
-            python3 scripts/pr_review/emit_row.py --phase started --out started.json
-          aws s3 cp started.json \
-            "s3://${S3_BUCKET}/${S3_PREFIX}/${{ github.repository }}/${{ github.run_id }}_${{ github.run_attempt }}_started.json"
-
-      - name: Close out a stale request
-        if: steps.freshness.outputs.eligible == 'true' && steps.freshness.outputs.fresh == 'false'
-        env:
-          HARNESS: gha-interim
-          HARNESS_VERSION: ${{ github.sha }}
-          REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ steps.coords.outputs.pr_number }}
-          HEAD_SHA: ${{ steps.coords.outputs.head_sha }}
-          # API-corroborated, like every other row: `freshness` is the only step
-          # that exports these two, precisely so the artifact's unverified claim
-          # is not reachable from here.
-          BASE_SHA: ${{ steps.freshness.outputs.base_sha }}
-          IS_FORK: ${{ steps.freshness.outputs.is_fork }}
-          TRIGGER_EVENT: ${{ steps.coords.outputs.trigger_event }}
-          TRIGGER_LABEL: ${{ env.REVIEW_LABEL }}
-          TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
-          PROMPT_HASH: ${{ steps.prompt.outputs.hash }}
-          TRUSTED_SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-          ROW_TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%S.000) \
-            python3 scripts/pr_review/emit_row.py \
-              --phase terminal --status skipped_stale --out terminal.json
-          aws s3 cp terminal.json \
-            "s3://${S3_BUCKET}/${S3_PREFIX}/${{ github.repository }}/${{ github.run_id }}_${{ github.run_attempt }}_terminal.json"
-
-      # Mirrors the stale close-out above, for the same reason: `review` and
-      # `publish` are both skipped on this path, so the terminal row has to be
-      # written from here or the attempt records a `started` with no terminal
-      # and reads as a runner death.
-      - name: Close out an oversized request
-        if: |
-          steps.freshness.outputs.eligible == 'true' &&
-          steps.freshness.outputs.fresh == 'true' &&
-          steps.freshness.outputs.too_large == 'true'
-        env:
-          HARNESS: gha-interim
-          HARNESS_VERSION: ${{ github.sha }}
-          REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ steps.coords.outputs.pr_number }}
-          HEAD_SHA: ${{ steps.coords.outputs.head_sha }}
-          BASE_SHA: ${{ steps.freshness.outputs.base_sha }}
-          IS_FORK: ${{ steps.freshness.outputs.is_fork }}
-          TRIGGER_EVENT: ${{ steps.coords.outputs.trigger_event }}
-          TRIGGER_LABEL: ${{ env.REVIEW_LABEL }}
-          TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
-          PROMPT_HASH: ${{ steps.prompt.outputs.hash }}
-          TRUSTED_SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-          ROW_TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%S.000) \
-            python3 scripts/pr_review/emit_row.py \
-              --phase terminal --status skipped_too_large --out terminal.json
-          aws s3 cp terminal.json \
-            "s3://${S3_BUCKET}/${S3_PREFIX}/${{ github.repository }}/${{ github.run_id }}_${{ github.run_attempt }}_terminal.json"
 
   announce:
     needs: prepare
@@ -751,18 +665,6 @@ jobs:
             echo "too_large=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Configure AWS credentials via OIDC
-        if: steps.diff.outputs.too_large == 'false'
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
-        with:
-          role-to-assume: ${{ env.REVIEW_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
-          # The role's ceiling. The review step's 55-minute timeout leaves room
-          # for the steps between here and it. The credential stays Bedrock-only.
-          role-duration-seconds: 3600
-
-      # Fetched by `prepare` from the API. No continue-on-error: a review
-      # that cannot see the conversation fails and is recorded as model_error.
       - name: Write the PR conversation
         if: steps.diff.outputs.too_large == 'false'
         env:
@@ -1078,30 +980,6 @@ jobs:
           fi
           echo "--- usage.json ---"; cat out/usage.json
 
-      - name: Upload the raw traces to S3
-        if: always()
-        env:
-          STAGE_B_EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
-        run: |
-          set -euo pipefail
-          # Best-effort: losing a debugging artifact must not fail the review.
-          # Stage B keeps the path the terminal row's reasoning_uri names;
-          # stage A, which holds the review itself, sits beside it.
-          if [ -f /tmp/stage-a-execution.json ]; then
-            aws s3 cp /tmp/stage-a-execution.json \
-              "s3://${S3_BUCKET}/pr_review_traces/${{ github.repository }}/${{ github.run_id }}_${{ github.run_attempt }}_stage_a.json" \
-              || echo "::warning::stage A trace upload failed (best-effort)"
-          fi
-          if [ -n "${STAGE_B_EXECUTION_FILE:-}" ] && [ -f "$STAGE_B_EXECUTION_FILE" ]; then
-            aws s3 cp "$STAGE_B_EXECUTION_FILE" \
-              "s3://${S3_BUCKET}/pr_review_traces/${{ github.repository }}/${{ github.run_id }}_${{ github.run_attempt }}.json" \
-              || echo "::warning::trace upload failed (best-effort)"
-          elif [ -f /tmp/stage-a-execution.json ]; then
-            # Stage B never ran, so reasoning_uri gets stage A's trace.
-            aws s3 cp /tmp/stage-a-execution.json \
-              "s3://${S3_BUCKET}/pr_review_traces/${{ github.repository }}/${{ github.run_id }}_${{ github.run_attempt }}.json" \
-              || echo "::warning::trace upload failed (best-effort)"
-          fi
 
 
   publish:
@@ -1128,63 +1006,6 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 1
           persist-credentials: false
-
-      - name: Configure AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
-        with:
-          role-to-assume: ${{ env.PUBLISHER_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-duration-seconds: 900
-
-      - name: Record terminal row
-        env:
-          HARNESS: gha-interim
-          HARNESS_VERSION: ${{ github.sha }}
-          REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ needs.prepare.outputs.pr_number }}
-          HEAD_SHA: ${{ needs.prepare.outputs.head_sha }}
-          BASE_SHA: ${{ needs.prepare.outputs.base_sha }}
-          IS_FORK: ${{ needs.prepare.outputs.is_fork }}
-          TRIGGER_EVENT: ${{ needs.prepare.outputs.trigger_event }}
-          TRIGGER_LABEL: ${{ env.REVIEW_LABEL }}
-          TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
-          PROMPT_HASH: ${{ needs.prepare.outputs.prompt_hash }}
-          TRUSTED_SHA: ${{ github.sha }}
-          REVIEW_RESULT: ${{ needs.review.result }}
-        run: |
-          set -euo pipefail
-          # The review job can fail or be cancelled without producing a verdict.
-          # Map that to an explicit terminal status rather than letting the row
-          # go missing, which would be indistinguishable from "never triggered".
-          STATUS_OVERRIDE=""
-          if [ ! -f out/verdict.json ]; then
-            case "$REVIEW_RESULT" in
-              cancelled) STATUS_OVERRIDE="blocked" ;;
-              *)         STATUS_OVERRIDE="model_error" ;;
-            esac
-            echo "::warning::no verdict artifact (review=${REVIEW_RESULT}); recording ${STATUS_OVERRIDE}"
-          elif [ "$REVIEW_RESULT" != "success" ]; then
-            CLAIMED=$(jq -r '.status // "unknown"' out/verdict.json 2>/dev/null || echo unknown)
-            if [ "$CLAIMED" = "succeeded" ]; then
-              STATUS_OVERRIDE="model_error"
-              echo "::warning::verdict claims succeeded but review job result=${REVIEW_RESULT}; recording model_error"
-            fi
-          fi
-
-          REASONING_URI="s3://${S3_BUCKET}/pr_review_traces/${{ github.repository }}/${{ github.run_id }}_${{ github.run_attempt }}.json" \
-          ROW_TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%S.000) \
-            python3 scripts/pr_review/emit_row.py \
-              --phase terminal \
-              --verdict-file out/verdict.json \
-              --usage-file out/usage.json \
-              ${STATUS_OVERRIDE:+--status "$STATUS_OVERRIDE"} \
-              --out terminal.json
-
-          echo "--- terminal.json ---"
-          cat terminal.json
-
-          aws s3 cp terminal.json \
-            "s3://${S3_BUCKET}/${S3_PREFIX}/${{ github.repository }}/${{ github.run_id }}_${{ github.run_attempt }}_terminal.json"
 
       - name: Post the automated review on the PR
         # Posts the verdict as a GitHub review and hides the previous one.
