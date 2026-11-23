@@ -85,21 +85,6 @@ jobs:
           set -x
           python3 .github/scripts/comment_on_pr.py "${PR_NUM}" "merge"
 
-      - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 # v4.1.0
-        continue-on-error: true
-        with:
-          role-to-assume: arn:aws:iam::308535385114:role/upload_to_ossci_raw_job_status
-          aws-region: us-east-1
-
-      - name: Upload merge record to s3
-        if: always()
-        continue-on-error: true
-        uses: seemethere/upload-artifact-s3@baba72d0712b404f646cebe0730933554ebce96a # v5.1.0
-        with:
-          s3-bucket: ossci-raw-job-status
-          s3-prefix: merges/${{ github.repository }}/${{ github.event.client_payload.pr_num }}/${{ github.event.client_payload.comment_id }}/${{ github.run_id }}
-          path: merge_record.json
 
 # We want newer merge commands to supersede old ones
 concurrency:

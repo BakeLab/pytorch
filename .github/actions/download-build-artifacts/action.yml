@@ -17,13 +17,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Download PyTorch Build Artifacts from S3
-      if: inputs.use-gha == '' || inputs.use-gha == 'false'
-      uses: seemethere/download-artifact-s3@1da556a7aa0a088e3153970611f6c432d58e80e6 # v4.2.0
-      with:
-        name: ${{ inputs.name }}
-        s3-bucket: ${{ inputs.s3-bucket }}
-
     - name: Unzip artifacts
       shell: bash
       run: unzip -o artifacts.zip
