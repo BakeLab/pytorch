@@ -1103,19 +1103,6 @@ jobs:
               || echo "::warning::trace upload failed (best-effort)"
           fi
 
-      - name: Upload the sanitized verdict
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: hardened-pr-review-verdict
-          # ONLY the sanitized verdict and the numeric usage metrics. The raw
-          # transcript is NOT here — artifacts on a public repo are
-          # world-readable, so it goes straight to S3 instead.
-          path: |
-            out/verdict.json
-            out/usage.json
-          retention-days: 7
-          if-no-files-found: warn
 
   publish:
     needs: [prepare, announce, review]
@@ -1141,14 +1128,6 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 1
           persist-credentials: false
-
-      - name: Download the sanitized verdict
-        id: fetch
-        continue-on-error: true
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: hardened-pr-review-verdict
-          path: out
 
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4

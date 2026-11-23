@@ -40,7 +40,7 @@ jobs:
           # torch==2.0.1 (pinned by llm-target-determinator) only ships wheels up to cp311
           python-version: "3.11"
           activate-environment: true
-          enable-cache: true
+          enable-cache: false
 
       - name: Clone CodeLlama
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -136,11 +136,3 @@ jobs:
           cd assets
           zip -r mappings.zip mappings
 
-      - name: Upload results
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        if: ${{ steps.run_retriever.outcome == 'success' }}
-        with:
-          name: llm_results
-          retention-days: 1
-          if-no-files-found: warn
-          path: ${{ env.TD_WORKSPACE }}/llm-target-determinator/assets/mappings.zip

@@ -164,14 +164,6 @@ jobs:
           printf '%s' "$VERDICT_JSON" > /tmp/verdict/verdict.json
           cat /tmp/verdict/verdict.json
 
-      - name: Upload verdict artifact
-        if: always() && steps.claude.outputs.structured_output != ''
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: autorevert-verdict
-          path: /tmp/verdict/verdict.json
-          retention-days: 30
-
       - name: Upload verdict to S3 for ClickHouse ingestion
         if: always() && steps.claude.outputs.structured_output != ''
         env:

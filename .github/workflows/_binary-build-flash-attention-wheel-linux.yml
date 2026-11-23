@@ -90,8 +90,3 @@ jobs:
             "torch==${TORCH_VERSION}" --extra-index-url "https://download.pytorch.org/whl/cu${CUDA_SHORT}"
           bash .ci/flash-attention/build.sh
 
-      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
-        with:
-          name: flash-attn-3-wheel-cu${{ matrix.cuda_short }}-${{ matrix.arch }}
-          if-no-files-found: error
-          path: ${{ runner.temp }}/artifacts/*.whl

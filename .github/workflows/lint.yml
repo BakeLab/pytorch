@@ -278,10 +278,6 @@ jobs:
           python-version: 3.8
           architecture: x64
           check-latest: false
-          cache: pip
-          cache-dependency-path: |
-            **/requirements-build.txt
-            **/requirements.txt
       - name: Setup Min Python version
         if: matrix.test_type != 'older_python_version'
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
@@ -289,10 +285,6 @@ jobs:
           python-version: ${{ steps.get-min-python-version.outputs.MIN_PYTHON_VERSION }}
           architecture: x64
           check-latest: false
-          cache: pip
-          cache-dependency-path: |
-            **/requirements-build.txt
-            **/requirements.txt
       - name: Install torch
         if: matrix.test_type == 'with_torch'
         run: |

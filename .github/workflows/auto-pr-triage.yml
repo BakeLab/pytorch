@@ -144,43 +144,6 @@ jobs:
       # They hold PR content, checked-in config, and LLM output from a session
       # with no tools or credential access. The full Claude transcript
       # (execution.json) is uploaded only when the analysis action fails.
-      - name: Upload human-review result
-        if: >-
-          steps.history.outputs.should-run == 'true' &&
-          steps.auto-pr-triage.outcome == 'success'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: auto-pr-triage-human-review-${{ github.event.pull_request.number }}-${{ github.run_attempt }}
-          path: |
-            ${{ steps.paths.outputs.output-dir }}/action-failure.json
-            ${{ steps.paths.outputs.output-dir }}/error.json
-            ${{ steps.paths.outputs.output-dir }}/intake.json
-            ${{ steps.paths.outputs.output-dir }}/ownership.json
-            ${{ steps.paths.outputs.output-dir }}/planner_input.json
-            ${{ steps.paths.outputs.output-dir }}/plan.json
-            ${{ steps.paths.outputs.output-dir }}/result.json
-          retention-days: 90
-          if-no-files-found: error
-
-      - name: Upload Auto PR Triage failure diagnostics
-        if: >-
-          always() &&
-          steps.history.outputs.should-run == 'true' &&
-          steps.auto-pr-triage.outcome != 'success'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: auto-pr-triage-human-review-${{ github.event.pull_request.number }}-${{ github.run_attempt }}
-          path: |
-            ${{ steps.paths.outputs.output-dir }}/action-failure.json
-            ${{ steps.paths.outputs.output-dir }}/error.json
-            ${{ steps.paths.outputs.output-dir }}/execution.json
-            ${{ steps.paths.outputs.output-dir }}/intake.json
-            ${{ steps.paths.outputs.output-dir }}/ownership.json
-            ${{ steps.paths.outputs.output-dir }}/planner_input.json
-            ${{ steps.paths.outputs.output-dir }}/plan.json
-            ${{ steps.paths.outputs.output-dir }}/result.json
-          retention-days: 90
-          if-no-files-found: warn
 
   apply:
     needs: analyze
